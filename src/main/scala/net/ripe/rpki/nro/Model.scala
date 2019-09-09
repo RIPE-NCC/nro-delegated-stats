@@ -84,6 +84,20 @@ object Ipv4Record {
     val ext = if (rec.length > 8) rec(8) else ""
     new Ipv4Record(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid, ext)
   }
+
+  // Ipv4 ianapool on Jeff's combined results always dated 20120801, Magic date, where is it from? The ASN and Ipv6 is dated TODAY
+  def ianapool(ipv4: IpResourceRange) =
+    Ipv4Record("iana",
+               "ZZ",
+               "ipv4",
+               ipv4.getStart + "",
+               rangeLen(ipv4) + "",
+               "20120801",
+               "ianapool",
+               "",
+               "iana")
+
+
 }
 
 object Ipv6Record {
@@ -96,6 +110,13 @@ object Ipv6Record {
     val Array(start, prefix) = ipv6.toString.split("/")
     new Ipv6Record(rec(0), rec(1), rec(2), start, prefix, rec(5), rec(6), oid, ext)
   }
+
+  def ianapool(ipv6: IpResourceRange) = {
+    val Array(start, prefix) = ipv6.toString.split("/")
+    Ipv6Record("iana", "ZZ", "ipv6", start, prefix, TODAY, "ianapool", "", "iana")
+  }
+
+
 }
 
 object AsnRecord {
@@ -104,6 +125,18 @@ object AsnRecord {
     val ext = if (rec.length > 8) rec(8) else ""
     new AsnRecord(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid, ext)
   }
+
+  def ianapool(asn: IpResourceRange) =
+    AsnRecord("iana",
+              "ZZ",
+              "asn",
+              asn.getStart.getValue + "",
+              rangeLen(asn) + "",
+              TODAY,
+              "ianapool",
+              "",
+              "iana")
+
 
 }
 

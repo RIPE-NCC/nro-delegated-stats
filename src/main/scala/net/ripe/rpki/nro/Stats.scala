@@ -106,34 +106,6 @@ object Main extends App {
   def rangeLen(r: IpResourceRange) =
     r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
 
-  def asnPool(asn: IpResourceRange) =
-    AsnRecord("iana",
-              "ZZ",
-              "asn",
-              asn.getStart.getValue + "",
-              rangeLen(asn) + "",
-              TODAY,
-              "ianapool",
-              "",
-              "iana")
-
-  // Ipv4 ianapool on Jeff's combined results always dated 20120801, Magic date, where is it from? The ASN and Ipv6 is dated TODAY
-  def ipv4Pool(ipv4: IpResourceRange) =
-    Ipv4Record("iana",
-               "ZZ",
-               "ipv4",
-               ipv4.getStart + "",
-               rangeLen(ipv4) + "",
-               "20120801",
-               "ianapool",
-               "",
-               "iana")
-
-  def ipv6Pool(ipv6: IpResourceRange) = {
-    val Array(start, prefix) = ipv6.toString.split("/")
-    Ipv6Record("iana", "ZZ", "ipv6", start, prefix, TODAY, "ianapool", "", "iana")
-  }
-
   def writeOut(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) {
     val writer    = new PrintWriter(new File("result/combined-stat"))
     val totalSize = asn.size + ipv4.size + ipv6.size
@@ -174,7 +146,7 @@ object Main extends App {
     // Ipv4 does not have to fit in bit boundary no need for prefix splitting.
     val ipv4sp = ipv4s ++ ianapool4.iterator.asScala
       .map(a => IpResourceRange.parse(a.toString))
-      .map(a => a -> ipv4Pool(a))
+      .map(a => a -> Ipv4Record.ianapool(a))
       .toMap
 
     // Started with slash zero and remove one by one all ipv6s we found by combining RIRs, we ended up with ianapool
@@ -187,7 +159,7 @@ object Main extends App {
       .map(_.toString)
       .flatMap(s => Ipv6Range.parse(s).splitToPrefixes.asScala)
       .map(a => IpResourceRange.parse(a.toString))
-      .map(a => a -> ipv6Pool(a))
+      .map(a => a -> Ipv6Record.ianapool(a))
       .toMap
 
     val ianapoolAsn = new IpResourceSet
@@ -195,7 +167,7 @@ object Main extends App {
     asns.keys.foreach(ianapoolAsn.remove)
     val asnsp = asns ++ ianapoolAsn.iterator.asScala
       .map(a => IpResourceRange.parse(a.toString))
-      .map(a => a -> asnPool(a))
+      .map(a => a -> AsnRecord.ianapool(a))
       .toMap
 
     writeOut(asnsp.values.toList, ipv4sp.values.toList, ipv6sp.values.toList)
