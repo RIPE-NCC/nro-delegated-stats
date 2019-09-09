@@ -8,7 +8,6 @@ import net.ripe.ipresource._
 
 import Defs._
 import Ports._
-
 object Stats extends App {
 
   // I guess we can do conflict detection here.
@@ -33,51 +32,70 @@ object Stats extends App {
 
   def combineAll() = {
 
-    val (rirs, iana, jeff) = fetchAndParse
+    val recordMaps : Map[String, Records] = fetchAndParse()
 
-    // IETF reserved data from IANA is combined without modification
-    val asnIetf  = iana.asn.filter { case (_, v)  => v.status == "ietf" || v.status == "assigned" }
-    val ipv4Ietf = iana.ipv4.filter { case (_, v) => v.status == "ietf" || v.status == "assigned" }
-    val ipv6Ietf = iana.ipv6.filter { case (_, v) => v.status == "ietf" || v.status == "assigned" }
+    // Adjusting and fixing record fields conforming to what is done by jeff.
+    val rirs = (recordMaps - "iana" - "jeff").mapValues(_.fixExt.fixReservedAvailable.fixAllocated)
+    val iana = recordMaps("iana").fixExt.fixIetfIana
+    val jeff = recordMaps("jeff")
+
+    // Filter for iana data not from RIRs
+    val nonRirData: ((IpResourceRange, Record)) => Boolean =  {
+      case (k,v) => !rirs.keySet.contains(v.status) 
+    }
+
+    // Non RIRs a.k.a IETF reserved data from IANA is combined without modification
+    val asnIetf  = iana.asn.filter(nonRirData)
+    val ipv4Ietf = iana.ipv4.filter(nonRirData)
+    val ipv6Ietf = iana.ipv6.filter(nonRirData)
 
     // Combine will also check for conflicts inter RIRS, not checking integrity within RIR
-    println(s"\n\n---  Combining RIRs data and checking for conflicts ---\n\n")
+    println(s"\n\n---  Combining RIRs data and checking for conflicts within RIRs ---\n\n")
+    // Note we are not checking conflicts with IANA only among RIRs
     val asns  = combine(rirs.values.map(_.asn)) ++ asnIetf
     val ipv4s = combine(rirs.values.map(_.ipv4)) ++ ipv4Ietf
     val ipv6s = combine(rirs.values.map(_.ipv6)) ++ ipv6Ietf
 
-    // Started with slash zero and remove one by one all ipv4s we found by combining RIRs, we ended up with ianapool
-    val ianapool4 = new IpResourceSet
-    ianapool4.add(IpResourceRange.parse("0.0.0.0/0"))
-    ipv4s.keys.foreach(ianapool4.remove)
+    // Started with slash zero 
+    val allIpv4 = new IpResourceSet
+    allIpv4.add(IpResourceRange.parse("0.0.0.0/0"))
+    // Remove all ipv4s we found from RIRs for ianapool
+    ipv4s.keys.foreach(allIpv4.remove)
 
-    // Ipv4 does not have to fit in bit boundary no need for prefix splitting.
-    val ipv4sp = ipv4s ++ ianapool4.iterator.asScala
+    // We process the remaining range into iana pool 
+    val ipv4pool =  allIpv4.iterator.asScala
       .map(a => IpResourceRange.parse(a.toString))
       .map(a => a -> Ipv4Record.ianapool(a))
       .toMap
 
-    // Started with slash zero and remove one by one all ipv6s we found by combining RIRs, we ended up with ianapool
-    val ianapool6 = new IpResourceSet
-    ianapool6.add(IpResourceRange.parse("::/0"))
-    ipv6s.keys.foreach(ianapool6.remove)
+    // Started with slash zero 
+    val allIpv6 = new IpResourceSet
+    allIpv6.add(IpResourceRange.parse("::/0"))
+
+    // Remove all ipv6s we found from RIRs for ianapool
+    ipv6s.keys.foreach(allIpv6.remove)
 
     // IPv6 has to be fit into bit boundary, since the format is | start | prefixLength
-    val ipv6sp = ipv6s ++ ianapool6.iterator.asScala
+    val ipv6pool = allIpv6.iterator.asScala
       .map(_.toString)
       .flatMap(s => Ipv6Range.parse(s).splitToPrefixes.asScala)
       .map(a => IpResourceRange.parse(a.toString))
       .map(a => a -> Ipv6Record.ianapool(a))
       .toMap
 
-    val ianapoolAsn = new IpResourceSet
-    ianapoolAsn.add(IpResourceRange.parse("AS0-AS4200000000"))
-    asns.keys.foreach(ianapoolAsn.remove)
-    val asnsp = asns ++ ianapoolAsn.iterator.asScala
+    // Started with whole ASN range 
+    val allAsn = new IpResourceSet
+    allAsn.add(IpResourceRange.parse("AS0-AS4200000000"))
+
+    // Remove asns we found so far from RIR for ianapool
+    asns.keys.foreach(allAsn.remove)
+
+    val asnPool = allAsn.iterator.asScala
       .map(a => IpResourceRange.parse(a.toString))
       .map(a => a -> AsnRecord.ianapool(a))
       .toMap
 
+    val (asnsp, ipv4sp, ipv6sp) = (asns ++ asnPool, ipv4s ++ ipv4pool, ipv6s ++ ipv6pool)
     writeOut(asnsp.values.toList, ipv4sp.values.toList, ipv6sp.values.toList)
     ((rirs, iana, jeff), (asnsp, ipv4sp, ipv6sp))
 
