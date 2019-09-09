@@ -1,17 +1,16 @@
 package net.ripe.rpki.nro 
 
-import Defs._
 import java.io._
-import java.math.BigInteger
+import scala.io._
 
-import net.ripe.commons.ip.Ipv6Range
-import net.ripe.ipresource._
-
+import scala.collection._
 import scala.collection.JavaConverters._
-import scala.collection.SortedMap
-import scala.io.Source
 
-object IO {
+import Defs._
+
+
+object Ports {
+
    val dataSources = Map[String, String](
     "apnic"   -> "http://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
     "afrinic" -> "http://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",

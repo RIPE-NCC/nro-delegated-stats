@@ -1,19 +1,15 @@
 package net.ripe.rpki.nro
 
-import java.io._
-import java.math.BigInteger
+import scala.collection._
+import scala.collection.JavaConverters._
 
-import net.ripe.commons.ip.Ipv6Range
+import net.ripe.commons.ip._
 import net.ripe.ipresource._
 
-import scala.collection.JavaConverters._
-import scala.collection.SortedMap
-import scala.io.Source
-
 import Defs._
-import IO._ 
+import Ports._ 
 
-object Main extends App {
+object Stats extends App {
 
     // I guess we can do conflict detection here.
   def merge(ma: SortedMap[IpResourceRange, Record], mb: SortedMap[IpResourceRange, Record]) = {

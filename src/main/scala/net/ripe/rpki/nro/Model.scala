@@ -20,7 +20,7 @@ object Defs {
 
 }
 
-import net.ripe.rpki.nro.Defs._
+import Defs._
 
 sealed trait Record {
   def range(): IpResourceRange
