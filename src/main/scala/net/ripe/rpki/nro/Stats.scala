@@ -8,6 +8,7 @@ import net.ripe.ipresource._
 
 import Defs._
 import Ports._
+
 object Stats extends App {
 
   // I guess we can do conflict detection here.
@@ -30,7 +31,7 @@ object Stats extends App {
   def combine(resourceMap: Iterable[SortedMap[IpResourceRange, Record]]) =
     resourceMap.foldLeft(SortedMap[IpResourceRange, Record]())(merge)
 
-  def combineAll() = {
+  def createDelegatedStats() = {
 
     val recordMaps : Map[String, Records] = fetchAndParse()
 
@@ -95,13 +96,14 @@ object Stats extends App {
       .map(a => a -> AsnRecord.ianapool(a))
       .toMap
 
-    val (asnsp, ipv4sp, ipv6sp) = (asns ++ asnPool, ipv4s ++ ipv4pool, ipv6s ++ ipv6pool)
-    writeOut(asnsp.values.toList, ipv4sp.values.toList, ipv6sp.values.toList)
-    ((rirs, iana, jeff), (asnsp, ipv4sp, ipv6sp))
+    val List(asnsWithPool, ipv4sWithPool, ipv6sWithPool) = List(asns ++ asnPool, ipv4s ++ ipv4pool, ipv6s ++ ipv6pool).map(_.values.toList)
+
+    // Dump to file output, see on results dir.
+    writeOut(asnsWithPool, ipv4sWithPool, ipv6sWithPool)
 
   }
 
-  combineAll()
+  createDelegatedStats()
   println("Done")
 
 }
