@@ -1,4 +1,4 @@
-package net.ripe.rpki.nro 
+package net.ripe.rpki.nro
 
 import java.io._
 import scala.io._
@@ -8,10 +8,9 @@ import scala.collection.JavaConverters._
 
 import Defs._
 
-
 object Ports {
 
-   val dataSources = Map[String, String](
+  val dataSources = Map[String, String](
     "apnic"   -> "http://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
     "afrinic" -> "http://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",
     "arin"    -> "http://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest",
@@ -33,15 +32,18 @@ object Ports {
 
     // Parse and create sorted map from range to record
     val asn = SortedMap(
-      parse(records.filter(_.contains("asn"))).map(a => AsnRecord(a)).map(r => r.range() -> r): _*)
+      parse(records.filter(_.contains("asn"))).map(a => AsnRecord(a)).map(r => r.range() -> r): _*
+    )
     val ipv4 = SortedMap(
       parse(records.filter(_.contains("ipv4")))
         .map(r => Ipv4Record(r))
-        .map(r => r.range() -> r): _*)
+        .map(r => r.range() -> r): _*
+    )
     val ipv6 = SortedMap(
       parse(records.filter(_.contains("ipv6")))
         .map(r => Ipv6Record(r))
-        .map(r => r.range() -> r): _*)
+        .map(r => r.range() -> r): _*
+    )
 
     Records(source, header, summaries, asn, ipv4, ipv6)
   }
@@ -94,6 +96,5 @@ object Ports {
     writer.close
 
   }
-
 
 }

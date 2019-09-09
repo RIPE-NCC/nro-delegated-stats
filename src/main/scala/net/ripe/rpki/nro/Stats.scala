@@ -7,11 +7,11 @@ import net.ripe.commons.ip._
 import net.ripe.ipresource._
 
 import Defs._
-import Ports._ 
+import Ports._
 
 object Stats extends App {
 
-    // I guess we can do conflict detection here.
+  // I guess we can do conflict detection here.
   def merge(ma: SortedMap[IpResourceRange, Record], mb: SortedMap[IpResourceRange, Record]) = {
     val ka       = ma.keySet
     val kb       = mb.keySet
