@@ -72,8 +72,8 @@ object Ports {
       }
     }
 
-    val rirs = (records - "iana" - "jeff").mapValues(_.fixExt.fixZZDate.fixAllocated)
-    val iana = records("iana").fixExt.fixOid
+    val rirs = (records - "iana" - "jeff").mapValues(_.fixExt.fixReservedAvailable.fixAllocated)
+    val iana = records("iana").fixExt.fixIetfIana 
     val jeff = records("jeff")
 
     (rirs, iana, jeff)

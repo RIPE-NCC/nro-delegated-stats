@@ -35,6 +35,7 @@ object Stats extends App {
     val (rirs, iana, jeff) = fetchAndParse
 
     // IETF reserved data from IANA is combined without modification
+
     val asnIetf  = iana.asn.filter { case (_, v)  => v.status == "ietf" || v.status == "assigned" }
     val ipv4Ietf = iana.ipv4.filter { case (_, v) => v.status == "ietf" || v.status == "assigned" }
     val ipv6Ietf = iana.ipv6.filter { case (_, v) => v.status == "ietf" || v.status == "assigned" }
