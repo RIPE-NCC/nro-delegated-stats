@@ -11,6 +11,13 @@ object Defs {
   type Line = Array[String]
   val TODAY = java.time.LocalDate.now.toString.replaceAll("-", "")
 
+  implicit val ipResourceRangeOrder = new Ordering[IpResourceRange] {
+    override def compare(a: IpResourceRange, b: IpResourceRange) = a.compareTo(b)
+  }
+
+  def rangeLen(r: IpResourceRange) =
+    r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
+
 }
 
 import net.ripe.rpki.nro.Defs._
