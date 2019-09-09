@@ -8,7 +8,6 @@ import Defs._
 import Updates._
 
 sealed trait Record {
-  def range(): IpResourceRange
   def registry: String
   def cc: String
   def lType: String
@@ -19,6 +18,7 @@ sealed trait Record {
   def oid: String
   def ext: String
 
+  def range(): IpResourceRange
   override def toString: String =
     List(registry, cc, lType, start, length, date, status, oid, ext).mkString("|")
 }
@@ -84,17 +84,7 @@ object Ipv4Record {
 
   // Ipv4 ianapool on Jeff's combined results always dated 20120801, Magic date, where is it from? The ASN and Ipv6 is dated TODAY
   def ianapool(ipv4: IpResourceRange) =
-    Ipv4Record(
-      "iana",
-      "ZZ",
-      "ipv4",
-      ipv4.getStart + "",
-      rangeLen(ipv4) + "",
-      "20120801",
-      "ianapool",
-      "",
-      "iana"
-    )
+    Ipv4Record( "iana", "ZZ", "ipv4", ipv4.getStart + "", rangeLen(ipv4) + "", "20120801", "ianapool", "", "iana")
 
 }
 
@@ -124,17 +114,7 @@ object AsnRecord {
   }
 
   def ianapool(asn: IpResourceRange) =
-    AsnRecord(
-      "iana",
-      "ZZ",
-      "asn",
-      asn.getStart.getValue + "",
-      rangeLen(asn) + "",
-      TODAY,
-      "ianapool",
-      "",
-      "iana"
-    )
+    AsnRecord( "iana", "ZZ", "asn", asn.getStart.getValue + "", rangeLen(asn) + "", TODAY, "ianapool", "", "iana")
 
 }
 

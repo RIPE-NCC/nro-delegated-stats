@@ -15,7 +15,6 @@ object Defs {
 
   def rangeLen(r: IpResourceRange) =
     r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
-
   
 }
 

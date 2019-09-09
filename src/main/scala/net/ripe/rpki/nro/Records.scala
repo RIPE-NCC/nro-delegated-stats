@@ -7,7 +7,7 @@ import scala.collection.SortedMap
 import Defs._
 import Updates._
 
-
+// Records holder for three type of records, contains some logic of fixing entries
 case class Records(
     source: String,
     header: Line,
@@ -16,6 +16,7 @@ case class Records(
     ipv4: SortedMap[IpResourceRange, Ipv4Record],
     ipv6: SortedMap[IpResourceRange, Ipv6Record]
 ) {
+
 
  // ext field will be adjusted according to the source. (what about oid?)
   def fixExt: Records = {

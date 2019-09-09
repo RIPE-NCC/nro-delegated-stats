@@ -94,7 +94,5 @@ object Ports {
     writer.write("\n")
     writer.write(ipv6.map(_.toString).mkString("\n"))
     writer.close
-
   }
-
 }
