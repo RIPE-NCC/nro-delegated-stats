@@ -1,8 +1,8 @@
 package net.ripe.rpki.nro
 
 import java.math.BigInteger
-import net.ripe.ipresource.{IpAddress, IpResourceRange, IpResourceType}
-import scala.collection.SortedMap
+
+import net.ripe.ipresource.IpResourceRange
 
 object Defs {
 

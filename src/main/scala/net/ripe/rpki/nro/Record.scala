@@ -1,11 +1,9 @@
 package net.ripe.rpki.nro
 
 import java.math.BigInteger
-import net.ripe.ipresource.{IpAddress, IpResourceRange, IpResourceType}
-import scala.collection.SortedMap
 
-import Defs._
-import Updates._
+import net.ripe.ipresource.{IpAddress, IpResourceRange, IpResourceType}
+import net.ripe.rpki.nro.Defs._
 
 sealed trait Record {
   def registry: String
@@ -31,11 +29,11 @@ case class Ipv4Record(
     length: String,
     date: String,
     status: String,
-    oid: String = "",
-    ext: String = ""
+    oid: String,
+    ext: String = "e-stats"
 ) extends Record {
-  def range() = {
-    val startAddr = IpAddress.parse(start).getValue()
+  def range(): IpResourceRange = {
+    val startAddr = IpAddress.parse(start).getValue
     val endAddr   = new BigInteger(length).add(startAddr).subtract(BigInteger.ONE)
     IpResourceRange.assemble(startAddr, endAddr, IpResourceType.IPv4)
   }
@@ -49,10 +47,10 @@ case class Ipv6Record(
     length: String,
     date: String,
     status: String,
-    oid: String = "",
-    ext: String = ""
+    oid: String,
+    ext: String = "e-stats"
 ) extends Record {
-  def range() = {
+  def range(): IpResourceRange = {
     IpResourceRange.parse(start + "/" + length)
   }
 }
@@ -65,10 +63,10 @@ case class AsnRecord(
     length: String,
     date: String,
     status: String,
-    oid: String = "",
-    ext: String = ""
+    oid: String,
+    ext: String = "e-stats"
 ) extends Record {
-  def range() = {
+  def range(): IpResourceRange = {
     val iLength = length.toLong
     val iStart  = start.toLong
     IpResourceRange.parse(s"AS$iStart-AS${iStart + iLength - 1}")
@@ -76,10 +74,9 @@ case class AsnRecord(
 }
 
 object Ipv4Record {
-  def apply(rec: Array[String]) = {
+  def apply(rec: Array[String]): Ipv4Record = {
     val oid = if (rec.length > 7) rec(7) else ""
-    val ext = if (rec.length > 8) rec(8) else ""
-    new Ipv4Record(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid, ext)
+    new Ipv4Record(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid)
   }
 
   // Ipv4 ianapool on Jeff's combined results always dated 20120801, Magic date, where is it from? The ASN and Ipv6 is dated TODAY
@@ -89,17 +86,16 @@ object Ipv4Record {
 }
 
 object Ipv6Record {
-  def apply(rec: Array[String]) = {
-    val oid = if (rec.length > 7) rec(7) else ""
-    val ext = if (rec.length > 8) rec(8) else ""
+  def apply(rec: Array[String]): Ipv6Record = {
 
-    // Normalize data from iana 4000:0000 instead of 4000::
+    val oid = if (rec.length > 7) rec(7) else ""
+    // Normalize data from iana input 4000:0000 into 4000::
     val ipv6                 = IpResourceRange.parse(rec(3) + "/" + rec(4))
     val Array(start, prefix) = ipv6.toString.split("/")
-    new Ipv6Record(rec(0), rec(1), rec(2), start, prefix, rec(5), rec(6), oid, ext)
+    new Ipv6Record(rec(0), rec(1), rec(2), start, prefix, rec(5), rec(6), oid)
   }
 
-  def ianapool(ipv6: IpResourceRange) = {
+  def ianapool(ipv6: IpResourceRange): Ipv6Record = {
     val Array(start, prefix) = ipv6.toString.split("/")
     Ipv6Record("iana", "ZZ", "ipv6", start, prefix, TODAY, "ianapool", "", "iana")
   }
@@ -107,27 +103,12 @@ object Ipv6Record {
 }
 
 object AsnRecord {
-  def apply(rec: Array[String]) = {
+  def apply(rec: Array[String]): AsnRecord = {
     val oid = if (rec.length > 7) rec(7) else ""
-    val ext = if (rec.length > 8) rec(8) else ""
-    new AsnRecord(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid, ext)
+    new AsnRecord(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid)
   }
 
   def ianapool(asn: IpResourceRange) =
     AsnRecord( "iana", "ZZ", "asn", asn.getStart.getValue + "", rangeLen(asn) + "", TODAY, "ianapool", "", "iana")
 
 }
-
-
-case class Summary(registry: String, lType: String, count: String)
-
-case class Header(
-    version: String,
-    registry: String,
-    serial: String,
-    records: String,
-    startDate: String,
-    endDate: String,
-    utcOffset: String
-)
-

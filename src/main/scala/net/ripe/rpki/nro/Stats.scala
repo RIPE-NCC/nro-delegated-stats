@@ -1,13 +1,14 @@
 package net.ripe.rpki.nro
 
-import scala.collection._
-import scala.collection.JavaConverters._
-
 import net.ripe.commons.ip._
 import net.ripe.ipresource._
+import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Ports._
 
-import Defs._
-import Ports._
+import scala.collection.JavaConverters._
+import scala.collection._
+import scala.collection.parallel.ParIterable
+import scala.collection.parallel.immutable.ParMap
 
 object Stats extends App {
 
@@ -28,21 +29,21 @@ object Stats extends App {
   }
 
   // Combining multiple maps from different RIRs
-  def combine(resourceMap: Iterable[SortedMap[IpResourceRange, Record]]) =
+  def combine(resourceMap: ParIterable[SortedMap[IpResourceRange, Record]]): SortedMap[IpResourceRange, Record] =
     resourceMap.foldLeft(SortedMap[IpResourceRange, Record]())(merge)
 
-  def createDelegatedStats() = {
+  def createDelegatedStats(): Unit = {
 
-    val recordMaps : Map[String, Records] = fetchAndParse()
+    val recordMaps: ParMap[String, Records] = fetchAndParse()
 
     // Adjusting and fixing record fields conforming to what is done by jeff.
-    val rirs = (recordMaps - "iana" - "jeff").mapValues(_.fixExt.fixReservedAvailable.fixAllocated)
-    val iana = recordMaps("iana").fixExt.fixIetfIana
-    val jeff = recordMaps("jeff")
+    val rirs = (recordMaps - "iana" - "jeff").mapValues(_.fixRIRs)
+    val iana = recordMaps("iana").fixIana
+    //val jeff = recordMaps("jeff")
 
-    // Filter for iana data not from RIRs
+    // Filter for iana data not allocated for RIRs
     val nonRirData: ((IpResourceRange, Record)) => Boolean =  {
-      case (k,v) => !rirs.keySet.contains(v.status) 
+      case (_,v) => !rirs.keySet.contains(v.status)
     }
 
     // Non RIRs a.k.a IETF reserved data from IANA is combined without modification
@@ -65,7 +66,7 @@ object Stats extends App {
 
     // We process the remaining range into iana pool 
     val ipv4pool =  allIpv4.iterator.asScala
-      .map(a => IpResourceRange.parse(a.toString))
+      .map(a => IpResourceRange.range(a.getStart, a.getEnd))
       .map(a => a -> Ipv4Record.ianapool(a))
       .toMap
 
@@ -92,11 +93,12 @@ object Stats extends App {
     asns.keys.foreach(allAsn.remove)
 
     val asnPool = allAsn.iterator.asScala
-      .map(a => IpResourceRange.parse(a.toString))
+      .map(a => IpResourceRange.range(a.getStart, a.getEnd))
       .map(a => a -> AsnRecord.ianapool(a))
       .toMap
 
-    val List(asnsWithPool, ipv4sWithPool, ipv6sWithPool) = List(asns ++ asnPool, ipv4s ++ ipv4pool, ipv6s ++ ipv6pool).map(_.values.toList)
+    val List(asnsWithPool, ipv4sWithPool, ipv6sWithPool) = 
+      List(asns ++ asnPool, ipv4s ++ ipv4pool, ipv6s ++ ipv6pool).map(_.values.toList)
 
     // Dump to file output, see on results dir.
     writeOut(asnsWithPool, ipv4sWithPool, ipv6sWithPool)
