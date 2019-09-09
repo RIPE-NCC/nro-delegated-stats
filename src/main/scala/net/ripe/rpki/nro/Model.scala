@@ -5,6 +5,7 @@ import net.ripe.ipresource.{IpAddress, IpResourceRange, IpResourceType}
 import scala.collection.SortedMap
 
 import Defs._
+import Updates._
 
 sealed trait Record {
   def range(): IpResourceRange
@@ -95,13 +96,6 @@ object Ipv4Record {
       "iana"
     )
 
-  implicit val updates = new Updates[Ipv4Record] {
-    def status_(r: Ipv4Record, status: String) = r.copy(status = status)
-    def ext_(r: Ipv4Record, ext: String)       = r.copy(ext = ext)
-    def oid_(r: Ipv4Record, oid: String)       = r.copy(oid = oid)
-    def cc_(r: Ipv4Record, cc: String)         = r.copy(cc = cc)
-    def date_(r: Ipv4Record, date: String)     = r.copy(date = date)
-  }
 }
 
 object Ipv6Record {
@@ -118,14 +112,6 @@ object Ipv6Record {
   def ianapool(ipv6: IpResourceRange) = {
     val Array(start, prefix) = ipv6.toString.split("/")
     Ipv6Record("iana", "ZZ", "ipv6", start, prefix, TODAY, "ianapool", "", "iana")
-  }
-
-  implicit val updates = new Updates[Ipv6Record] {
-    def status_(r: Ipv6Record, status: String) = r.copy(status = status)
-    def ext_(r: Ipv6Record, ext: String)       = r.copy(ext = ext)
-    def oid_(r: Ipv6Record, oid: String)       = r.copy(oid = oid)
-    def cc_(r: Ipv6Record, cc: String)         = r.copy(cc = cc)
-    def date_(r: Ipv6Record, date: String)     = r.copy(date = date)
   }
 
 }
@@ -150,17 +136,11 @@ object AsnRecord {
       "iana"
     )
 
-  implicit val updates = new Updates[AsnRecord] {
-    def status_(r: AsnRecord, status: String) = r.copy(status = status)
-    def ext_(r: AsnRecord, ext: String)       = r.copy(ext = ext)
-    def oid_(r: AsnRecord, oid: String)       = r.copy(oid = oid)
-    def cc_(r: AsnRecord, oid: String)        = r.copy(cc = oid)
-    def date_(r: AsnRecord, oid: String)      = r.copy(date = oid)
-  }
-
 }
 
+
 case class Summary(registry: String, lType: String, count: String)
+
 case class Header(
     version: String,
     registry: String,
@@ -171,71 +151,3 @@ case class Header(
     utcOffset: String
 )
 
-case class Records(
-    source: String,
-    header: Line,
-    summaries: List[Line],
-    asn: SortedMap[IpResourceRange, AsnRecord],
-    ipv4: SortedMap[IpResourceRange, Ipv4Record],
-    ipv6: SortedMap[IpResourceRange, Ipv6Record]
-) {
-  override def toString: String =
-    s"""Source: $source \nHeader: ${header.mkString(",")} \nSummaries: \n${summaries
-      .map(_.mkString(","))
-      .mkString("\n")}\n\n"""
-
-  // ext field will be adjusted according to the source. (what about oid?)
-  def fixExt: Records = {
-
-    val ext                                  = if (source == "iana") "iana" else "e-stats"
-    def fixExt[A <: Record: Updates]: A => A = _.ext_(ext)
-
-    val fAsn  = this.asn.mapValues(fixExt)
-    val fIpv4 = this.ipv4.mapValues(fixExt)
-    val fIpv6 = this.ipv6.mapValues(fixExt)
-
-    this.copy(asn = fAsn, ipv4 = fIpv4, ipv6 = fIpv6)
-  }
-
-  def fixIetfIana: Records = {
-
-    def fixIetfIana[A <: Record: Updates]: A => A = (a: A) => {
-      if (a.status == "ietf") a.oid_("ietf").ext_("iana")
-      else if (a.status == "iana") a.oid_("iana").status_("assigned").ext_("iana")
-      else a
-    }
-
-    val fAsn  = this.asn.mapValues(fixIetfIana)
-    val fIpv4 = this.ipv4.mapValues(fixIetfIana)
-    val fIpv6 = this.ipv6.mapValues(fixIetfIana)
-
-    this.copy(asn = fAsn, ipv4 = fIpv4, ipv6 = fIpv6)
-  }
-
-  // Reserved and available records normally have neither country code or date, when combined it will be filled with ZZ and today's date.
-  def fixReservedAvailable: Records = {
-    val cc = "ZZ"
-    def fixReservedAvailable[A <: Record: Updates]: A => A =
-      (a: A) => if (a.status == "reserved" || a.status == "available") a.date_(TODAY).cc_(cc) else a
-
-    val fAsn  = this.asn.mapValues(fixReservedAvailable)
-    val fIpv4 = this.ipv4.mapValues(fixReservedAvailable)
-    val fIpv6 = this.ipv6.mapValues(fixReservedAvailable)
-
-    this.copy(asn = fAsn, ipv4 = fIpv4, ipv6 = fIpv6)
-  }
-
-  // RIR's allocated are all converted to assigned when combined.
-  def fixAllocated: Records = {
-
-    def fixAllocated[A <: Record: Updates]: A => A =
-      (a: A) => if (a.status == "allocated") a.status_("assigned") else a
-
-    val fAsn  = this.asn.mapValues(fixAllocated)
-    val fIpv4 = this.ipv4.mapValues(fixAllocated)
-    val fIpv6 = this.ipv6.mapValues(fixAllocated)
-
-    this.copy(asn = fAsn, ipv4 = fIpv4, ipv6 = fIpv6)
-  }
-
-}
