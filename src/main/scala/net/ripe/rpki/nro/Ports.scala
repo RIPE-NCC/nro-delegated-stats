@@ -65,12 +65,12 @@ object Ports {
   // Assumes a data directory existed to store fetched data.
   def fetchAndParse() = {
 
-    val records: Map[String, Records] = dataSources.map {
+    val records: Map[String, Records] = dataSources.par.map {
       case (name, url) => {
         fetch(url, s"data/$name")
         (name, parseRecords(s"data/$name"))
       }
-    }
+    }.seq
 
     val rirs = (records - "iana" - "jeff").mapValues(_.fixExt.fixReservedAvailable.fixAllocated)
     val iana = records("iana").fixExt.fixIetfIana
