@@ -28,6 +28,10 @@ object Record {
     r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
 }
 
+case class Conflict(a : Record, b: Record, kind: String = "inter-rir"){
+  override def toString: String = s"\n$kind:\n<$a\n>$b"
+}
+
 case class Ipv4Record(
     registry: String,
     cc: String,

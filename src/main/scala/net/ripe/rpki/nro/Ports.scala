@@ -3,7 +3,9 @@ package net.ripe.rpki.nro
 
 import java.io.{File, PrintWriter}
 
+import net.ripe.ipresource.IpResourceRange
 import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Ports.using
 
 import scala.collection.SortedMap
 import scala.collection.parallel.immutable.ParMap
@@ -21,31 +23,25 @@ object Ports {
     JEFF    -> "https://www.nro.net/wp-content/uploads/apnic-uploads/delegated-extended"
   )
 
-  def parseRecords(source: String): Records = {
+  def parseLines(lines: List[String]): List[Line] = lines.map(_.split('|'))
 
-    def parse(records: List[String]): List[Line] = records.map(_.split('|'))
+  def toSortedRecordMap[R <: Record](lines : List[Line], f : Line => R) : SortedMap[IpResourceRange, R] = {
+    SortedMap(lines.map(r => f(r)).map(r => r.range() -> r): _*)
+  }
+
+  def parseRecords(source: String): Records = {
 
     using(fromFile(source)) { src =>
       val lines = src.getLines.filter(!_.startsWith("#")).toList
       val header = lines.head.split('|')
-      val summaries = parse(lines.filter(_.contains(SUMMARY)))
+      val summaries = parseLines(lines.filter(_.contains(SUMMARY)))
 
-      val records = lines.tail.filter(!_.contains(SUMMARY))
+      val recordLines = lines.tail.filter(!_.contains(SUMMARY))
 
       // Parse and create sorted map from range to record
-      val asn = SortedMap(
-        parse(records.filter(_.contains(ASN))).map(a => AsnRecord(a)).map(r => r.range() -> r): _*
-      )
-      val ipv4 = SortedMap(
-        parse(records.filter(_.contains(IPV4)))
-          .map(r => Ipv4Record(r))
-          .map(r => r.range() -> r): _*
-      )
-      val ipv6 = SortedMap(
-        parse(records.filter(_.contains(IPV6)))
-          .map(r => Ipv6Record(r))
-          .map(r => r.range() -> r): _*
-      )
+      val asn  = toSortedRecordMap(parseLines(recordLines.filter(_.contains(ASN))), AsnRecord.apply)
+      val ipv4 = toSortedRecordMap(parseLines(recordLines.filter(_.contains(IPV4))), Ipv4Record.apply)
+      val ipv6 = toSortedRecordMap(parseLines(recordLines.filter(_.contains(IPV6))), Ipv6Record.apply)
 
       Records(source, header, summaries, asn, ipv4, ipv6)
     }
@@ -93,7 +89,11 @@ object Ports {
     }
   }
 
-
+  def writeConflicts(conflicts: List[Conflict]): Unit = {
+    using(new PrintWriter(new File("result/conflicts"))) { writer =>
+      writer.write(conflicts.mkString("\n"))
+    }
+  }
   def using[A, B <: {def close(): Unit}] (closeable: B) (f: B => A): A =
     try { f(closeable) } finally { closeable.close() }
 

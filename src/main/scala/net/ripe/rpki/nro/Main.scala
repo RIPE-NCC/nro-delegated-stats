@@ -32,25 +32,28 @@ object Main extends App {
     // Combine will also check for conflicts inter RIRS, not checking integrity within RIR
     println(s"\n\n---  Combining RIRs data and checking for conflicts within RIRs ---\n\n")
     // Note we are not checking conflicts with IANA only among RIRs
-    val asns  = combine(rirs.values.map(_.asn)) ++ asnIetf
-    val ipv4s = combine(rirs.values.map(_.ipv4)) ++ ipv4Ietf
-    val ipv6s = combine(rirs.values.map(_.ipv6)) ++ ipv6Ietf
+    val (asns, asnConflicts)   = combine(rirs.values.map(_.asn))
+    val (ipv4s, ipv4Conflicts) = combine(rirs.values.map(_.ipv4))
+    val (ipv6s, ipv6Conflicts) = combine(rirs.values.map(_.ipv6))
 
-    val ipv4pool = substractSpace(ALL_IPV4, ipv4s.keys).map(ipv4 => ipv4 -> Ipv4Record.ianapool(ipv4)).toMap
-    val asnPool  = substractSpace(ALL_ASNS, asns.keys) .map(asn  => asn  -> AsnRecord.ianapool(asn)).toMap
+    val ipv4pool = subtractRanges(ALL_IPV4, ipv4s.keys ++ ipv4Ietf.keys).map(ipv4 => ipv4 -> Ipv4Record.ianapool(ipv4)).toMap
+    val asnPool  = subtractRanges(ALL_ASNS, asns.keys  ++ asnIetf.keys) .map(asn  => asn  -> AsnRecord.ianapool(asn)).toMap
 
     // Ipv6 needs to adjusted/split to bit boundary using other library (commons ip math)
     // To String and parse are converting between these ip libraries
-    val ipv6pool = substractSpace(ALL_IPV6, ipv6s.keys).map(_.toString)
+    val ipv6pool = subtractRanges(ALL_IPV6, ipv6s.keys ++ ipv6Ietf.keys).map(_.toString)
       .flatMap(s => Ipv6Range.parse(s).splitToPrefixes.asScala)
       .map(a => IpResourceRange.parse(a.toString))
       .map(a => a -> Ipv6Record.ianapool(a))
       .toMap
 
     val List(asnsWithPool, ipv4sWithPool, ipv6sWithPool) = 
-      List(asns ++ asnPool, ipv4s ++ ipv4pool, ipv6s ++ ipv6pool).map(_.values.toList)
+      List(asns ++ asnPool ++ asnIetf, ipv4s ++ ipv4pool ++ ipv4Ietf, ipv6s ++ ipv6pool ++ ipv6Ietf).map(_.values.toList)
 
     // Dump to file output, see on results dir.
     writeOut(asnsWithPool, ipv4sWithPool, ipv6sWithPool)
+
+
+    writeConflicts(asnConflicts++ipv4Conflicts++ipv6Conflicts)
 
 }

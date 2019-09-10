@@ -11,7 +11,7 @@ case class Records(
     source: String,
     header: Line,
     summaries: List[Line],
-    asn: SortedMap[IpResourceRange, AsnRecord],
+    asn:  SortedMap[IpResourceRange, AsnRecord],
     ipv4: SortedMap[IpResourceRange, Ipv4Record],
     ipv6: SortedMap[IpResourceRange, Ipv6Record]
 ) {

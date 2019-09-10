@@ -2,6 +2,8 @@ package net.ripe.rpki.nro
 
 import net.ripe.ipresource.IpResourceRange
 
+import scala.collection.SortedMap
+
 object Defs {
 
   val IANA = "iana"
@@ -37,11 +39,15 @@ object Defs {
   val ALL_IPV6: IpResourceRange = IpResourceRange.parse("::/0")
   val ALL_ASNS: IpResourceRange = IpResourceRange.parse("AS0-AS4200000000")
 
-  type Line = Array[String]
 
   val TODAY: String = java.time.LocalDate.now.toString.replaceAll("-", "")
 
   implicit val ipResourceRangeOrder: Ordering[IpResourceRange] = (a: IpResourceRange, b: IpResourceRange) => a.compareTo(b)
+
+
+  type Line = Array[String]
+  type SortedRecordsMap = SortedMap[IpResourceRange, Record]
+  type RecordsAndConflicts = (SortedRecordsMap, List[Conflict])
 }
 
 
