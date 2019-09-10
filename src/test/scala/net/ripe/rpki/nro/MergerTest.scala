@@ -1,16 +1,16 @@
 package net.ripe.rpki.nro
 
-import org.scalatest.{FlatSpec, PropSpec}
-import Merger._
-import Defs._
-import Ports._
-import net.ripe.ipresource.{IpResource, IpResourceRange}
+import net.ripe.ipresource.IpResource
+import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Merger._
+import net.ripe.rpki.nro.Ports._
+import org.scalatest.FlatSpec
 
 class MergerTest extends FlatSpec {
 
   "Removing half of ipv6" should "produce the other half" in {
-    assert(subtractRanges(ALL_IPV6, Set(IpResourceRange.parse("::/1"))).toSet == Set(IpResourceRange.parse("8000::/1")))
-    assert(subtractRanges(ALL_IPV4, Set(IpResourceRange.parse("0.0.0.0/1"))).toSet == Set(IpResourceRange.parse("128.0.0.0/1")))
+    assert(subtractRanges(ALL_IPV6, Set(IpResource.parse("::/1"))).toSet == Set(IpResource.parse("8000::/1")))
+    assert(subtractRanges(ALL_IPV4, Set(IpResource.parse("0.0.0.0/1"))).toSet == Set(IpResource.parse("128.0.0.0/1")))
   }
 
   val apnic =

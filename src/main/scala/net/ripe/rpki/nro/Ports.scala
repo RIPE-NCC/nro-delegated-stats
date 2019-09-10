@@ -3,7 +3,7 @@ package net.ripe.rpki.nro
 
 import java.io.{File, PrintWriter}
 
-import net.ripe.ipresource.IpResourceRange
+import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs._
 
 import scala.collection.SortedMap
@@ -24,7 +24,7 @@ object Ports {
 
   def parseLines(lines: List[String]): List[Line] = lines.map(_.split('|'))
 
-  def toSortedRecordMap[R <: Record](lines : List[Line], f : Line => R) : SortedMap[IpResourceRange, R] = {
+  def toSortedRecordMap[R <: Record](lines : List[Line], f : Line => R) : SortedMap[IpResource, R] = {
     SortedMap(lines.map(r => f(r)).map(r => r.range() -> r): _*)
   }
 
@@ -70,7 +70,7 @@ object Ports {
     }
   }
 
-  def writeOut(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) {
+  def writeCombined(asn: SortedRecordsMap, ipv4: SortedRecordsMap, ipv6: SortedRecordsMap) {
     using(new PrintWriter(new File("result/combined-stat"))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
@@ -80,11 +80,11 @@ object Ports {
       writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
       writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
       writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
-      writer.write(asn.map(_.toString).mkString("\n"))
+      writer.write(asn.values.map(_.toString).mkString("\n"))
       writer.write("\n")
-      writer.write(ipv4.map(_.toString).mkString("\n"))
+      writer.write(ipv4.values.map(_.toString).mkString("\n"))
       writer.write("\n")
-      writer.write(ipv6.map(_.toString).mkString("\n"))
+      writer.write(ipv6.values.map(_.toString).mkString("\n"))
     }
   }
 

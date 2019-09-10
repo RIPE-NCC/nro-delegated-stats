@@ -1,6 +1,6 @@
 package net.ripe.rpki.nro
 
-import net.ripe.ipresource.{IpResource, IpResourceRange, IpResourceSet}
+import net.ripe.ipresource.{IpResource, IpResourceSet}
 import net.ripe.rpki.nro.Defs._
 
 import scala.collection.JavaConverters._
@@ -24,10 +24,10 @@ object Merger {
   }
 
   // Combining multiple maps from different RIRs
-  def combine(resourceMap: ParIterable[SortedRecordsMap]): RecordsAndConflicts =
-    resourceMap.foldLeft((SortedMap[IpResourceRange, Record](), List[Conflict]()))(checkAndMerge)
+  def combine(resourceMap: ParIterable[SortedRecordsMap]): (SortedRecordsMap, List[Conflict]) =
+    resourceMap.foldLeft((SortedMap[IpResource, Record](), List[Conflict]()))(checkAndMerge)
 
-  def subtractRanges(slash0: IpResourceRange, used : Iterable[IpResourceRange]): Iterator[IpResource] = {
+  def subtractRanges(slash0: IpResource, used : Iterable[IpResource]): Iterator[IpResource] = {
     val allSpace = new IpResourceSet(slash0)
     used.foreach(allSpace.remove)
     allSpace.iterator.asScala

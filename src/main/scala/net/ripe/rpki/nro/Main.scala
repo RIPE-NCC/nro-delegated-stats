@@ -3,12 +3,11 @@ package net.ripe.rpki.nro
 import net.ripe.commons.ip._
 import net.ripe.ipresource._
 import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Merger._
 import net.ripe.rpki.nro.Ports._
 
 import scala.collection.JavaConverters._
 import scala.collection.parallel.immutable.ParMap
-
-import Merger._
 
 object Main extends App {
 
@@ -20,7 +19,7 @@ object Main extends App {
     //val jeff = recordMaps("jeff")
 
     // Filter for iana data not allocated for RIRs
-    val nonRirData: ((IpResourceRange, Record)) => Boolean =  {
+    val nonRirData: ((IpResource, Record)) => Boolean =  {
       case (_,v) => !rirs.keySet.contains(v.status)
     }
 
@@ -47,11 +46,12 @@ object Main extends App {
       .map(a => a -> Ipv6Record.ianapool(a))
       .toMap
 
-    val List(asnsWithPool, ipv4sWithPool, ipv6sWithPool) = 
-      List(asns ++ asnPool ++ asnIetf, ipv4s ++ ipv4pool ++ ipv4Ietf, ipv6s ++ ipv6pool ++ ipv6Ietf).map(_.values.toList)
+   val asnCombined  = asns ++ asnPool ++ asnIetf
+   val ipv4Combined = ipv4s ++ ipv4pool ++ ipv4Ietf
+   val ipv6Combined = ipv6s ++ ipv6pool ++ ipv6Ietf
 
     // Dump to file output, see on results dir.
-    writeOut(asnsWithPool, ipv4sWithPool, ipv6sWithPool)
+    writeCombined(asnCombined, ipv4Combined, ipv6Combined)
 
 
     writeConflicts(asnConflicts++ipv4Conflicts++ipv6Conflicts)

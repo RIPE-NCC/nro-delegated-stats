@@ -17,7 +17,7 @@ sealed trait Record {
   def oid: String
   def ext: String
 
-  def range(): IpResourceRange
+  def range(): IpResource
 
   override def toString: String =
     List(registry, cc, lType, start, length, date, status, oid, ext).mkString("|")
@@ -43,7 +43,7 @@ case class Ipv4Record(
     oid: String,
     ext: String = DEFAULT_EXT
 ) extends Record {
-  def range(): IpResourceRange = {
+  def range(): IpResource = {
     val startAddr = IpAddress.parse(start).getValue
     val endAddr   = new BigInteger(length).add(startAddr).subtract(BigInteger.ONE)
     IpResourceRange.assemble(startAddr, endAddr, IpResourceType.IPv4)
@@ -61,8 +61,8 @@ case class Ipv6Record(
     oid: String,
     ext: String = DEFAULT_EXT
 ) extends Record {
-  def range(): IpResourceRange = {
-    IpResourceRange.parse(start + "/" + length)
+  def range(): IpResource = {
+    IpResource.parse(start + "/" + length)
   }
 }
 
@@ -77,10 +77,10 @@ case class AsnRecord(
     oid: String,
     ext: String = DEFAULT_EXT
 ) extends Record {
-  def range(): IpResourceRange = {
+  def range(): IpResource = {
     val iLength = length.toLong
     val iStart  = start.toLong
-    IpResourceRange.parse(s"AS$iStart-AS${iStart + iLength - 1}")
+    IpResource.parse(s"AS$iStart-AS${iStart + iLength - 1}")
   }
 }
 

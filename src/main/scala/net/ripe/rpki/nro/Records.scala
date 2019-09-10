@@ -1,6 +1,6 @@
 package net.ripe.rpki.nro 
 
-import net.ripe.ipresource.IpResourceRange
+import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
 
@@ -11,9 +11,9 @@ case class Records(
     source: String,
     header: Line,
     summaries: List[Line],
-    asn:  SortedMap[IpResourceRange, AsnRecord],
-    ipv4: SortedMap[IpResourceRange, Ipv4Record],
-    ipv6: SortedMap[IpResourceRange, Ipv6Record]
+    asn:  SortedMap[IpResource, AsnRecord],
+    ipv4: SortedMap[IpResource, Ipv4Record],
+    ipv6: SortedMap[IpResource, Ipv6Record]
 ) {
 
  def fixIana: Records = {
