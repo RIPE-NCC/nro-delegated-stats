@@ -5,7 +5,6 @@ import java.io.{File, PrintWriter}
 
 import net.ripe.ipresource.IpResourceRange
 import net.ripe.rpki.nro.Defs._
-import net.ripe.rpki.nro.Ports.using
 
 import scala.collection.SortedMap
 import scala.collection.parallel.immutable.ParMap
@@ -92,6 +91,10 @@ object Ports {
   def writeConflicts(conflicts: List[Conflict]): Unit = {
     using(new PrintWriter(new File("result/conflicts"))) { writer =>
       writer.write(conflicts.mkString("\n"))
+      if(!conflicts.isEmpty){
+        println("Conflicts found:")
+        println(conflicts.mkString("\n"))
+      }
     }
   }
   def using[A, B <: {def close(): Unit}] (closeable: B) (f: B => A): A =

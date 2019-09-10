@@ -26,7 +26,8 @@ Memory option for SBT:
 export SBT_OPTS="-Xmx2G -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=2G -Xss2M  -Duser.timezone=GMT"
 ```
 
-Results will be in `result/combined-stat`
+Merged results will be created in `result/combined-stat`
+If there are conflicting entries between RIRs it will be stored in `result/conflicts`
 
 When there is a conflict of resources contained in more than one RIRs it will be printed out in console for now.
 
