@@ -36,12 +36,12 @@ object Main extends App {
     val ipv4s = combine(rirs.values.map(_.ipv4)) ++ ipv4Ietf
     val ipv6s = combine(rirs.values.map(_.ipv6)) ++ ipv6Ietf
 
-    val ipv4pool = ianaPool(ipv4s.keys, ALL_IPV4).map(ipv4 => ipv4 -> Ipv4Record.ianapool(ipv4)).toMap
-    val asnPool  = ianaPool(asns.keys,  ALL_ASNS).map(asn  => asn  -> AsnRecord.ianapool(asn)).toMap
+    val ipv4pool = substractSpace(ALL_IPV4, ipv4s.keys).map(ipv4 => ipv4 -> Ipv4Record.ianapool(ipv4)).toMap
+    val asnPool  = substractSpace(ALL_ASNS, asns.keys) .map(asn  => asn  -> AsnRecord.ianapool(asn)).toMap
 
     // Ipv6 needs to adjusted/split to bit boundary using other library (commons ip math)
     // To String and parse are converting between these ip libraries
-    val ipv6pool = ianaPool(ipv6s.keys, ALL_IPV6).map(_.toString)
+    val ipv6pool = substractSpace(ALL_IPV6, ipv6s.keys).map(_.toString)
       .flatMap(s => Ipv6Range.parse(s).splitToPrefixes.asScala)
       .map(a => IpResourceRange.parse(a.toString))
       .map(a => a -> Ipv6Record.ianapool(a))

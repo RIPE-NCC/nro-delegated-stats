@@ -29,12 +29,9 @@ object Merger {
   def combine(resourceMap: ParIterable[SortedMap[IpResourceRange, Record]]): SortedMap[IpResourceRange, Record] =
     resourceMap.foldLeft(SortedMap[IpResourceRange, Record]())(checkAndMerge)
 
-  def ianaPool(used : Iterable[IpResourceRange], slash0: String): Iterator[IpResource] = {
-    val allSpace = new IpResourceSet
-    allSpace.add(IpResourceRange.parse(slash0))
+  def substractSpace(slash0: IpResourceRange, used : Iterable[IpResourceRange]): Iterator[IpResource] = {
+    val allSpace = new IpResourceSet(slash0)
     used.foreach(allSpace.remove)
-
-    // We process the remaining range into iana pool
     allSpace.iterator.asScala
   }
 }

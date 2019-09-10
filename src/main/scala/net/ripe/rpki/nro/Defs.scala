@@ -33,9 +33,9 @@ object Defs {
 
   val SUMMARY = "summary"
 
-  val ALL_IPV4 = "0.0.0.0/0"
-  val ALL_IPV6 = "::/0"
-  val ALL_ASNS = "AS0-AS4200000000"
+  val ALL_IPV4: IpResourceRange = IpResourceRange.parse("0.0.0.0/0")
+  val ALL_IPV6: IpResourceRange = IpResourceRange.parse("::/0")
+  val ALL_ASNS: IpResourceRange = IpResourceRange.parse("AS0-AS4200000000")
 
   type Line = Array[String]
 

@@ -22,7 +22,6 @@ case class Records(
      case IANA => rec.oid_(IANA).status_(ASSIGNED).ext_(IANA)
      case _ => rec.ext_(IANA)
    }
-
     this.asn_(fix).ipv4_(fix).ipv6_(fix)
   }
 
@@ -33,7 +32,6 @@ case class Records(
       case ALLOCATED => rec.status_(ASSIGNED)
       case _ => rec
     }
-
     this.asn_(fix).ipv4_(fix).ipv6_(fix)
   }
 
