@@ -18,9 +18,9 @@ case class Records(
 
  def fixIana: Records = {
    def fix[A <: Record : Updates]: A => A = (rec: A) => rec.status match {
-     case "ietf" => rec.oid_("ietf").ext_("iana")
-     case "iana" => rec.oid_("iana").status_("assigned").ext_("iana")
-     case _ => rec.ext_("iana")
+     case IETF => rec.oid_(IETF).ext_(IANA)
+     case IANA => rec.oid_(IANA).status_(ASSIGNED).ext_(IANA)
+     case _ => rec.ext_(IANA)
    }
 
     this.asn_(fix).ipv4_(fix).ipv6_(fix)
@@ -29,8 +29,8 @@ case class Records(
   // Reserved and available records normally have neither country code or date, when combined it will be filled with ZZ and today's date.
   def fixRIRs: Records = {
     def fix[A <: Record: Updates]: A => A = (rec: A) => rec.status match {
-      case "reserved" | "available" => rec.date_(TODAY).cc_("ZZ")
-      case "allocated" => rec.status_("assigned")
+      case RESERVED | AVAILABLE => rec.date_(TODAY).cc_(DEFAULT_CC)
+      case ALLOCATED => rec.status_(ASSIGNED)
       case _ => rec
     }
 

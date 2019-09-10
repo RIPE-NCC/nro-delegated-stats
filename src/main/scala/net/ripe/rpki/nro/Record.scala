@@ -2,8 +2,9 @@ package net.ripe.rpki.nro
 
 import java.math.BigInteger
 
-import net.ripe.ipresource.{IpAddress, IpResourceRange, IpResourceType}
+import net.ripe.ipresource.{IpAddress, IpResource, IpResourceRange, IpResourceType}
 import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Record._
 
 sealed trait Record {
   def registry: String
@@ -17,8 +18,14 @@ sealed trait Record {
   def ext: String
 
   def range(): IpResourceRange
+
   override def toString: String =
     List(registry, cc, lType, start, length, date, status, oid, ext).mkString("|")
+}
+
+object Record {
+  def rangeLen(r: IpResource): BigInteger =
+    r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
 }
 
 case class Ipv4Record(
@@ -30,7 +37,7 @@ case class Ipv4Record(
     date: String,
     status: String,
     oid: String,
-    ext: String = "e-stats"
+    ext: String = DEFAULT_EXT
 ) extends Record {
   def range(): IpResourceRange = {
     val startAddr = IpAddress.parse(start).getValue
@@ -48,7 +55,7 @@ case class Ipv6Record(
     date: String,
     status: String,
     oid: String,
-    ext: String = "e-stats"
+    ext: String = DEFAULT_EXT
 ) extends Record {
   def range(): IpResourceRange = {
     IpResourceRange.parse(start + "/" + length)
@@ -64,7 +71,7 @@ case class AsnRecord(
     date: String,
     status: String,
     oid: String,
-    ext: String = "e-stats"
+    ext: String = DEFAULT_EXT
 ) extends Record {
   def range(): IpResourceRange = {
     val iLength = length.toLong
@@ -80,8 +87,8 @@ object Ipv4Record {
   }
 
   // Ipv4 ianapool on Jeff's combined results always dated 20120801, Magic date, where is it from? The ASN and Ipv6 is dated TODAY
-  def ianapool(ipv4: IpResourceRange) =
-    Ipv4Record( "iana", "ZZ", "ipv4", ipv4.getStart + "", rangeLen(ipv4) + "", "20120801", "ianapool", "", "iana")
+  def ianapool(ipv4: IpResource) =
+    Ipv4Record( IANA, DEFAULT_CC, IPV4, ipv4.getStart + "", rangeLen(ipv4) + "", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)
 
 }
 
@@ -95,9 +102,9 @@ object Ipv6Record {
     new Ipv6Record(rec(0), rec(1), rec(2), start, prefix, rec(5), rec(6), oid)
   }
 
-  def ianapool(ipv6: IpResourceRange): Ipv6Record = {
+  def ianapool(ipv6: IpResource): Ipv6Record = {
     val Array(start, prefix) = ipv6.toString.split("/")
-    Ipv6Record("iana", "ZZ", "ipv6", start, prefix, TODAY, "ianapool", "", "iana")
+    Ipv6Record(IANA, DEFAULT_CC, IPV6, start, prefix, TODAY, IANAPOOL, "", IANA)
   }
 
 }
@@ -108,7 +115,7 @@ object AsnRecord {
     new AsnRecord(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid)
   }
 
-  def ianapool(asn: IpResourceRange) =
-    AsnRecord( "iana", "ZZ", "asn", asn.getStart.getValue + "", rangeLen(asn) + "", TODAY, "ianapool", "", "iana")
+  def ianapool(asn: IpResource) =
+    AsnRecord( IANA, DEFAULT_CC, ASN, asn.getStart.getValue + "", rangeLen(asn) + "", TODAY, IANAPOOL, "", IANA)
 
 }

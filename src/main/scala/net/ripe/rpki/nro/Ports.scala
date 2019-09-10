@@ -12,13 +12,13 @@ import scala.io.Source.fromFile
 object Ports {
 
   val dataSources: Map[String, String] = Map[String, String](
-    "apnic"   -> "http://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
-    "afrinic" -> "http://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",
-    "arin"    -> "http://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest",
-    "lacnic"  -> "http://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest",
-    "ripencc" -> "https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest",
-    "iana"    -> "http://ftp.apnic.net/pub/stats/iana/delegated-iana-latest",
-    "jeff"    -> "https://www.nro.net/wp-content/uploads/apnic-uploads/delegated-extended"
+    APNIC   -> "http://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
+    AFRINIC -> "http://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",
+    ARIN    -> "http://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest",
+    LACNIC  -> "http://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest",
+    RIPENCC -> "https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest",
+    IANA    -> "http://ftp.apnic.net/pub/stats/iana/delegated-iana-latest",
+    JEFF    -> "https://www.nro.net/wp-content/uploads/apnic-uploads/delegated-extended"
   )
 
   def parseRecords(source: String): Records = {
@@ -28,21 +28,21 @@ object Ports {
     using(fromFile(source)) { src =>
       val lines = src.getLines.filter(!_.startsWith("#")).toList
       val header = lines.head.split('|')
-      val summaries = parse(lines.filter(_.contains("summary")))
+      val summaries = parse(lines.filter(_.contains(SUMMARY)))
 
-      val records = lines.tail.filter(!_.contains("summary"))
+      val records = lines.tail.filter(!_.contains(SUMMARY))
 
       // Parse and create sorted map from range to record
       val asn = SortedMap(
-        parse(records.filter(_.contains("asn"))).map(a => AsnRecord(a)).map(r => r.range() -> r): _*
+        parse(records.filter(_.contains(ASN))).map(a => AsnRecord(a)).map(r => r.range() -> r): _*
       )
       val ipv4 = SortedMap(
-        parse(records.filter(_.contains("ipv4")))
+        parse(records.filter(_.contains(IPV4)))
           .map(r => Ipv4Record(r))
           .map(r => r.range() -> r): _*
       )
       val ipv6 = SortedMap(
-        parse(records.filter(_.contains("ipv6")))
+        parse(records.filter(_.contains(IPV6)))
           .map(r => Ipv6Record(r))
           .map(r => r.range() -> r): _*
       )
