@@ -2,9 +2,8 @@ package net.ripe.rpki.nro
 
 import java.math.BigInteger
 
-import net.ripe.ipresource.{IpAddress, IpResource, IpResourceRange, IpResourceType}
+import net.ripe.ipresource._
 import net.ripe.rpki.nro.Defs._
-import net.ripe.rpki.nro.Record._
 
 sealed trait Record {
   def registry: String
@@ -90,11 +89,6 @@ object Ipv4Record {
     val oid = if (rec.length > 7) rec(7) else ""
     new Ipv4Record(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid)
   }
-
-  // Ipv4 ianapool on Jeff's combined results always dated 20120801, Magic date, where is it from? The ASN and Ipv6 is dated TODAY
-  def ianapool(ipv4: IpResource) =
-    Ipv4Record( IANA, DEFAULT_CC, IPV4, ipv4.getStart + "", rangeLen(ipv4) + "", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)
-
 }
 
 object Ipv6Record {
@@ -106,12 +100,6 @@ object Ipv6Record {
     val Array(start, prefix) = ipv6.toString.split("/")
     new Ipv6Record(rec(0), rec(1), rec(2), start, prefix, rec(5), rec(6), oid)
   }
-
-  def ianapool(ipv6: IpResource): Ipv6Record = {
-    val Array(start, prefix) = ipv6.toString.split("/")
-    Ipv6Record(IANA, DEFAULT_CC, IPV6, start, prefix, TODAY, IANAPOOL, "", IANA)
-  }
-
 }
 
 object AsnRecord {
@@ -119,8 +107,4 @@ object AsnRecord {
     val oid = if (rec.length > 7) rec(7) else ""
     new AsnRecord(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid)
   }
-
-  def ianapool(asn: IpResource) =
-    AsnRecord( IANA, DEFAULT_CC, ASN, asn.getStart.getValue + "", rangeLen(asn) + "", TODAY, IANAPOOL, "", IANA)
-
 }

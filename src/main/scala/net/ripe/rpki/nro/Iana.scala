@@ -1,8 +1,9 @@
 package net.ripe.rpki.nro
 
-import net.ripe.commons.ip.Ipv6Range
-import net.ripe.ipresource.{IpResource, IpResourceRange, IpResourceSet}
-import net.ripe.rpki.nro.Defs.{ALL_ASNS, ALL_IPV4, ALL_IPV6, RIRS}
+import net.ripe.commons.ip._
+import net.ripe.ipresource._
+import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Record.rangeLen
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterable, Iterator, SortedMap}
@@ -29,17 +30,29 @@ object Iana {
 
   def ianaPools(asns: Iterable[IpResource], ipv4s: Iterable[IpResource], ipv6s: Iterable[IpResource]): (Map[IpResource, AsnRecord], Map[IpResource, Ipv4Record], Map[IpResourceRange, Ipv6Record]) = {
 
-    val asnPool = subtractRanges(ALL_ASNS, asns).map(asn => asn -> AsnRecord.ianapool(asn)).toMap
-    val ipv4pool = subtractRanges(ALL_IPV4, ipv4s).map(ipv4 => ipv4 -> Ipv4Record.ianapool(ipv4)).toMap
+    val asn  = subtractRanges(ALL_ASNS, asns).map(asn => asn -> asnPool(asn)).toMap
+    val ipv4 = subtractRanges(ALL_IPV4, ipv4s).map(ipv4 => ipv4 -> ipv4Pool(ipv4)).toMap
 
     // Ipv6 needs to adjusted/split to bit boundary using other library (commons ip math)
     // To String and parse are converting between these ip libraries
-    val ipv6pool = subtractRanges(ALL_IPV6, ipv6s).map(_.toString)
+    val ipv6 = subtractRanges(ALL_IPV6, ipv6s).map(_.toString)
       .flatMap(s => Ipv6Range.parse(s).splitToPrefixes.asScala)
       .map(a => IpResourceRange.parse(a.toString))
-      .map(a => a -> Ipv6Record.ianapool(a))
+      .map(a => a -> ipv6Pool(a))
       .toMap
 
-    (asnPool, ipv4pool, ipv6pool)
+    (asn, ipv4, ipv6)
+  }
+
+  // Ipv4 ianapool on Jeff's combined results always dated 20120801, Magic date, where is it from? The ASN and Ipv6 is dated TODAY
+  def ipv4Pool(ipv4: IpResource) =
+    Ipv4Record( IANA, DEFAULT_CC, IPV4, ipv4.getStart + "", rangeLen(ipv4) + "", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)
+
+  def asnPool(asn: IpResource) =
+    AsnRecord( IANA, DEFAULT_CC, ASN, asn.getStart.getValue + "", rangeLen(asn) + "", TODAY, IANAPOOL, "", IANA)
+
+  def ipv6Pool(ipv6: IpResource): Ipv6Record = {
+    val Array(start, prefix) = ipv6.toString.split("/")
+    Ipv6Record(IANA, DEFAULT_CC, IPV6, start, prefix, TODAY, IANAPOOL, "", IANA)
   }
 }

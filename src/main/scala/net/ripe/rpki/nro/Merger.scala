@@ -3,12 +3,10 @@ package net.ripe.rpki.nro
 import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs._
 
+import scala.collection.SortedMap
 import scala.collection.parallel.ParIterable
-import scala.collection.{SortedMap, mutable}
 
 object Merger {
-
-  val conflicts : mutable.MutableList[(Record, Record)] = mutable.MutableList[(Record,Record)]()
 
   def checkAndMerge(currentResult: RecordsAndConflicts, nextRecords: SortedRecordsMap): RecordsAndConflicts = {
     val (currentMerge, currentConflict) = currentResult

@@ -1,10 +1,9 @@
 package net.ripe.rpki.nro
 
-import scala.collection.parallel.immutable.ParMap
 
 object Main extends App {
 
-  val recordMaps: ParMap[String, Records] = Ports.fetchAndParse()
+  val recordMaps = Ports.fetchAndParse()
 
   // Adjusting and fixing record fields conforming to what is done by geoff.
   val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs)

@@ -1,7 +1,7 @@
 package net.ripe.rpki.nro
 
 import net.ripe.ipresource.IpResource
-import net.ripe.rpki.nro.Defs.{ALL_IPV4, ALL_IPV6}
+import net.ripe.rpki.nro.Defs.{ALL_IPV4, ALL_IPV6, ASN, DEFAULT_CC, IANA, IANAPOOL, IPV4, IPV4_IANA_POOL_DATE, IPV6, TODAY}
 import net.ripe.rpki.nro.Ports.parseFile
 import org.scalatest.FlatSpec
 
@@ -32,5 +32,20 @@ class IanaTest extends FlatSpec {
     assert(asn.size  == 1)
     assert(ipv4.size == 1)
     assert(ipv6.size == 1)
+  }
+
+  "Iana pool calculation" should "work for Asn" in {
+    assert(Iana.asnPool(IpResource.parse("AS1000-AS2000")) ==
+      AsnRecord( IANA, DEFAULT_CC, ASN, "1000", "1001" + "", TODAY, IANAPOOL, "", IANA))
+  }
+
+  it should "work for Ipv4" in {
+    assert(Iana.ipv4Pool(IpResource.parse("0.0.0.0/24")) ==
+      Ipv4Record( IANA, DEFAULT_CC, IPV4, "0.0.0.0", "256", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA))
+  }
+
+  it should "work for Ipv6" in {
+    assert(Iana.ipv6Pool(IpResource.parse("::/24")) ==
+      Ipv6Record(IANA, DEFAULT_CC, IPV6, "::", "24", TODAY, IANAPOOL, "", IANA))
   }
 }
