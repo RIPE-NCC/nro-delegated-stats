@@ -21,17 +21,17 @@ class RecordsTest extends FlatSpec {
     val (merged, conflicts) = combineResources(records.par)
 
     merged.values.foreach(println)
-
     conflicts.foreach(println)
+
     assert(conflicts.size == 1)
   }
 
   "Conflicts" should "be detected for afriaprin (fake RIR taking asn from afrinic, ipv4 from apnic, and ipv6 from arin)" in {
 
-    val apnic = parseFile(getClass.getResource("/data/apnic").getFile)
-    val afrinic = parseFile(getClass.getResource("/data/afrinic").getFile)
-    val arin = parseFile(getClass.getResource("/data/arin").getFile)
-    val afriaprin = parseFile(getClass.getResource("/data/afriaprin").getFile)
+    val apnic = parseFileAsRecords(getClass.getResource("/data/apnic").getFile)
+    val afrinic = parseFileAsRecords(getClass.getResource("/data/afrinic").getFile)
+    val arin = parseFileAsRecords(getClass.getResource("/data/arin").getFile)
+    val afriaprin = parseFileAsRecords(getClass.getResource("/data/afriaprin").getFile)
 
     val rirs = Iterable(apnic, afrinic, arin, afriaprin).par.map(_.fixRIRs)
 

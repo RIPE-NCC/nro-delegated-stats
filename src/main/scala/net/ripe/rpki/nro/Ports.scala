@@ -19,7 +19,7 @@ object Ports {
     SortedMap(lines.map(r => f(r)).map(r => r.range() -> r): _*)
   }
 
-  def parseFile(source: String): Records = {
+  def parseFileAsRecords(source: String): Records = {
 
     using(fromFile(source)) { src =>
       val lines = src.getLines.filter(!_.startsWith("#")).toList
@@ -57,7 +57,7 @@ object Ports {
     val recordMaps = dataSources.par.map {
       case (name, url) =>
         fetchLocally(url, s"data/$name")
-        (name, parseFile(s"data/$name"))
+        (name, parseFileAsRecords(s"data/$name"))
     }
     // Adjusting and fixing record fields conforming to what is done by geoff.
     val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs).values
