@@ -10,6 +10,8 @@ import scala.collection.SortedMap
 import scala.collection.parallel.immutable.ParMap
 import scala.io.Source.fromFile
 
+// Importing data from remotes files and exporting to file.
+// Or maybe Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge.
 object Ports {
 
   val dataSources: Map[String, String] = Map[String, String](

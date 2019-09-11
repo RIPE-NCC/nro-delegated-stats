@@ -50,10 +50,7 @@ object Main extends App {
    val ipv4Combined = ipv4s ++ ipv4pool ++ ipv4Ietf
    val ipv6Combined = ipv6s ++ ipv6pool ++ ipv6Ietf
 
-    // Dump to file output, see on results dir.
     writeCombined(asnCombined, ipv4Combined, ipv6Combined)
-
-
     writeConflicts(asnConflicts++ipv4Conflicts++ipv6Conflicts)
 
 }

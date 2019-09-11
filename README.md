@@ -18,13 +18,7 @@ Input files are data from RIRs, and IANA files which is also from Jeff.
 
 ##
 
-Running this project can be done by using `sbt run` 
-
-Memory option for SBT: 
-
-```
-export SBT_OPTS="-Xmx2G -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=2G -Xss2M  -Duser.timezone=GMT"
-```
+Running this project can be done by using `run.sh`  script that will call sbt with enough memory.
 
 Merged results will be created in `result/combined-stat`
 If there are conflicting entries between RIRs it will be stored in `result/conflicts`
