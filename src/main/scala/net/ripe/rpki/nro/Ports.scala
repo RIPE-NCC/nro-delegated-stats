@@ -6,7 +6,7 @@ import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs._
 
 import scala.collection.SortedMap
-import scala.collection.parallel.immutable.ParMap
+import scala.collection.parallel.ParIterable
 import scala.io.Source.fromFile
 
 // Importing data from remotes files and exporting to file.
@@ -53,12 +53,16 @@ object Ports {
   }
 
   // Assumes a data directory existed to store fetched data.
-  def fetchAndParse(): ParMap[String, Records] = {
-    dataSources.par.map {
+  def fetchAndParse(): (ParIterable[Records], Records) = {
+    val recordMaps = dataSources.par.map {
       case (name, url) =>
         fetchLocally(url, s"data/$name")
         (name, parseFile(s"data/$name"))
     }
+    // Adjusting and fixing record fields conforming to what is done by geoff.
+    val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs).values
+    val iana = recordMaps("iana").fixIana
+    (rirs, iana)
   }
 
   def writeCombined(asn: SortedRecordsMap, ipv4: SortedRecordsMap, ipv6: SortedRecordsMap) {

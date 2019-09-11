@@ -19,6 +19,7 @@ object Defs {
   val DEFAULT_CC = "ZZ"
   val DEFAULT_EXT = "e-stats"
 
+  // Ipv4 ianapool on Geoff's combined results always dated 20120801, Magic date, where is it from?
   val IPV4_IANA_POOL_DATE = "20120801"
 
   val IPV4 = "ipv4"

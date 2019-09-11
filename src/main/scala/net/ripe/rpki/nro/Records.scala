@@ -5,6 +5,7 @@ import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
 
 import scala.collection.SortedMap
+import scala.collection.parallel.ParIterable
 
 // Records holder for three type of records, contains some logic of fixing entries
 case class Records(
@@ -48,5 +49,24 @@ case class Records(
     this.copy(ipv4 = this.ipv4.mapValues(f))
   def ipv6_(f: Ipv6Record => Ipv6Record)(implicit ev: Updates[Ipv6Record]): Records =
     this.copy(ipv6 = this.ipv6.mapValues(f))
+
+}
+
+object Records {
+
+  def accumulate(currentResult: RecordsAndConflicts, nextRecords: SortedRecordsMap): RecordsAndConflicts = {
+    val (currentMerge, currentConflict) = currentResult
+    val mergedKeys = currentMerge.keySet
+    val nextKeys   = nextRecords.keySet
+
+    val newConflicts = mergedKeys.intersect(nextKeys)
+      .map(k => Conflict(currentMerge(k), nextRecords(k)))
+
+    (currentMerge ++ nextRecords, currentConflict ++ newConflicts)
+  }
+
+  // Combining multiple maps from different RIRs
+  def combineResources(resourceMap: ParIterable[SortedRecordsMap]): (SortedRecordsMap, List[Conflict]) =
+    resourceMap.foldLeft((SortedMap[IpResource, Record](), List[Conflict]()))(accumulate)
 
 }

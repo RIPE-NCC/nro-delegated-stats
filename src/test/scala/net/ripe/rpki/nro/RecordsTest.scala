@@ -1,10 +1,10 @@
 package net.ripe.rpki.nro
 
-import net.ripe.rpki.nro.Merger._
 import net.ripe.rpki.nro.Ports._
 import org.scalatest.FlatSpec
+import Records._
 
-class MergerTest extends FlatSpec {
+class RecordsTest extends FlatSpec {
 
   "Conflicts" should "be detected for first lines of these data " in {
     val apnic =
@@ -18,7 +18,7 @@ class MergerTest extends FlatSpec {
     val apnicRecords = toSortedRecordMap(parseLines(apnic.split("\n").toList), Ipv4Record.apply)
     val ripeRecords = toSortedRecordMap(parseLines(ripe.split("\n").toList), Ipv4Record.apply)
     val records = Iterable(apnicRecords, ripeRecords)
-    val (merged, conflicts) = mergeAndDetectConflicts(records.par)
+    val (merged, conflicts) = combineResources(records.par)
 
     merged.values.foreach(println)
 
@@ -35,9 +35,9 @@ class MergerTest extends FlatSpec {
 
     val rirs = Iterable(apnic, afrinic, arin, afriaprin).par.map(_.fixRIRs)
 
-    val (asns, asnConflicts) = mergeAndDetectConflicts(rirs.map(_.asn))
-    val (ipv4s, ipv4Conflicts) = mergeAndDetectConflicts(rirs.map(_.ipv4))
-    val (ipv6s, ipv6Conflicts) = mergeAndDetectConflicts(rirs.map(_.ipv6))
+    val (asns, asnConflicts) = combineResources(rirs.map(_.asn))
+    val (ipv4s, ipv4Conflicts) = combineResources(rirs.map(_.ipv4))
+    val (ipv6s, ipv6Conflicts) = combineResources(rirs.map(_.ipv6))
 
     assert(asns.size == 300)
     assert(ipv4s.size == 300)
