@@ -56,4 +56,52 @@ class RecordsTest extends FlatSpec {
     // IPV4 conflicts are all between arin and afriaprin
     assert(ipv6Conflicts.filter(_.rirsInvolved == "arin--afriaprin") == ipv6Conflicts)
   }
+
+  "Merge siblings" should "merge adjacent asn entries" in {
+    val splitted =
+      """|arin|ZZ|asn|100000|1|20190815|assigned|8db2e0d637d4b1e9c912fa1832eeb396|e-stats
+         |arin|ZZ|asn|397837|1|20190815|assigned|8db2e0d637d4b1e9c912fa1832eeb396|e-stats
+         |arin|ZZ|asn|397838|1|20190815|assigned|8db2e0d637d4b1e9c912fa1832eeb396|e-stats
+         |arin|ZZ|asn|397839|1|20190815|assigned|8db2e0d637d4b1e9c912fa1832eeb396|e-stats""".stripMargin
+
+    val merged =
+      """|arin|ZZ|asn|100000|1|20190815|assigned|8db2e0d637d4b1e9c912fa1832eeb396|e-stats
+         |arin|ZZ|asn|397837|3|20190815|assigned|8db2e0d637d4b1e9c912fa1832eeb396|e-stats""".stripMargin
+
+    val original = toSortedRecordMap(parseLines(splitted.split("\n").toList), AsnRecord.apply)
+    val expected = toSortedRecordMap(parseLines(merged.split("\n").toList), AsnRecord.apply)
+
+    assert(mergeSiblings(original) == expected)
+  }
+
+  it should "merge adjacent ipv4 entries" in {
+    val splitted =
+      """|apnic|ZZ|ipv4|0.0.0.0|256|20110412|assigned|A92319D5|e-stats
+         |apnic|ZZ|ipv4|1.1.9.0|256|20110412|assigned|A92319D5|e-stats
+         |apnic|ZZ|ipv4|1.1.10.0|512|20110412|assigned|A92319D5|e-stats
+         |apnic|ZZ|ipv4|1.1.12.0|1024|20110412|assigned|A92319D5|e-stats
+         |apnic|ZZ|ipv4|1.1.16.0|4096|20110412|assigned|A92319D5|e-stats
+         |apnic|ZZ|ipv4|1.1.32.0|8192|20110412|assigned|A92319D5|e-stats""".stripMargin
+
+    val merged =
+      """|apnic|ZZ|ipv4|0.0.0.0|256|20110412|assigned|A92319D5|e-stats
+         |apnic|ZZ|ipv4|1.1.9.0|14080|20110412|assigned|A92319D5|e-stats""".stripMargin
+
+    val original = toSortedRecordMap(parseLines(splitted.split("\n").toList), Ipv4Record.apply)
+    val expected = toSortedRecordMap(parseLines(merged.split("\n").toList), Ipv4Record.apply)
+
+    assert(mergeSiblings(original) == expected)
+  }
+
+  it should "not merge adjacent ipv6 entries" in {
+    val splitted =
+      """|afrinic|ZZ|ipv6|2c0f:ea58::|32|20190910|assigned|F36D32D1|e-stats
+         |afrinic|ZZ|ipv6|2c0f:ea59::|32|20190911|reserved||e-stats
+         |afrinic|ZZ|ipv6|2c0f:ea5a::|31|20190911|reserved||e-stats
+         |afrinic|ZZ|ipv6|2c0f:ea5c::|30|20190911|reserved||e-stats""".stripMargin
+
+    val original = toSortedRecordMap(parseLines(splitted.split("\n").toList), Ipv6Record.apply)
+
+    assert(mergeSiblings(original) == original)
+  }
 }
