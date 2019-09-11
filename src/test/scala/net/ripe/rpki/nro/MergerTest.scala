@@ -1,18 +1,10 @@
 package net.ripe.rpki.nro
 
-import net.ripe.ipresource.IpResource
-import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Merger._
 import net.ripe.rpki.nro.Ports._
 import org.scalatest.FlatSpec
 
 class MergerTest extends FlatSpec {
-
-  "Removing half of ipv6" should "produce the other half" in {
-    assert(subtractRanges(ALL_IPV6, Set(IpResource.parse("::/1"))).toSet == Set(IpResource.parse("8000::/1")))
-    assert(subtractRanges(ALL_IPV4, Set(IpResource.parse("0.0.0.0/1"))).toSet == Set(IpResource.parse("128.0.0.0/1")))
-  }
-
 
   "Conflicts" should "be detected for first lines of these data " in {
     val apnic =
@@ -26,7 +18,7 @@ class MergerTest extends FlatSpec {
     val apnicRecords = toSortedRecordMap(parseLines(apnic.split("\n").toList), Ipv4Record.apply)
     val ripeRecords = toSortedRecordMap(parseLines(ripe.split("\n").toList), Ipv4Record.apply)
     val records = Iterable(apnicRecords, ripeRecords)
-    val (merged, conflicts) = combine(records.par)
+    val (merged, conflicts) = mergeAndDetectConflicts(records.par)
 
     merged.values.foreach(println)
 
@@ -34,24 +26,24 @@ class MergerTest extends FlatSpec {
     assert(conflicts.size == 1)
   }
 
-  it should "be detected for afriaprin test data file (asn from afrinic, ipv4 from apnic, and ipv6 from arin" in {
+  "Conflicts" should "be detected for afriaprin (fake RIR taking asn from afrinic, ipv4 from apnic, and ipv6 from arin)" in {
+
     val apnic = parseFile(getClass.getResource("/data/apnic").getFile)
     val afrinic = parseFile(getClass.getResource("/data/afrinic").getFile)
     val arin = parseFile(getClass.getResource("/data/arin").getFile)
     val afriaprin = parseFile(getClass.getResource("/data/afriaprin").getFile)
 
-
     val rirs = Iterable(apnic, afrinic, arin, afriaprin).par.map(_.fixRIRs)
 
-    val (asns, asnConflicts)   = combine(rirs.map(_.asn))
-    val (ipv4s, ipv4Conflicts) = combine(rirs.map(_.ipv4))
-    val (ipv6s, ipv6Conflicts) = combine(rirs.map(_.ipv6))
+    val (asns, asnConflicts) = mergeAndDetectConflicts(rirs.map(_.asn))
+    val (ipv4s, ipv4Conflicts) = mergeAndDetectConflicts(rirs.map(_.ipv4))
+    val (ipv6s, ipv6Conflicts) = mergeAndDetectConflicts(rirs.map(_.ipv6))
 
-    assert(asns.size  == 300)
+    assert(asns.size == 300)
     assert(ipv4s.size == 300)
     assert(ipv6s.size == 300)
 
-    assert( asnConflicts.size == 100)
+    assert(asnConflicts.size == 100)
     assert(ipv4Conflicts.size == 100)
     assert(ipv6Conflicts.size == 100)
 
@@ -64,9 +56,4 @@ class MergerTest extends FlatSpec {
     // IPV4 conflicts are all between arin and afriaprin
     assert(ipv6Conflicts.filter(_.rirsInvolved == "arin--afriaprin") == ipv6Conflicts)
   }
-
-
-
-
-
 }

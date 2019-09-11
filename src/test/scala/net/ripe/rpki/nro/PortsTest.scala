@@ -1,6 +1,5 @@
 package net.ripe.rpki.nro
 
-
 import net.ripe.rpki.nro.Ports._
 import org.scalatest.FlatSpec
 
@@ -15,8 +14,8 @@ class PortsTest extends FlatSpec {
 
   it should "work for partial iana data" in {
     val iana = parseFile(getClass.getResource("/data/iana").getFile)
-    assert(iana.asn.size  == 133)
-    assert(iana.ipv4.size == 781)
-    assert(iana.ipv6.size == 59)
+    assert(iana.asn.size  == 6)
+    assert(iana.ipv4.size == 6)
+    assert(iana.ipv6.size == 6)
   }
 }

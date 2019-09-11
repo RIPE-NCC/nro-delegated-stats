@@ -1,6 +1,5 @@
 package net.ripe.rpki.nro
 
-
 import java.io.{File, PrintWriter}
 
 import net.ripe.ipresource.IpResource
@@ -13,16 +12,6 @@ import scala.io.Source.fromFile
 // Importing data from remotes files and exporting to file.
 // Or maybe Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge.
 object Ports {
-
-  val dataSources: Map[String, String] = Map[String, String](
-    APNIC   -> "http://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
-    AFRINIC -> "http://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",
-    ARIN    -> "http://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest",
-    LACNIC  -> "http://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest",
-    RIPENCC -> "https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest",
-    IANA    -> "http://ftp.apnic.net/pub/stats/iana/delegated-iana-latest",
-    JEFF    -> "https://www.nro.net/wp-content/uploads/apnic-uploads/delegated-extended"
-  )
 
   def parseLines(lines: List[String]): List[Line] = lines.map(_.split('|'))
 
@@ -93,7 +82,7 @@ object Ports {
   def writeConflicts(conflicts: List[Conflict]): Unit = {
     using(new PrintWriter(new File("result/conflicts"))) { writer =>
       writer.write(conflicts.mkString("\n"))
-      if(!conflicts.isEmpty){
+      if(conflicts.nonEmpty){
         println("Conflicts found:")
         println(conflicts.mkString("\n"))
       }

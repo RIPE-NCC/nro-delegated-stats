@@ -45,6 +45,19 @@ object Defs {
   type Line = Array[String]
   type SortedRecordsMap = SortedMap[IpResource, Record]
   type RecordsAndConflicts = (SortedRecordsMap, List[Conflict])
+
+
+  val dataSources: Map[String, String] = Map[String, String](
+    APNIC   -> "http://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
+    AFRINIC -> "http://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",
+    ARIN    -> "http://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest",
+    LACNIC  -> "http://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest",
+    RIPENCC -> "https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest",
+    IANA    -> "http://ftp.apnic.net/pub/stats/iana/delegated-iana-latest",
+    JEFF    -> "https://www.nro.net/wp-content/uploads/apnic-uploads/delegated-extended"
+  )
+
+  val RIRS = List(APNIC, AFRINIC, ARIN, LACNIC, RIPENCC)
 }
 
 
