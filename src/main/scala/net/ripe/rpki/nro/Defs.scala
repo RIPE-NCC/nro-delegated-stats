@@ -31,14 +31,13 @@ object Defs {
   val RESERVED = "reserved"
   val AVAILABLE = "available"
 
-  val JEFF = "jeff"
+  val GEOFF = "geoff"
 
   val SUMMARY = "summary"
 
   val ALL_IPV4: IpResource = IpResource.parse("0.0.0.0/0")
   val ALL_IPV6: IpResource = IpResource.parse("::/0")
   val ALL_ASNS: IpResource = IpResource.parse("AS0-AS4200000000")
-
 
   val TODAY: String = java.time.LocalDate.now.toString.replaceAll("-", "")
 
@@ -54,7 +53,7 @@ object Defs {
     LACNIC  -> "http://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest",
     RIPENCC -> "https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest",
     IANA    -> "http://ftp.apnic.net/pub/stats/iana/delegated-iana-latest",
-    JEFF    -> "https://www.nro.net/wp-content/uploads/apnic-uploads/delegated-extended"
+    GEOFF   -> "https://www.nro.net/wp-content/uploads/apnic-uploads/delegated-extended"
   )
 
   val RIRS = List(APNIC, AFRINIC, ARIN, LACNIC, RIPENCC)

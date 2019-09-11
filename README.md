@@ -26,7 +26,7 @@ If there are conflicting entries between RIRs it will be stored in `result/confl
 When there is a conflict of resources contained in more than one RIRs it will be printed out in console for now.
 
 
-There is `compare.sh` script that will try to compare it with `data/jeff` which was the target file [1] we are trying
+There is `compare.sh` script that will try to compare it with `data/geoff` which was the target file [1] we are trying
  to reverse engineer. Output of this script will be on `compare/difference_nocc`.
  
 Comparison is done ignoring country code (second column), since Jeff has special AS number mapping for EU country code.

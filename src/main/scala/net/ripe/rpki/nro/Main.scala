@@ -6,9 +6,9 @@ object Main extends App {
 
   val recordMaps: ParMap[String, Records] = Ports.fetchAndParse()
 
-  // Adjusting and fixing record fields conforming to what is done by jeff.
-  val rirs = (recordMaps - "iana" - "jeff").mapValues(_.fixRIRs)
-  //val jeff = recordMaps("jeff")
+  // Adjusting and fixing record fields conforming to what is done by geoff.
+  val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs)
+  val iana = recordMaps("iana").fixIana
 
   println(s"\n\n---  Combining RIRs data and checking for conflicts among RIRs ---\n\n")
 
@@ -17,7 +17,6 @@ object Main extends App {
   val (ipv4s, ipv4Conflicts) = Merger.mergeAndDetectConflicts(rirs.values.map(_.ipv4))
   val (ipv6s, ipv6Conflicts) = Merger.mergeAndDetectConflicts(rirs.values.map(_.ipv6))
 
-  val iana = recordMaps("iana").fixIana
   val (asnIetf, ipv4Ietf, ipv6Ietf) = Iana.filterNonRIRs(iana)
   val (asnPool, ipv4pool, ipv6pool) = Iana.ianaPools(
     asns.keys  ++ asnIetf.keys,
