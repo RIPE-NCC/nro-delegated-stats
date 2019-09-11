@@ -18,6 +18,19 @@ sealed trait Record {
 
   def range(): IpResource
 
+  def merge(that: Record) : Record
+
+  def canMerge(that: Record) : Boolean = {
+        this.range().adjacent(that.range()) &&
+        this.cc == that.cc &&
+        this.oid == that.oid &&
+        this.date == that.date &&
+        this.registry == that.registry &&
+        this.status == that.status
+  }
+
+
+
   override def toString: String =
     List(registry, cc, lType, start, length, date, status, oid, ext).mkString("|")
 }
@@ -48,6 +61,11 @@ case class Ipv4Record(
     val endAddr   = new BigInteger(length).add(startAddr).subtract(BigInteger.ONE)
     IpResourceRange.assemble(startAddr, endAddr, IpResourceType.IPv4)
   }
+
+  override def merge(that: Record): Record = {
+    val newLength = length.toLong + that.length.toLong
+    this.copy(length = s"$newLength")
+  }
 }
 
 case class Ipv6Record(
@@ -61,9 +79,15 @@ case class Ipv6Record(
     oid: String,
     ext: String = DEFAULT_EXT
 ) extends Record {
+
   def range(): IpResource = {
     IpResource.parse(start + "/" + length)
   }
+
+  override def canMerge(that: Record): Boolean =  false
+
+  override def merge(that: Record): Record = throw new Exception("Nope, don't do this")
+
 }
 
 case class AsnRecord(
@@ -82,6 +106,12 @@ case class AsnRecord(
     val iStart  = start.toLong
     IpResource.parse(s"AS$iStart-AS${iStart + iLength - 1}")
   }
+
+  override def merge(that: Record): Record = {
+    val newLength = length.toLong + that.length.toLong
+    this.copy(length = s"$newLength")
+  }
+
 }
 
 object Ipv4Record {

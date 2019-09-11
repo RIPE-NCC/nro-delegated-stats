@@ -69,4 +69,21 @@ object Records {
   def combineResources(resourceMap: ParIterable[SortedRecordsMap]): (SortedRecordsMap, List[Conflict]) =
     resourceMap.foldLeft((SortedMap[IpResource, Record](), List[Conflict]()))(accumulate)
 
+  def mergeSiblings(resources : SortedRecordsMap): SortedMap[IpResource, Record] = {
+      resources.foldLeft(SortedMap[IpResource, Record]())(mergeSibling)
+  }
+
+  def mergeSibling(merged: SortedRecordsMap, nextPair: (IpResource, Record)): SortedRecordsMap = {
+      if(merged.isEmpty) SortedMap(nextPair)
+      else {
+        val (_, lastRecord) = merged.last
+        val (_, nextRecord) = nextPair
+
+        if(lastRecord.canMerge(nextRecord)){
+          val mergedEntry = lastRecord.merge(nextRecord)
+          merged.init + (mergedEntry.range -> mergedEntry)
+        } else merged + nextPair
+      }
+  }
+
 }

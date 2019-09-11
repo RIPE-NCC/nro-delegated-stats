@@ -22,9 +22,9 @@ object Main extends App {
     ipv6s.keys ++ ipv6Ietf.keys
   )
 
-  val asnCombined  = asns  ++ asnPool  ++ asnIetf
-  val ipv4Combined = ipv4s ++ ipv4pool ++ ipv4Ietf
-  val ipv6Combined = ipv6s ++ ipv6pool ++ ipv6Ietf
+  val asnCombined  = Records.mergeSiblings(asns  ++ asnPool  ++ asnIetf)
+  val ipv4Combined = Records.mergeSiblings(ipv4s ++ ipv4pool ++ ipv4Ietf)
+  val ipv6Combined = Records.mergeSiblings(ipv6s ++ ipv6pool ++ ipv6Ietf)
 
   Ports.writeCombined(asnCombined, ipv4Combined, ipv6Combined)
   Ports.writeConflicts(asnConflicts ++ ipv4Conflicts ++ ipv6Conflicts)
