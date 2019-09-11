@@ -28,7 +28,7 @@ object Ports {
     SortedMap(lines.map(r => f(r)).map(r => r.range() -> r): _*)
   }
 
-  def parseRecords(source: String): Records = {
+  def parseFile(source: String): Records = {
 
     using(fromFile(source)) { src =>
       val lines = src.getLines.filter(!_.startsWith("#")).toList
@@ -47,7 +47,7 @@ object Ports {
   }
 
   // Fetch only if data file is not yet downloaded.
-  def fetch(source: String, dest: String) {
+  def fetchLocally(source: String, dest: String) {
     if (new File(dest).isFile) {
       System.err.println(s"     File $dest exist, not fetching")
       return
@@ -65,8 +65,8 @@ object Ports {
   def fetchAndParse(): ParMap[String, Records] = {
     dataSources.par.map {
       case (name, url) =>
-        fetch(url, s"data/$name")
-        (name, parseRecords(s"data/$name"))
+        fetchLocally(url, s"data/$name")
+        (name, parseFile(s"data/$name"))
     }
   }
 

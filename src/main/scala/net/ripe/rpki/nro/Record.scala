@@ -30,6 +30,7 @@ object Record {
 
 case class Conflict(a : Record, b: Record, kind: String = "inter-rir"){
   override def toString: String = s"\n$kind:\n<$a\n>$b"
+  def rirsInvolved = s"${a.registry}--${b.registry}"
 }
 
 case class Ipv4Record(
