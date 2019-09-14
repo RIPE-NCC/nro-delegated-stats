@@ -4,8 +4,6 @@ import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
 
-import scala.collection.SortedMap
-
 // Records holder for three type of records, contains some logic of fixing entries
 case class Records(
                     source: String,
@@ -59,44 +57,45 @@ case class Records(
 
 object Records {
 
-  val EMPTY_SORTED_RECORDS_MAP = List[Record]()
-  val EMPTY_CONFLICTS = List[Conflict]()
-
-  def detectConflict(current: (List[Record], List[Conflict]), next: Record): (List[Record], List[Conflict]) = {
-    val (checked, conflicts) = current 
-    if(checked.size % 10000 == 0) println(">", checked.size, conflicts.size)
-    checked match {
-      case Nil => (next :: Nil, conflicts)
-
-      // Record conflict with next record when intersecting, keep what was there before. 
-      case lastRecord :: _ => if (lastRecord.endsAfter(next)) {
-        (checked, Conflict(lastRecord, next) :: conflicts)
-      } else {
-        // No conflict, keep the next 
-        (next :: checked, conflicts)
-      }
-    }
-  }
-
   def combineResources(resourceMap: Iterable[List[Record]]): (List[Record], List[Conflict]) = {
-    val sortedRecords = resourceMap.reduce(_ ++ _).sortBy(_.range)
-    val (merged, conflicts) = sortedRecords.par.foldLeft((List[Record](), List[Conflict]()))(detectConflict)
-    (merged.toList.reverse, conflicts.toList.reverse)
-  }
 
-  def mergeSiblings(resources: List[Record]): List[Record] = {
-    resources.sortBy(_.range).foldLeft(EMPTY_SORTED_RECORDS_MAP)(mergeSibling).reverse
-  }
+    val sortedRecords = resourceMap.reduce(_ ++ _).sorted
 
-  def mergeSibling(merged: List[Record], nextRecord: Record): List[Record] = {
-    if(merged.size % 10000 == 0) println("|", merged.size)
+    var result : List[Record]  = Nil 
+    var conflicts : List[Conflict] = Nil 
+    var lastRecord = sortedRecords.head 
 
-    merged match {
-      case Nil => List(nextRecord) 
-      case lastRecord :: rest => 
-           if (lastRecord.canMerge(nextRecord)) lastRecord.merge(nextRecord) :: rest else nextRecord :: merged  
-                              
+    sortedRecords.tail foreach { nextRecord => 
+        if(lastRecord.endsAfter(nextRecord)) {
+            conflicts = Conflict(lastRecord, nextRecord) :: conflicts
+        } else {
+            result = lastRecord :: result 
+            lastRecord = nextRecord
+        } 
     }
+
+    ((lastRecord::result).reverse, conflicts.reverse)
   }
+
+  def mergeSiblings(records: List[Record]): List[Record] = {
+
+    val sortedRecords = records.sorted 
+
+    var result : List[Record] = Nil 
+    var lastRecord = sortedRecords.head 
+
+    sortedRecords.tail foreach { nextRecord => 
+        if(lastRecord.canMerge(nextRecord)) {
+          lastRecord = lastRecord.merge(nextRecord) 
+        }
+        else {
+          result = lastRecord :: result 
+          lastRecord = nextRecord
+        }
+     }
+    
+     (lastRecord :: result).reverse
+  }
+
 
 }

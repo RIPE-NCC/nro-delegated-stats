@@ -36,7 +36,7 @@ object Main extends App {
   val asnMerged  = Records.mergeSiblings(asnCombined)
   println("Merging IPv4 siblings ")
   val ipv4Merged = Records.mergeSiblings(ipv4Combined)
-  println("Merging IPv4 siblings ")
+  println("Merging IPv6 siblings ")
   val ipv6Merged = Records.mergeSiblings(ipv6Combined)
 
   Ports.writeResult(asnCombined, ipv4Combined, ipv6Combined, "result/combined-stat")

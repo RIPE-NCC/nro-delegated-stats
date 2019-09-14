@@ -21,7 +21,9 @@ sealed trait Record {
   def merge(that: Record) : Record
 
   def canMerge(that: Record) : Boolean = {
-        this.range.adjacent(that.range) &&
+        // Originally using IpResource.adjacent, but to make it faster
+        // Knowing these records are sorted without overlap, we can do this.
+        this.range.getEnd.getValue.add(BigInteger.ONE) == that.range.getStart.getValue &&
         this.cc == that.cc &&
         this.oid == that.oid &&
         this.date == that.date &&
