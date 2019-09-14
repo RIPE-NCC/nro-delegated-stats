@@ -6,7 +6,6 @@ import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs._
 
 import scala.collection.SortedMap
-import scala.collection.parallel.ParIterable
 import scala.io.Source.fromFile
 
 // Importing data from remotes files and exporting to file.
@@ -15,9 +14,6 @@ object Ports {
 
   def parseLines(lines: List[String]): List[Line] = lines.map(_.split('|'))
 
-  def toSortedRecordMap[R <: Record](lines : List[Line], f : Line => R) : SortedMap[IpResource, R] = {
-    SortedMap(lines.map(r => f(r)).map(r => r.range() -> r): _*)
-  }
 
   def parseFileAsRecords(source: String): Records = {
 
@@ -29,9 +25,9 @@ object Ports {
       val recordLines = lines.tail.filter(!_.contains(SUMMARY))
 
       // Parse and create sorted map from range to record
-      val asn  = toSortedRecordMap(parseLines(recordLines.filter(_.contains(ASN))), AsnRecord.apply)
-      val ipv4 = toSortedRecordMap(parseLines(recordLines.filter(_.contains(IPV4))), Ipv4Record.apply)
-      val ipv6 = toSortedRecordMap(parseLines(recordLines.filter(_.contains(IPV6))), Ipv6Record.apply)
+      val asn  = parseLines(recordLines.filter(_.contains(ASN)) ).map(AsnRecord .apply)
+      val ipv4 = parseLines(recordLines.filter(_.contains(IPV4))).map(Ipv4Record.apply)
+      val ipv6 = parseLines(recordLines.filter(_.contains(IPV6))).map(Ipv6Record.apply)
 
       Records(source, header, summaries, asn, ipv4, ipv6)
     }
@@ -53,20 +49,20 @@ object Ports {
   }
 
   // Assumes a data directory existed to store fetched data.
-  def fetchAndParse(): (ParIterable[Records], Records) = {
-    val recordMaps = dataSources.par.map {
+  def fetchAndParse(): (Iterable[Records], Records) = {
+    val recordMaps = dataSources.map {
       case (name, url) =>
         fetchLocally(url, s"data/$name")
         (name, parseFileAsRecords(s"data/$name"))
     }
     // Adjusting and fixing record fields conforming to what is done by geoff.
-    val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs).values
+    val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs).values.seq
     val iana = recordMaps("iana").fixIana
     (rirs, iana)
   }
 
-  def writeCombined(asn: SortedRecordsMap, ipv4: SortedRecordsMap, ipv6: SortedRecordsMap) {
-    using(new PrintWriter(new File("result/combined-stat"))) { writer =>
+  def writeResult(asn: ListRecords, ipv4: ListRecords, ipv6: ListRecords, outputFile: String = "result/combined-stat") {
+    using(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
       val SERIAL = 19821213
@@ -75,16 +71,16 @@ object Ports {
       writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
       writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
       writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
-      writer.write(asn.values.map(_.toString).mkString("\n"))
+      writer.write(asn.map(_.toString).mkString("\n"))
       writer.write("\n")
-      writer.write(ipv4.values.map(_.toString).mkString("\n"))
+      writer.write(ipv4.map(_.toString).mkString("\n"))
       writer.write("\n")
-      writer.write(ipv6.values.map(_.toString).mkString("\n"))
+      writer.write(ipv6.map(_.toString).mkString("\n"))
     }
   }
 
-  def writeConflicts(conflicts: List[Conflict]): Unit = {
-    using(new PrintWriter(new File("result/conflicts"))) { writer =>
+  def writeConflicts(conflicts: List[Conflict], outputFile: String = "result/conflicts"): Unit = {
+    using(new PrintWriter(new File(outputFile))) { writer =>
       writer.write(conflicts.mkString("\n"))
       if(conflicts.nonEmpty){
         println("Conflicts found:")

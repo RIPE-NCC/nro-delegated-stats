@@ -16,12 +16,12 @@ sealed trait Record {
   def oid: String
   def ext: String
 
-  def range(): IpResource
+  def range: IpResource
 
   def merge(that: Record) : Record
 
   def canMerge(that: Record) : Boolean = {
-        this.range().adjacent(that.range()) &&
+        this.range.adjacent(that.range) &&
         this.cc == that.cc &&
         this.oid == that.oid &&
         this.date == that.date &&
@@ -29,6 +29,12 @@ sealed trait Record {
         this.status == that.status
   }
 
+  // That is known to be equal or after since this only used for sorted.
+  def endsAfter(that: Record) : Boolean = {
+       val thisR = this.range
+       val thatR = that.range
+       thisR.getEnd().compareTo(thatR.getStart()) >= 0
+  }
 
 
   override def toString: String =
@@ -38,6 +44,9 @@ sealed trait Record {
 object Record {
   def rangeLen(r: IpResource): BigInteger =
     r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
+  implicit val recordOrder = new Ordering[Record] {
+    override def compare(a: Record, b: Record) = a.range.compareTo(b.range)
+  }
 }
 
 case class Conflict(a : Record, b: Record, kind: String = "inter-rir"){
@@ -56,7 +65,7 @@ case class Ipv4Record(
     oid: String,
     ext: String = DEFAULT_EXT
 ) extends Record {
-  def range(): IpResource = {
+  val range: IpResource = {
     val startAddr = IpAddress.parse(start).getValue
     val endAddr   = new BigInteger(length).add(startAddr).subtract(BigInteger.ONE)
     IpResourceRange.assemble(startAddr, endAddr, IpResourceType.IPv4)
@@ -80,7 +89,7 @@ case class Ipv6Record(
     ext: String = DEFAULT_EXT
 ) extends Record {
 
-  def range(): IpResource = {
+  val range: IpResource = {
     IpResource.parse(start + "/" + length)
   }
 
@@ -101,7 +110,7 @@ case class AsnRecord(
     oid: String,
     ext: String = DEFAULT_EXT
 ) extends Record {
-  def range(): IpResource = {
+  val range: IpResource = {
     val iLength = length.toLong
     val iStart  = start.toLong
     IpResource.parse(s"AS$iStart-AS${iStart + iLength - 1}")

@@ -7,33 +7,59 @@ import Records._
 class RecordsTest extends FlatSpec {
 
   "Conflicts" should "be detected for first lines of these data " in {
+    val ripe =
+      """|ripencc|AU|ipv4|1.10.10.0|256|20110811|assigned|A9173591
+         |ripencc|CN|ipv4|1.10.16.0|4096|20110412|allocated|A92319D5""".stripMargin
+
     val apnic =
       """|apnic|AU|ipv4|1.10.10.0|256|20110811|assigned|A9173591
+         |apnic|CN|ipv4|1.10.11.0|256|20110414|allocated|A92E1062""".stripMargin
+
+
+    val ripeRecords  =parseLines(ripe.split("\n").toList).map( Ipv4Record.apply)
+    val apnicRecords  =parseLines(apnic.split("\n").toList).map( Ipv4Record.apply)
+
+
+    val records = Iterable(apnicRecords, ripeRecords)
+    val (merged, conflicts) = combineResources(records)
+
+
+    assert(conflicts.size == 1)
+    assert(merged.size == 3)
+    assert(conflicts.head.rirsInvolved == "apnic--ripencc")
+    assert(merged.head == apnicRecords.head)
+  }
+
+
+  it should "detecttial conflicts" in {
+    val apnic =
+      """|apnic|AU|ipv4|1.10.10.0|128|20110811|assigned|A9173591
          |apnic|CN|ipv4|1.10.11.0|256|20110414|allocated|A92E1062""".stripMargin
 
     val ripe =
       """|ripencc|AU|ipv4|1.10.10.0|256|20110811|assigned|A9173591
          |ripencc|CN|ipv4|1.10.16.0|4096|20110412|allocated|A92319D5""".stripMargin
 
-    val apnicRecords = toSortedRecordMap(parseLines(apnic.split("\n").toList), Ipv4Record.apply)
-    val ripeRecords = toSortedRecordMap(parseLines(ripe.split("\n").toList), Ipv4Record.apply)
-    val records = Iterable(apnicRecords, ripeRecords)
-    val (merged, conflicts) = combineResources(records.par)
+    val ripeRecords  =parseLines(ripe.split("\n").toList).map( Ipv4Record.apply)
+    val apnicRecords  =parseLines(apnic.split("\n").toList).map( Ipv4Record.apply)
 
-    merged.values.foreach(println)
-    conflicts.foreach(println)
+    val records = Iterable(apnicRecords, ripeRecords)
+    val (merged, conflicts) = combineResources(records)
+
 
     assert(conflicts.size == 1)
+    assert(merged.size == 3)
+    assert(merged.head == ripeRecords.head)
   }
 
-  "Conflicts" should "be detected for afriaprin (fake RIR taking asn from afrinic, ipv4 from apnic, and ipv6 from arin)" in {
+  it should "be detected for afriaprin (fake RIR taking asn from afrinic, ipv4 from apnic, and ipv6 from arin)" in {
 
-    val apnic = parseFileAsRecords(getClass.getResource("/data/apnic").getFile)
-    val afrinic = parseFileAsRecords(getClass.getResource("/data/afrinic").getFile)
-    val arin = parseFileAsRecords(getClass.getResource("/data/arin").getFile)
-    val afriaprin = parseFileAsRecords(getClass.getResource("/data/afriaprin").getFile)
+    val apnic =parseFileAsRecords(getClass.getResource("/data/apnic").getFile)
+    val afrinic =parseFileAsRecords(getClass.getResource("/data/afrinic").getFile)
+    val arin =parseFileAsRecords(getClass.getResource("/data/arin").getFile)
+    val afriaprin =parseFileAsRecords(getClass.getResource("/data/afriaprin").getFile)
 
-    val rirs = Iterable(apnic, afrinic, arin, afriaprin).par.map(_.fixRIRs)
+    val rirs = Iterable(apnic, afrinic, arin, afriaprin).map(_.fixRIRs)
 
     val (asns, asnConflicts) = combineResources(rirs.map(_.asn))
     val (ipv4s, ipv4Conflicts) = combineResources(rirs.map(_.ipv4))
@@ -68,8 +94,8 @@ class RecordsTest extends FlatSpec {
       """|arin|ZZ|asn|100000|1|20190815|assigned|8db2e0d637d4b1e9c912fa1832eeb396|e-stats
          |arin|ZZ|asn|397837|3|20190815|assigned|8db2e0d637d4b1e9c912fa1832eeb396|e-stats""".stripMargin
 
-    val original = toSortedRecordMap(parseLines(splitted.split("\n").toList), AsnRecord.apply)
-    val expected = toSortedRecordMap(parseLines(merged.split("\n").toList), AsnRecord.apply)
+    val original =parseLines(splitted.split("\n").toList).map( AsnRecord.apply)
+    val expected =parseLines(merged.split("\n").toList).map( AsnRecord.apply)
 
     assert(mergeSiblings(original) == expected)
   }
@@ -87,8 +113,8 @@ class RecordsTest extends FlatSpec {
       """|apnic|ZZ|ipv4|0.0.0.0|256|20110412|assigned|A92319D5|e-stats
          |apnic|ZZ|ipv4|1.1.9.0|14080|20110412|assigned|A92319D5|e-stats""".stripMargin
 
-    val original = toSortedRecordMap(parseLines(splitted.split("\n").toList), Ipv4Record.apply)
-    val expected = toSortedRecordMap(parseLines(merged.split("\n").toList), Ipv4Record.apply)
+    val original =parseLines(splitted.split("\n").toList).map( Ipv4Record.apply)
+    val expected =parseLines(merged.split("\n").toList).map( Ipv4Record.apply)
 
     assert(mergeSiblings(original) == expected)
   }
@@ -100,8 +126,9 @@ class RecordsTest extends FlatSpec {
          |afrinic|ZZ|ipv6|2c0f:ea5a::|31|20190911|reserved||e-stats
          |afrinic|ZZ|ipv6|2c0f:ea5c::|30|20190911|reserved||e-stats""".stripMargin
 
-    val original = toSortedRecordMap(parseLines(splitted.split("\n").toList), Ipv6Record.apply)
+    val original =parseLines(splitted.split("\n").toList).map(Ipv6Record.apply)
 
     assert(mergeSiblings(original) == original)
   }
+
 }

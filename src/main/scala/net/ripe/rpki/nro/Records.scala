@@ -1,89 +1,102 @@
-package net.ripe.rpki.nro 
+package net.ripe.rpki.nro
 
 import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
 
 import scala.collection.SortedMap
-import scala.collection.parallel.ParIterable
 
 // Records holder for three type of records, contains some logic of fixing entries
 case class Records(
-    source: String,
-    header: Line,
-    summaries: List[Line],
-    asn:  SortedMap[IpResource, AsnRecord],
-    ipv4: SortedMap[IpResource, Ipv4Record],
-    ipv6: SortedMap[IpResource, Ipv6Record]
-) {
+                    source: String,
+                    header: Line,
+                    summaries: List[Line],
+                    asn: List[AsnRecord],
+                    ipv4: List[Ipv4Record],
+                    ipv6: List[Ipv6Record]
+                  ) {
 
- def fixIana: Records = {
-   def fix[A <: Record : Updates]: A => A = (rec: A) => rec.status match {
-     case IETF => rec.oid_(IETF).ext_(IANA)
-     case IANA => rec.oid_(IANA).status_(ASSIGNED).ext_(IANA)
-     case _ => rec.ext_(IANA)
-   }
+  def fixIana: Records = {
+    def fix[A <: Record : Updates]: A => A = (rec: A) => rec.status match {
+      case IETF => rec.oid_(IETF).ext_(IANA)
+      case IANA => rec.oid_(IANA).status_(ASSIGNED).ext_(IANA)
+      case _ => rec.ext_(IANA)
+    }
+
     this.asn_(fix).ipv4_(fix).ipv6_(fix)
   }
 
   // Reserved and available records normally have neither country code or date, when combined it will be filled with ZZ and today's date.
   def fixRIRs: Records = {
-    def fix[A <: Record: Updates]: A => A = (rec: A) => rec.status match {
+    def fix[A <: Record : Updates]: A => A = (rec: A) => rec.status match {
       case RESERVED | AVAILABLE => rec.date_(TODAY).cc_(DEFAULT_CC)
       case ALLOCATED => rec.status_(ASSIGNED)
       case _ => rec
     }
+
     this.asn_(fix).ipv4_(fix).ipv6_(fix)
   }
 
 
   override def toString: String =
-    s"""Source: $source \nHeader: ${header.mkString(",")} \nSummaries: \n${summaries
-      .map(_.mkString(","))
-      .mkString("\n")}\n\n"""
+    s"""Source: $source \nHeader: ${header.mkString(",")} \nSummaries: \n${
+      summaries
+        .map(_.mkString(","))
+        .mkString("\n")
+    }\n\n"""
 
   // Map values wrapper
   def asn_(f: AsnRecord => AsnRecord)(implicit ev: Updates[AsnRecord]): Records =
-    this.copy(asn = this.asn.mapValues(f))
+    this.copy(asn = this.asn.map(f))
+
   def ipv4_(f: Ipv4Record => Ipv4Record)(implicit ev: Updates[Ipv4Record]): Records =
-    this.copy(ipv4 = this.ipv4.mapValues(f))
+    this.copy(ipv4 = this.ipv4.map(f))
+
   def ipv6_(f: Ipv6Record => Ipv6Record)(implicit ev: Updates[Ipv6Record]): Records =
-    this.copy(ipv6 = this.ipv6.mapValues(f))
+    this.copy(ipv6 = this.ipv6.map(f))
 
 }
 
 object Records {
 
-  def accumulate(currentResult: RecordsAndConflicts, nextRecords: SortedRecordsMap): RecordsAndConflicts = {
-    val (currentMerge, currentConflict) = currentResult
-    val mergedKeys = currentMerge.keySet
-    val nextKeys   = nextRecords.keySet
+  val EMPTY_SORTED_RECORDS_MAP = List[Record]()
+  val EMPTY_CONFLICTS = List[Conflict]()
 
-    val newConflicts = mergedKeys.intersect(nextKeys)
-      .map(k => Conflict(currentMerge(k), nextRecords(k)))
+  def detectConflict(current: (List[Record], List[Conflict]), next: Record): (List[Record], List[Conflict]) = {
+    val (checked, conflicts) = current 
+    if(checked.size % 10000 == 0) println(">", checked.size, conflicts.size)
+    checked match {
+      case Nil => (next :: Nil, conflicts)
 
-    (currentMerge ++ nextRecords, currentConflict ++ newConflicts)
-  }
-
-  // Combining multiple maps from different RIRs
-  def combineResources(resourceMap: ParIterable[SortedRecordsMap]): (SortedRecordsMap, List[Conflict]) =
-    resourceMap.foldLeft((SortedMap[IpResource, Record](), List[Conflict]()))(accumulate)
-
-  def mergeSiblings(resources : SortedRecordsMap): SortedMap[IpResource, Record] = {
-      resources.foldLeft(SortedMap[IpResource, Record]())(mergeSibling)
-  }
-
-  def mergeSibling(merged: SortedRecordsMap, nextPair: (IpResource, Record)): SortedRecordsMap = {
-      if(merged.isEmpty) SortedMap(nextPair)
-      else {
-        val (_, lastRecord) = merged.last
-        val (_, nextRecord) = nextPair
-
-        if(lastRecord.canMerge(nextRecord)){
-          val mergedEntry = lastRecord.merge(nextRecord)
-          merged.init + (mergedEntry.range -> mergedEntry)
-        } else merged + nextPair
+      // Record conflict with next record when intersecting, keep what was there before. 
+      case lastRecord :: _ => if (lastRecord.endsAfter(next)) {
+        (checked, Conflict(lastRecord, next) :: conflicts)
+      } else {
+        // No conflict, keep the next 
+        (next :: checked, conflicts)
       }
+    }
+  }
+
+  def combineResources(resourceMap: Iterable[List[Record]]): (List[Record], List[Conflict]) = {
+    val sortedRecords = resourceMap.reduce(_ ++ _).sortBy(_.range)
+    val (merged, conflicts) = sortedRecords.par.foldLeft((List[Record](), List[Conflict]()))(detectConflict)
+    (merged.toList.reverse, conflicts.toList.reverse)
+  }
+
+  def mergeSiblings(resources: List[Record]): List[Record] = {
+    resources.sortBy(_.range).foldLeft(EMPTY_SORTED_RECORDS_MAP)(mergeSibling).reverse
+  }
+
+  def mergeSibling(merged: List[Record], nextRecord: Record): List[Record] = {
+    if(merged.size % 10000 == 0) println("|", merged.size)
+
+    merged match {
+      case Nil => List(nextRecord) 
+      case lastRecord :: rest => 
+           if (lastRecord.canMerge(nextRecord)) lastRecord.merge(nextRecord) :: rest else nextRecord :: merged  
+                              
+    }
   }
 
 }

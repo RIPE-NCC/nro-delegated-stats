@@ -43,10 +43,10 @@ object Defs {
   val TODAY: String = java.time.LocalDate.now.toString.replaceAll("-", "")
 
   type Line = Array[String]
-  type SortedRecordsMap = SortedMap[IpResource, Record]
-  type RecordsAndConflicts = (SortedRecordsMap, List[Conflict])
+  type ListRecords = List[Record]
+  type RecordsAndConflicts = (ListRecords, List[Conflict])
 
-
+  
   val dataSources: Map[String, String] = Map[String, String](
     APNIC   -> "http://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
     AFRINIC -> "http://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",
