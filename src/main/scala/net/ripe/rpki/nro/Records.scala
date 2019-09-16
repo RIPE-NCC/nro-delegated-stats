@@ -65,7 +65,8 @@ object Records {
     var lastRecord = sortedRecords.head 
 
     sortedRecords.tail foreach { nextRecord => 
-        if(lastRecord.endsAfter(nextRecord)) {
+        if(lastRecord.intersect(nextRecord)) {
+            // record conflict, discard next record.
             conflicts = Conflict(lastRecord, nextRecord) :: conflicts
         } else {
             result = lastRecord :: result 
@@ -83,9 +84,9 @@ object Records {
     var result : List[Record] = Nil 
     var lastRecord = sortedRecords.head 
 
-    sortedRecords.tail foreach { nextRecord => 
+    sortedRecords.tail foreach { nextRecord =>
         if(lastRecord.canMerge(nextRecord)) {
-          lastRecord = lastRecord.merge(nextRecord) 
+          lastRecord = lastRecord.merge(nextRecord)
         }
         else {
           result = lastRecord :: result 

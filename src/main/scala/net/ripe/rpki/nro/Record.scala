@@ -21,9 +21,7 @@ sealed trait Record {
   def merge(that: Record) : Record
 
   def canMerge(that: Record) : Boolean = {
-        // Originally using IpResource.adjacent, but to make it faster
-        // Knowing these records are sorted without overlap, we can do this.
-        this.range.getEnd.getValue.add(BigInteger.ONE) == that.range.getStart.getValue &&
+        this.range.adjacent(that.range) &&
         this.cc == that.cc &&
         this.oid == that.oid &&
         this.date == that.date &&
@@ -31,11 +29,9 @@ sealed trait Record {
         this.status == that.status
   }
 
-  // That is known to be equal or after since this only used for sorted.
-  def endsAfter(that: Record) : Boolean = {
-       val thisR = this.range
-       val thatR = that.range
-       thisR.getEnd().compareTo(thatR.getStart()) >= 0
+
+  def intersect(that: Record) : Boolean = {
+      this.range.intersect(that.range) != null;
   }
 
 
