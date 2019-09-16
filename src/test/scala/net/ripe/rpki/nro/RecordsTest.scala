@@ -31,7 +31,7 @@ class RecordsTest extends FlatSpec {
   }
 
 
-  it should "detecttial conflicts" in {
+  it should "detect partial conflicts" in {
     val apnic =
       """|apnic|AU|ipv4|1.10.10.0|128|20110811|assigned|A9173591
          |apnic|CN|ipv4|1.10.11.0|256|20110414|allocated|A92E1062""".stripMargin
@@ -129,6 +129,29 @@ class RecordsTest extends FlatSpec {
     val original =parseLines(splitted.split("\n").toList).map(Ipv6Record.apply)
 
     assert(mergeSiblings(original) == original)
+  }
+
+  "Merge asn conflict priority first" should " do what original nro-stat code does  " in  {
+    val apnic =
+      """|apnic|NL|asn|11|5|20110811|assigned|A9173591
+         |apnic|NL|asn|21|3|20110811|assigned|A9173591
+         |apnic|NL|asn|31|7|20110811|assigned|A9173591""".stripMargin
+
+    val ripe =
+      """|ripencc|NL|asn|11|5|20110811|assigned|A9173591
+         |ripencc|NL|asn|21|5|20110811|assigned|A9173591
+         |ripencc|NL|asn|31|5|20110811|assigned|A9173591""".stripMargin
+
+    val ripeRecords   = parseLines(ripe.split("\n").toList).map( AsnRecord.apply)
+    val apnicRecords  = parseLines(apnic.split("\n").toList).map( AsnRecord.apply)
+
+    val records = Iterable(apnicRecords, ripeRecords)
+    val (merged, conflicts) = combineResources(records)
+
+    assert(merged.mkString("\n") ==
+      """|apnic|NL|asn|11|5|20110811|assigned|A9173591|e-stats
+         |ripencc|NL|asn|21|5|20110811|assigned|A9173591|e-stats
+         |apnic|NL|asn|31|7|20110811|assigned|A9173591|e-stats""".stripMargin)
   }
 
 }

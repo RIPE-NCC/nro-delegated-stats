@@ -6,7 +6,7 @@ import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Record.rangeLen
 
 import scala.collection.JavaConverters._
-import scala.collection.{Iterable, Iterator, SortedMap}
+import scala.collection.{Iterable, Iterator}
 
 object Iana {
 

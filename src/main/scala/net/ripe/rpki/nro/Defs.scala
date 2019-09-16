@@ -2,8 +2,6 @@ package net.ripe.rpki.nro
 
 import net.ripe.ipresource.IpResource
 
-import scala.collection.SortedMap
-
 object Defs {
 
   val IANA = "iana"

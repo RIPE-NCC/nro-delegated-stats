@@ -2,10 +2,8 @@ package net.ripe.rpki.nro
 
 import java.io.{File, PrintWriter}
 
-import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs._
 
-import scala.collection.SortedMap
 import scala.io.Source.fromFile
 
 // Importing data from remotes files and exporting to file.

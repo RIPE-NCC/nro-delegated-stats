@@ -1,6 +1,5 @@
 package net.ripe.rpki.nro
 
-import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
 
