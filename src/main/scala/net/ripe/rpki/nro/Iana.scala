@@ -3,7 +3,7 @@ package net.ripe.rpki.nro
 import net.ripe.commons.ip._
 import net.ripe.ipresource._
 import net.ripe.rpki.nro.Defs._
-import net.ripe.rpki.nro.Record.rangeLen
+import net.ripe.rpki.nro.Record.length
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterable, Iterator}
@@ -48,10 +48,10 @@ object Iana {
   }
 
   def ipv4Pool(ipv4: IpResource) =
-    Ipv4Record( IANA, DEFAULT_CC, IPV4, ipv4.getStart + "", rangeLen(ipv4) + "", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)
+    Ipv4Record( IANA, DEFAULT_CC, IPV4, ipv4.getStart + "", length(ipv4) + "", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)
 
   def asnPool(asn: IpResource) =
-    AsnRecord( IANA, DEFAULT_CC, ASN, asn.getStart.getValue + "", rangeLen(asn) + "", TODAY, IANAPOOL, "", IANA)
+    AsnRecord( IANA, DEFAULT_CC, ASN, asn.getStart.getValue + "", length(asn) + "", TODAY, IANAPOOL, "", IANA)
 
   def ipv6Pool(ipv6: IpResource): Ipv6Record = {
     val Array(start, prefix) = ipv6.toString.split("/")

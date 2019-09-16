@@ -2,11 +2,12 @@ package net.ripe.rpki.nro
 
 import java.math.BigInteger
 
-import com.google.common.collect.TreeRangeMap
+import com.google.common.collect.{Range, TreeRangeMap}
+import net.ripe.commons.ip.Ipv6Range
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
+
 import scala.collection.JavaConverters._
-import com.google.common.collect.Range
 
 // Records holder for three type of records, contains some logic of fixing entries
 case class Records(
@@ -39,7 +40,6 @@ case class Records(
     this.asn_(fix).ipv4_(fix).ipv6_(fix)
   }
 
-
   override def toString: String =
     s"""Source: $source \nHeader: ${header.mkString(",")} \nSummaries: \n${
       summaries
@@ -63,31 +63,40 @@ object Records {
 
   def combineResources(rirRecords: Iterable[List[Record]]): (List[Record], List[Conflict]) = {
 
-    val rangeMap = TreeRangeMap.create[BigInteger, Record]()
+    val currentRecordMap = TreeRangeMap.create[BigInteger, Record]()
 
-    val conflicts = rirRecords.flatten.flatMap { record =>
+    // Detecting conflicts while adding new records. Latest one added prevails.
+    val conflicts = rirRecords.flatten.toList.flatMap { newRecord =>
 
-      val newRange = Range.closed(record.range.getStart.getValue, record.range.getEnd.getValue)
-      val conflicts = rangeMap.subRangeMap(newRange).asMapOfRanges().asScala
+      val newRange = Range.closed(newRecord.range.getStart.getValue, newRecord.range.getEnd.getValue)
 
-      if (conflicts.nonEmpty) {
-        val newConflicts = conflicts.map {
-          case (_, conflict) => Conflict(conflict, record)
-        }
-        rangeMap.put(newRange, record)
-        newConflicts
-      } else {
-        rangeMap.put(newRange, record)
-        List[Conflict]()
+      // Conflicts are records in current record map that is covered by newRange
+      val newConflicts = currentRecordMap.subRangeMap(newRange).asMapOfRanges().asScala.map {
+        case (_, conflict) => Conflict(conflict, newRecord)
       }
 
-    } toList
+      currentRecordMap.put(newRange, newRecord)
 
-    val combined = rangeMap.asMapOfRanges().asScala.map {
-      case (key, record) => record.update(key)
-    } toList
+      newConflicts
+    }
 
-    (combined, conflicts)
+    // Records needs to be updated, because as result of put into range maps above,
+    // some new splitted ranges might be introduced. See RecordsTests
+    val updatedRecords = currentRecordMap.asMapOfRanges().asScala.toList.flatMap {
+      case (range, record) => if(record.lType == "ipv6")
+       {
+        val (start, end) = Record.startEnd(range)
+        // Guava RangeMap[BigInteger, Record] does not care about bit boundary
+        // Special treatment needed to align IPv6 while updating.
+        Ipv6Range.from(start).to(end).splitToPrefixes().asScala.map { ipv6 =>
+          record.update(Range.closed(ipv6.start().asBigInteger(), ipv6.end().asBigInteger()))
+        }
+      } else {
+        List(record.update(range))
+      }
+    }
+
+    (updatedRecords, conflicts)
   }
 
   def mergeSiblings(records: List[Record]): List[Record] = {
