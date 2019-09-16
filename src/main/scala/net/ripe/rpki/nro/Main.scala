@@ -13,11 +13,11 @@ object Main extends App {
 
   // Note we are not checking conflicts with IANA only among RIRs
   println("Combine and detect conflict  ASNs")
-  val (asns,  asnConflicts)  = Records.combineResources(Iterable(asnIetf) ++ rirs.map(_.asn) )
+  val (asns,  asnConflicts)  = Records.combineResources(rirs.map(_.asn)  ++ Iterable(asnIetf) )
   println("Combine and detect conflict  IPv4")
-  val (ipv4s, ipv4Conflicts) = Records.combineResources(Iterable(ipv4Ietf) ++ rirs.map(_.ipv4) )
+  val (ipv4s, ipv4Conflicts) = Records.combineResources(rirs.map(_.ipv4) ++ Iterable(ipv4Ietf) )
   println("Combine and detect conflict  IPv6")
-  val (ipv6s, ipv6Conflicts) = Records.combineResources(Iterable(ipv6Ietf) ++ rirs.map(_.ipv6) )
+  val (ipv6s, ipv6Conflicts) = Records.combineResources(rirs.map(_.ipv6) ++ Iterable(ipv6Ietf)  )
 
 
   println("Calculating IANAPOOL")

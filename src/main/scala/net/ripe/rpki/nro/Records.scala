@@ -1,7 +1,12 @@
 package net.ripe.rpki.nro
 
+import java.math.BigInteger
+
+import com.google.common.collect.TreeRangeMap
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
+import scala.collection.JavaConverters._
+import com.google.common.collect.Range
 
 // Records holder for three type of records, contains some logic of fixing entries
 case class Records(
@@ -56,45 +61,53 @@ case class Records(
 
 object Records {
 
-  def combineResources(resourceMap: Iterable[List[Record]]): (List[Record], List[Conflict]) = {
+  def combineResources(rirRecords: Iterable[List[Record]]): (List[Record], List[Conflict]) = {
 
-    val sortedRecords = resourceMap.reduce(_ ++ _).sorted
+    val rangeMap = TreeRangeMap.create[BigInteger, Record]()
 
-    var result : List[Record]  = Nil 
-    var conflicts : List[Conflict] = Nil 
-    var lastRecord = sortedRecords.head 
+    val conflicts = rirRecords.flatten.flatMap { record =>
 
-    sortedRecords.tail foreach { nextRecord => 
-        if(lastRecord.intersect(nextRecord)) {
-            // record conflict, discard next record.
-            conflicts = Conflict(lastRecord, nextRecord) :: conflicts
-        } else {
-            result = lastRecord :: result 
-            lastRecord = nextRecord
-        } 
-    }
+      val newRange = Range.closed(record.range.getStart.getValue, record.range.getEnd.getValue)
+      val conflicts = rangeMap.subRangeMap(newRange).asMapOfRanges().asScala
 
-    ((lastRecord::result).reverse, conflicts.reverse)
+      if (conflicts.nonEmpty) {
+        val newConflicts = conflicts.map {
+          case (_, conflict) => Conflict(conflict, record)
+        }
+        rangeMap.put(newRange, record)
+        newConflicts
+      } else {
+        rangeMap.put(newRange, record)
+        List[Conflict]()
+      }
+
+    } toList
+
+    val combined = rangeMap.asMapOfRanges().asScala.map {
+      case (key, record) => record.update(key)
+    } toList
+
+    (combined, conflicts)
   }
 
   def mergeSiblings(records: List[Record]): List[Record] = {
 
-    val sortedRecords = records.sorted 
+    val sortedRecords = records.sorted
 
-    var result : List[Record] = Nil 
-    var lastRecord = sortedRecords.head 
+    var result: List[Record] = Nil
+    var lastRecord = sortedRecords.head
 
     sortedRecords.tail foreach { nextRecord =>
-        if(lastRecord.canMerge(nextRecord)) {
-          lastRecord = lastRecord.merge(nextRecord)
-        }
-        else {
-          result = lastRecord :: result 
-          lastRecord = nextRecord
-        }
-     }
-    
-     (lastRecord :: result).reverse
+      if (lastRecord.canMerge(nextRecord)) {
+        lastRecord = lastRecord.merge(nextRecord)
+      }
+      else {
+        result = lastRecord :: result
+        lastRecord = nextRecord
+      }
+    }
+
+    (lastRecord :: result).reverse
   }
 
 

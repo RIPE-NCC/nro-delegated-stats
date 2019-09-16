@@ -6,6 +6,7 @@ scalaVersion := "2.12.8"
 
 
 libraryDependencies += "net.ripe.ipresource" % "ipresource" % "1.46"
+libraryDependencies += "com.google.guava" % "guava" % "28.1-jre"
 
 libraryDependencies += "net.ripe.commons" % "commons-ip-math" % "1.23"
 

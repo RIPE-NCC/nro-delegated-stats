@@ -27,7 +27,8 @@ class RecordsTest extends FlatSpec {
     assert(conflicts.size == 1)
     assert(merged.size == 3)
     assert(conflicts.head.rirsInvolved == "apnic--ripencc")
-    assert(merged.head == apnicRecords.head)
+    // last one prevails
+    assert(merged.head == ripeRecords.head)
   }
 
 
@@ -132,25 +133,28 @@ class RecordsTest extends FlatSpec {
   }
 
   "Merge asn conflict priority first" should " do what original nro-stat code does  " in  {
-    val apnic =
-      """|apnic|NL|asn|11|5|20110811|assigned|A9173591
-         |apnic|NL|asn|21|3|20110811|assigned|A9173591
-         |apnic|NL|asn|31|7|20110811|assigned|A9173591""".stripMargin
-
     val ripe =
       """|ripencc|NL|asn|11|5|20110811|assigned|A9173591
          |ripencc|NL|asn|21|5|20110811|assigned|A9173591
          |ripencc|NL|asn|31|5|20110811|assigned|A9173591""".stripMargin
 
+    val apnic =
+      """|apnic|NL|asn|11|5|20110811|assigned|A9173591
+         |apnic|NL|asn|21|3|20110811|assigned|A9173591
+         |apnic|NL|asn|31|7|20110811|assigned|A9173591""".stripMargin
+
+
     val ripeRecords   = parseLines(ripe.split("\n").toList).map( AsnRecord.apply)
     val apnicRecords  = parseLines(apnic.split("\n").toList).map( AsnRecord.apply)
 
-    val records = Iterable(apnicRecords, ripeRecords)
+
+    val records = Iterable(ripeRecords, apnicRecords)
     val (merged, conflicts) = combineResources(records)
 
     assert(merged.mkString("\n") ==
       """|apnic|NL|asn|11|5|20110811|assigned|A9173591|e-stats
-         |ripencc|NL|asn|21|5|20110811|assigned|A9173591|e-stats
+         |apnic|NL|asn|21|3|20110811|assigned|A9173591|e-stats
+         |ripencc|NL|asn|24|2|20110811|assigned|A9173591|e-stats
          |apnic|NL|asn|31|7|20110811|assigned|A9173591|e-stats""".stripMargin)
   }
 

@@ -2,10 +2,15 @@ package net.ripe.rpki.nro
 
 import java.math.BigInteger
 
+import com.google.common.collect
+import com.google.common.collect.BoundType
 import net.ripe.ipresource._
 import net.ripe.rpki.nro.Defs._
 
 sealed trait Record {
+
+  def update(key: collect.Range[BigInteger]): Record
+
   def registry: String
   def cc: String
   def lType: String
@@ -17,6 +22,7 @@ sealed trait Record {
   def ext: String
 
   def range: IpResource
+
 
   def merge(that: Record) : Record
 
@@ -42,6 +48,15 @@ sealed trait Record {
 object Record {
   def rangeLen(r: IpResource): BigInteger =
     r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
+
+  // help me name this thing.
+  def startEndLen(r: collect.Range[BigInteger]) = {
+    val start = if(r.lowerBoundType() == BoundType.CLOSED) r.lowerEndpoint() else r.lowerEndpoint().add(BigInteger.ONE)
+    val end = if(r.upperBoundType() == BoundType.CLOSED) r.upperEndpoint() else r.upperEndpoint().subtract(BigInteger.ONE)
+    val len = end.subtract(start).add(BigInteger.ONE)
+    (start, end, len)
+  }
+
   implicit val recordOrder = new Ordering[Record] {
     override def compare(a: Record, b: Record) = a.range.compareTo(b.range)
   }
@@ -73,6 +88,12 @@ case class Ipv4Record(
     val newLength = length.toLong + that.length.toLong
     this.copy(length = s"$newLength")
   }
+
+  override def update(key: collect.Range[BigInteger]): Ipv4Record = {
+    val (start, _, len) = Record.startEndLen(key)
+    val startAddress  = new Ipv4Address(start.longValue());
+    this.copy(start = s"$startAddress", length = s"$len")
+  }
 }
 
 case class Ipv6Record(
@@ -95,6 +116,12 @@ case class Ipv6Record(
 
   override def merge(that: Record): Record = throw new Exception("Nope, don't do this")
 
+  override def update(key: collect.Range[BigInteger]): Record = {
+    val (begin, end, _) = Record.startEndLen(key)
+    val newRange =  IpResourceRange.range(new Ipv6Address(begin), new Ipv6Address(end));
+    val Array(start, prefix) = newRange.toString.split("/")
+    this.copy(start = start, length = prefix)
+  }
 }
 
 case class AsnRecord(
@@ -119,6 +146,10 @@ case class AsnRecord(
     this.copy(length = s"$newLength")
   }
 
+  override def update(key: collect.Range[BigInteger]): Record = {
+    val (start, _, length) = Record.startEndLen(key)
+    this.copy(start = s"$start", length = s"$length")
+  }
 }
 
 object Ipv4Record {
