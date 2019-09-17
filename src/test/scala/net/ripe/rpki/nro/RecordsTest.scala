@@ -3,6 +3,7 @@ package net.ripe.rpki.nro
 import net.ripe.rpki.nro.Ports._
 import org.scalatest.FlatSpec
 import Records._
+import net.ripe.rpki.nro.Defs.Line
 
 class RecordsTest extends FlatSpec {
 
@@ -207,11 +208,7 @@ class RecordsTest extends FlatSpec {
     val apnic =
       """|apnic|JP|ipv6|2001:db8::|68|20110811|assigned|B""".stripMargin
 
-    val afrinicRecords = parseLines(afrinic.split("\n").toList).map( Ipv6Record.apply)
-    val apnicRecords   = parseLines(apnic.split("\n").toList).map( Ipv6Record.apply)
-
-    val records = Iterable(afrinicRecords, apnicRecords)
-    val (merged, conflicts) = combineResources(records)
+    val (merged, conflicts) = combineTest(afrinic, apnic)
 
     assert(merged.mkString("\n") ==
       """|apnic|JP|ipv6|2001:db8::|68|20110811|assigned|B|e-stats
@@ -236,18 +233,17 @@ class RecordsTest extends FlatSpec {
     val apnic =
       """|apnic|JP|ipv4|1.1.1.32|64|20110811|assigned|B""".stripMargin
 
-    val afrinicRecords = parseLines(afrinic.split("\n").toList).map( Ipv4Record.apply)
-    val apnicRecords   = parseLines(apnic.split("\n").toList).map( Ipv4Record.apply)
+    val previous =
+      """|ripencc|EU|ipv4|1.1.1.32|64|20110811|assigned|C|e-stats""".stripMargin
 
-    val records = Iterable(afrinicRecords, apnicRecords)
-    val (merged, conflicts) = combineResources(records)
 
+    val (merged, conflicts) = combineTest(afrinic, apnic, previous)
+
+    println(merged.mkString("\n"))
     assert(merged.mkString("\n") ==
       """|afrinic|NI|ipv4|1.1.1.0|32|20110811|assigned|A|e-stats
-         |apnic|JP|ipv4|1.1.1.32|64|20110811|assigned|B|e-stats""".stripMargin)
+         |ripencc|EU|ipv4|1.1.1.32|64|20110811|assigned|C|e-stats""".stripMargin)
 
-    // note on original nro-stat the last line will be splitted into 2 ranges,
-    // we only force splitting for ipv6 since it's always in the boundary.
 
     assert(conflicts.mkString("\n") ==
       """|
@@ -258,4 +254,22 @@ class RecordsTest extends FlatSpec {
   }
 
 
+  def combineTest(olderLines: String,
+                  newerLines: String,
+                  previousLines: String = "") = {
+
+    val olderRecords    = parseLines(olderLines.split("\n").toList).map(buildRecord)
+    val newerRecords    = parseLines(newerLines.split("\n").toList).map(buildRecord)
+    val previousRecords = if(previousLines.nonEmpty)parseLines(previousLines.split("\n").toList).map(buildRecord) else List()
+
+    val records = Iterable(olderRecords, newerRecords)
+    combineResources(records, previousRecords)
+  }
+
+  def buildRecord(line : Line): Record = line(2) match {
+    case "ipv4" => Ipv4Record(line)
+    case "ipv6" => Ipv6Record(line)
+    case "asn" => AsnRecord(line)
+    case _ => throw new Exception("BOO!")
+  }
 }
