@@ -8,7 +8,6 @@ import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
 
 import scala.collection.JavaConverters._
-
 // Records holder for three type of records, contains some logic of fixing entries
 case class Records(
                     source: String,
@@ -32,7 +31,9 @@ case class Records(
   // Reserved and available records normally have neither country code or date, when combined it will be filled with ZZ and today's date.
   def fixRIRs: Records = {
     def fix[A <: Record : Updates]: A => A = (rec: A) => rec.status match {
+      // RESERVED and AVAILABLE has neither date nor country (except AFRINIC with ZZ)
       case RESERVED | AVAILABLE => rec.date_(TODAY).cc_(DEFAULT_CC)
+      // Whatever allocated in original RIR file appears as ASSIGNED
       case ALLOCATED => rec.status_(ASSIGNED)
       case _ => rec
     }
@@ -118,6 +119,5 @@ object Records {
 
     (lastRecord :: result).reverse
   }
-
 
 }
