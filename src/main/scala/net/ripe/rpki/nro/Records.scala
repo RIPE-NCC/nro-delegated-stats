@@ -2,7 +2,7 @@ package net.ripe.rpki.nro
 
 import java.math.BigInteger
 
-import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
+import com.google.common.collect.{DiscreteDomain, Range, RangeMap, TreeRangeMap}
 import net.ripe.commons.ip.Ipv6Range
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
@@ -108,6 +108,8 @@ object Records {
     // Records needs to be updated, because as result of put into range maps above,
     // some new splitted ranges might be introduced. See RecordsTests
     val updatedRecords = currentMap.asMapOfRanges().asScala.toList.flatMap {
+
+      case (range, _) if (empty(range)) => List()
       case (range, record) => if(record.lType == "ipv6")
        {
         val (start, end) = Record.startEnd(range)
@@ -122,6 +124,12 @@ object Records {
     }
 
     (updatedRecords, conflicts)
+  }
+
+  val discreteBigInteger = DiscreteDomain.bigIntegers()
+  // RangeMap due to splitting sometimes create empty open range e.g (23,24) need to be detected and filtered out.
+  def empty(r : Range[BigInteger]) = {
+    r.canonical(discreteBigInteger).isEmpty
   }
 
   private def recordRange(newRecord: Record) = {
