@@ -133,124 +133,77 @@ class RecordsTest extends FlatSpec {
     assert(mergeSiblings(original) == original)
   }
 
-  "Merge records " should " split non overlapping ranges when merging for ASN  " in  {
-    val ripe =
-      """|ripencc|NL|asn|11|5|20110811|assigned|A9173591
-         |ripencc|NL|asn|21|5|20110811|assigned|A9173591
-         |ripencc|NL|asn|31|5|20110811|assigned|A9173591
-         |ripencc|NL|asn|41|5|20110811|assigned|A9173591
-         |ripencc|NL|asn|51|5|20110811|assigned|A9173591
-         |ripencc|NL|asn|61|5|20110811|assigned|A9173591
-         |""".stripMargin
 
-    val apnic =
-      """|apnic|NL|asn|11|5|20110811|assigned|A9173591
-         |apnic|NL|asn|21|3|20110811|assigned|A9173591
-         |apnic|NL|asn|31|7|20110811|assigned|A9173591
-         |apnic|NL|asn|42|2|20110811|assigned|A9173591
-         |apnic|NL|asn|52|4|20110811|assigned|A9173591
-         |apnic|NL|asn|64|7|20110811|assigned|A9173591
-         |""".stripMargin
+  it should " split non overlapping ranges when merging for asn   " in  {
 
-    val ripeRecords   = parseLines(ripe.split("\n").toList).map( AsnRecord.apply)
-    val apnicRecords  = parseLines(apnic.split("\n").toList).map( AsnRecord.apply)
-
-    val records = Iterable(ripeRecords, apnicRecords)
-    val (merged, conflicts) = combineResources(records)
-
-    assert(merged.mkString("\n") ==
-      """|apnic|NL|asn|11|5|20110811|assigned|A9173591|e-stats
-         |apnic|NL|asn|21|3|20110811|assigned|A9173591|e-stats
-         |ripencc|NL|asn|24|2|20110811|assigned|A9173591|e-stats
-         |apnic|NL|asn|31|7|20110811|assigned|A9173591|e-stats
-         |ripencc|NL|asn|41|1|20110811|assigned|A9173591|e-stats
-         |apnic|NL|asn|42|2|20110811|assigned|A9173591|e-stats
-         |ripencc|NL|asn|44|2|20110811|assigned|A9173591|e-stats
-         |ripencc|NL|asn|51|1|20110811|assigned|A9173591|e-stats
-         |apnic|NL|asn|52|4|20110811|assigned|A9173591|e-stats
-         |ripencc|NL|asn|61|3|20110811|assigned|A9173591|e-stats
-         |apnic|NL|asn|64|7|20110811|assigned|A9173591|e-stats""".stripMargin)
-
-    assert(conflicts.mkString("\n") ==
-      """|
-         |inter-rir:
-         |<ripencc|NL|asn|11|5|20110811|assigned|A9173591|e-stats
-         |>apnic|NL|asn|11|5|20110811|assigned|A9173591|e-stats
-         |
-         |inter-rir:
-         |<ripencc|NL|asn|21|5|20110811|assigned|A9173591|e-stats
-         |>apnic|NL|asn|21|3|20110811|assigned|A9173591|e-stats
-         |
-         |inter-rir:
-         |<ripencc|NL|asn|31|5|20110811|assigned|A9173591|e-stats
-         |>apnic|NL|asn|31|7|20110811|assigned|A9173591|e-stats
-         |
-         |inter-rir:
-         |<ripencc|NL|asn|41|5|20110811|assigned|A9173591|e-stats
-         |>apnic|NL|asn|42|2|20110811|assigned|A9173591|e-stats
-         |
-         |inter-rir:
-         |<ripencc|NL|asn|51|5|20110811|assigned|A9173591|e-stats
-         |>apnic|NL|asn|52|4|20110811|assigned|A9173591|e-stats
-         |
-         |inter-rir:
-         |<ripencc|NL|asn|61|5|20110811|assigned|A9173591|e-stats
-         |>apnic|NL|asn|64|7|20110811|assigned|A9173591|e-stats""".stripMargin
+    val ripes  = List(
+      record("ripencc", "asn", "11",  "5"),
+      record("ripencc", "asn", "21",  "5"),
+      record("ripencc", "asn", "31",  "5"),
+      record("ripencc", "asn", "41",  "5"),
+      record("ripencc", "asn", "51",  "5"),
+      record("ripencc", "asn", "61",  "5"),
     )
+
+    val apnic  = List(
+      record("apnic", "asn", "11",  "5"),
+      record("apnic", "asn", "21",  "3"),
+      record("apnic", "asn", "31",  "7"),
+      record("apnic", "asn", "42",  "2"),
+      record("apnic", "asn", "52",  "4"),
+      record("apnic", "asn", "64",  "7"),
+    )
+
+    val (merged, conflicts) = combineResources(Iterable(ripes, apnic), List())
+    val expectedMerge = List(
+      record("apnic", "asn", "11",  "5"),
+      record("apnic", "asn", "21",  "3"),
+      record("ripencc", "asn", "24",  "2"),
+      record("apnic", "asn", "31",  "7"),
+      record("ripencc", "asn", "41",  "1"),
+      record("apnic", "asn", "42",  "2"),
+      record("ripencc", "asn", "44",  "2"),
+      record("ripencc", "asn", "51",  "1"),
+      record("apnic", "asn", "52",  "4"),
+      record("ripencc", "asn", "61",  "3"),
+      record("apnic", "asn", "64",  "7"),
+    )
+    val expectedConflict = ripes.zip(apnic).map{case (r,a) => Conflict(r,a)}
+
+    assert(merged == expectedMerge)
+    assert(conflicts == expectedConflict)
   }
 
   it should " split non overlapping ranges when merging for ipv6   " in  {
 
-    val afrinic =
-      """|afrinic|NI|ipv6|2001:db8::|64|20110811|assigned|A""".stripMargin
+    val afrinic  = record("afrinic", "ipv6", "2001:db8::",  "64")
+    val apnic    = record("apnic",   "ipv6", "2001:db8::", "68")
 
+    val (merged, conflicts) = combineResources(Iterable(List(afrinic), List(apnic)), List())
 
-    val apnic =
-      """|apnic|JP|ipv6|2001:db8::|68|20110811|assigned|B""".stripMargin
-
-    val (merged, conflicts) = combineTest(afrinic, apnic)
-
-    assert(merged.mkString("\n") ==
-      """|apnic|JP|ipv6|2001:db8::|68|20110811|assigned|B|e-stats
-         |afrinic|NI|ipv6|2001:db8:0:0:1000::|68|20110811|assigned|A|e-stats
-         |afrinic|NI|ipv6|2001:db8:0:0:2000::|67|20110811|assigned|A|e-stats
-         |afrinic|NI|ipv6|2001:db8:0:0:4000::|66|20110811|assigned|A|e-stats
-         |afrinic|NI|ipv6|2001:db8:0:0:8000::|65|20110811|assigned|A|e-stats""".stripMargin)
-
-    assert(conflicts.mkString("\n") ==
-      """|
-         |inter-rir:
-         |<afrinic|NI|ipv6|2001:db8::|64|20110811|assigned|A|e-stats
-         |>apnic|JP|ipv6|2001:db8::|68|20110811|assigned|B|e-stats""".stripMargin
+    val expectedMerge = apnic :: List(
+      record("afrinic", "ipv6", "2001:db8:0:0:1000::",  "68"),
+      record("afrinic", "ipv6", "2001:db8:0:0:2000::",  "67"),
+      record("afrinic", "ipv6", "2001:db8:0:0:4000::",  "66"),
+      record("afrinic", "ipv6", "2001:db8:0:0:8000::",  "65")
     )
+
+    assert(merged == expectedMerge)
+    assert(conflicts == Conflict(afrinic, apnic)::Nil)
   }
 
   it should " split non overlapping ranges when merging for ipv4   " in  {
 
-    val afrinic =
-      """|afrinic|NI|ipv4|1.1.1.0|64|20110811|assigned|A""".stripMargin
+    val afrinic  = record("afrinic", "ipv4", "1.1.1.0",  "64")
+    val apnic    = record("apnic",   "ipv4", "1.1.1.32", "64")
+    val ripencc  = record("ripencc", "ipv4", "1.1.1.32", "64")
 
-    val apnic =
-      """|apnic|JP|ipv4|1.1.1.32|64|20110811|assigned|B""".stripMargin
+    val (merged, conflicts) = combineResources(Iterable(List(afrinic), List(apnic)), List(ripencc ))
 
-    val previous =
-      """|ripencc|EU|ipv4|1.1.1.32|64|20110811|assigned|C|e-stats""".stripMargin
+    val expectedMerge = record("afrinic", "ipv4", "1.1.1.0",  "32") :: ripencc :: Nil
 
-
-    val (merged, conflicts) = combineTest(afrinic, apnic, previous)
-
-    println(merged.mkString("\n"))
-    assert(merged.mkString("\n") ==
-      """|afrinic|NI|ipv4|1.1.1.0|32|20110811|assigned|A|e-stats
-         |ripencc|EU|ipv4|1.1.1.32|64|20110811|assigned|C|e-stats""".stripMargin)
-
-
-    assert(conflicts.mkString("\n") ==
-      """|
-         |inter-rir:
-         |<afrinic|NI|ipv4|1.1.1.0|64|20110811|assigned|A|e-stats
-         |>apnic|JP|ipv4|1.1.1.32|64|20110811|assigned|B|e-stats""".stripMargin
-    )
+    assert(merged == expectedMerge)
+    assert(conflicts == Conflict(afrinic, apnic)::Nil)
   }
 
 
@@ -271,5 +224,10 @@ class RecordsTest extends FlatSpec {
     case "ipv6" => Ipv6Record(line)
     case "asn" => AsnRecord(line)
     case _ => throw new Exception("BOO!")
+  }
+
+  def record(rir:String, resourceType:String, start: String, length:String): Record = {
+    val line = s"""$rir|ZZ|$resourceType|$start|$length|20110811|assigned|ID"""
+    parseLines(List(line)).map(buildRecord).head
   }
 }
