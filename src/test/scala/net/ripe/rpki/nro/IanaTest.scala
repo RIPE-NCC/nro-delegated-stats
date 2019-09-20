@@ -19,9 +19,9 @@ class IanaTest extends FlatSpec {
       Iterable(IpResource.parse("0.0.0.0/1")),
       Iterable(IpResource.parse("::/1")))
 
-    assert(asn.keys.head  == IpResource.parse("AS2100000001-AS4200000000"))
-    assert(ipv4.keys.head == IpResource.parse("128.0.0.0/1"))
-    assert(ipv6.keys.head == IpResource.parse("8000::/1"))
+    assert(asn.head.range  == IpResource.parse("AS2100000001-AS4200000000"))
+    assert(ipv4.head.range == IpResource.parse("128.0.0.0/1"))
+    assert(ipv6.head.range == IpResource.parse("8000::/1"))
   }
 
   "Filter non RIRs data from iana" should "give either ietf or iana status" in {
