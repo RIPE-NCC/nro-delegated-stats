@@ -7,6 +7,7 @@ import com.google.common.collect.BoundType
 import net.ripe.commons.ip.Ipv6Range
 import net.ripe.ipresource._
 import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Util._
 
 sealed trait Record {
 
@@ -108,11 +109,13 @@ case class Ipv6Record(
   }
 
   override def canMerge(that: Record): Boolean = {
-    super.canMerge(that) && this.length == that.length
+    super.canMerge(that) && this.length == that.length &&
+      validIpv6(this.range.getStart.getValue, new Integer(this.length) - 1)
   }
   override def merge(that: Record): Record = {
-    val newLength = length.toLong-1
-    this.copy(length = s"$newLength")
+    val merged = this.range.merge(that.range)
+    val Array(start, length) = merged.toString.split("/")
+    this.copy(start = s"$start", length = s"$length")
   }
   override def update(key: collect.Range[BigInteger]): Record = {
     val (begin, end) = Record.startEnd(key)
