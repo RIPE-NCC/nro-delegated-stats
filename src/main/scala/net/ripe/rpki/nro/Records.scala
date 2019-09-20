@@ -109,7 +109,7 @@ object Records {
       case (range, _) if (empty(range)) => List()
       case (range, record) => if(record.lType == "ipv6")
        {
-        val (start, end) = Record.startEnd(range)
+        val (start, end) = Record.toInterval(range)
         // Guava RangeMap[BigInteger, Record] does not care about bit boundary
         // Special treatment needed to align IPv6 while updating.
         Ipv6Range.from(start).to(end).splitToPrefixes().asScala.map { ipv6 =>

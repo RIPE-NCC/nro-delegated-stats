@@ -44,14 +44,14 @@ object Record {
   def length(r: IpResource): BigInteger =
     r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
 
-  // help me name this thing
-  def startEnd(r: collect.Range[BigInteger]): (BigInteger, BigInteger) = {
+  def toInterval(r: collect.Range[BigInteger]): (BigInteger, BigInteger) = {
     val start = if(r.lowerBoundType() == BoundType.CLOSED) r.lowerEndpoint() else r.lowerEndpoint().add(BigInteger.ONE)
     val end = if(r.upperBoundType() == BoundType.CLOSED) r.upperEndpoint() else r.upperEndpoint().subtract(BigInteger.ONE)
     (start, end)
   }
+
   def length(r : collect.Range[BigInteger]) : BigInteger = {
-    val (start, end) = startEnd(r)
+    val (start, end) = toInterval(r)
     end.subtract(start).add(BigInteger.ONE)
   }
   implicit val recordOrder: Ordering[Record] = (a: Record, b: Record) => a.range.compareTo(b.range)
@@ -85,7 +85,7 @@ case class Ipv4Record(
   }
 
   override def update(key: collect.Range[BigInteger]): Ipv4Record = {
-    val start = Record.startEnd(key)._1.longValue()
+    val start = Record.toInterval(key)._1.longValue()
     val len = Record.length(key)
     val startAddress  = new Ipv4Address(start)
     this.copy(start = s"$startAddress", length = s"$len")
@@ -121,9 +121,9 @@ case class Ipv6Record(
     val Array(start, length) = merged.toString.split("/")
     this.copy(start = s"$start", length = s"$length")
   }
-  
+
   override def update(key: collect.Range[BigInteger]): Record = {
-    val (begin, end) = Record.startEnd(key)
+    val (begin, end) = Record.toInterval(key)
     val newRange : Ipv6Range =  Ipv6Range.from(begin).to(end)
     val Array(start, prefix) = newRange.toStringInCidrNotation.split("/")
     this.copy(start = start, length = prefix)
@@ -153,7 +153,7 @@ case class AsnRecord(
   }
 
   override def update(key: collect.Range[BigInteger]): Record = {
-    val start = Record.startEnd(key)._1
+    val start = Record.toInterval(key)._1
     val length = Record.length(key)
     this.copy(start = s"$start", length = s"$length")
   }

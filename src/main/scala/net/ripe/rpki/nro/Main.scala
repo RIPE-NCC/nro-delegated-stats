@@ -24,9 +24,6 @@ object Main extends App {
   // Ranges not used by RIRs and not IETF's become ianapools.
   val (asnPool, ipv4pool, ipv6pool) = Iana.ianaPools( asns.map(_.range), ipv4s.map(_.range), ipv6s.map(_.range))
 
-  // NOTE: What happened inside this merge siblling calls are no longer map operations !
-  // IETF ++ no longer overrides, it used to be map operations, and now its just list append operations.
-  // POOL are safely ++'ed since they are exclusive. Seems to me now IETF has to be merged earlier. 
   val asnCombined  = (asns  ++ asnPool).sorted
   val ipv4Combined = (ipv4s ++ ipv4pool).sorted
   val ipv6Combined = (ipv6s ++ ipv6pool).sorted
