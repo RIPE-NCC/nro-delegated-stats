@@ -4,10 +4,10 @@ import java.math.BigInteger
 
 import com.google.common.collect
 import com.google.common.collect.BoundType
-import net.ripe.commons.ip.Ipv6Range
+import net.ripe.commons.ip.{Ipv6Range, PrefixUtils}
+import net.ripe.commons.ip.Ipv6Range.Ipv6RangeBuilder
 import net.ripe.ipresource._
 import net.ripe.rpki.nro.Defs._
-import net.ripe.rpki.nro.Util._
 
 sealed trait Record {
 
@@ -108,15 +108,20 @@ case class Ipv6Record(
     IpResource.parse(start + "/" + length)
   }
 
-  override def canMerge(that: Record): Boolean = {
-    super.canMerge(that) && this.length == that.length &&
-      validIpv6(this.range.getStart.getValue, new Integer(this.length) - 1)
+  private def legalMerge(a : IpResource, b: IpResource): Boolean = {
+    PrefixUtils.isLegalPrefix(Ipv6Range.parse(a.merge(b).toString))
   }
+
+  override def canMerge(that: Record): Boolean = {
+    super.canMerge(that) && legalMerge(this.range, that.range)
+  }
+
   override def merge(that: Record): Record = {
     val merged = this.range.merge(that.range)
     val Array(start, length) = merged.toString.split("/")
     this.copy(start = s"$start", length = s"$length")
   }
+  
   override def update(key: collect.Range[BigInteger]): Record = {
     val (begin, end) = Record.startEnd(key)
     val newRange : Ipv6Range =  Ipv6Range.from(begin).to(end)
