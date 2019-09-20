@@ -36,7 +36,7 @@ class RangeMapTest extends FlatSpec{
     assert(map.asMapOfRanges().asScala.mkString(", ") == "[1..20] -> AB, [21..25] -> E, (25..30] -> D")
   }
 
-  it should "sometimes produces empty interval when splitting" in {
+  it can "sometimes produces empty interval when splitting" in {
     map.put(Range.closed( 1,10), "WEIRD1")
     map.put(Range.closed(11,20), "WEIRD2")
     assert(map.asMapOfRanges().asScala.mkString(", ") ==

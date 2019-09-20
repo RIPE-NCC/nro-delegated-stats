@@ -107,10 +107,13 @@ case class Ipv6Record(
     IpResource.parse(start + "/" + length)
   }
 
-  override def canMerge(that: Record): Boolean =  false
-
-  override def merge(that: Record): Record = throw new Exception("Nope, don't do this")
-
+  override def canMerge(that: Record): Boolean = {
+    super.canMerge(that) && this.length == that.length
+  }
+  override def merge(that: Record): Record = {
+    val newLength = length.toLong-1
+    this.copy(length = s"$newLength")
+  }
   override def update(key: collect.Range[BigInteger]): Record = {
     val (begin, end) = Record.startEnd(key)
     val newRange : Ipv6Range =  Ipv6Range.from(begin).to(end)

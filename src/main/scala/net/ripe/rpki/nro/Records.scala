@@ -77,10 +77,7 @@ object Records {
         }
         val previousOverlaps = previousMap.subRangeMap(newRange)
         if(!previousOverlaps.asMapOfRanges().isEmpty) {
-          val merged: RangeMap[BigInteger, Record] = TreeRangeMap.create[BigInteger,Record]()
-          merged.put(newRange, newRecord)
-          merged.putAll(previousOverlaps)
-          currentMap.putAll(merged)
+          currentMap.putAll(previousOverlaps)
         } else
           currentMap.put(newRange, newRecord)
         newConflicts.toList

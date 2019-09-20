@@ -174,21 +174,59 @@ class RecordsTest extends FlatSpec {
     assert(conflicts == expectedConflict)
   }
 
+  it should "resolve partial conflict with previous in the middle " in {
+    val ripes  = List(
+      record("ripencc", "asn", "1",  "10"),
+    )
+
+    val apnic  = List(
+      record("apnic", "asn", "6",  "10"),
+    )
+
+    val previous  = List(
+      record("apnic", "asn", "1",  "15"),
+    )
+
+    val (merged, conflicts) = combineResources(Iterable(ripes, apnic), previous)
+    val expectedMerge = List(
+      record("ripencc", "asn", "1",  "5"),
+      record("apnic", "asn", "6",  "10")
+    )
+    val expectedConflict = ripes.zip(apnic).map{case (r,a) => Conflict(r,a)}
+
+    assert(merged == expectedMerge)
+    assert(conflicts == expectedConflict)
+  }
+
+  it should " resolve conflict based on previous records for ASN" in  {
+
+    val afrinic  = record("afrinic", "asn", "1",  "100")
+    val apnic    = record("apnic",   "asn", "1", "10")
+
+    val previous  = record("afrinic", "asn", "1",  "100")
+
+    val (merged, conflicts) = combineResources(Iterable(List(afrinic), List(apnic)), List(previous))
+
+    val mergedSiblings = mergeSiblings(merged)
+
+    val expectedMerge = List(previous)
+    assert(mergedSiblings == expectedMerge)
+    assert(conflicts == Conflict(afrinic, apnic)::Nil)
+  }
+
   it should " split non overlapping ranges when merging for ipv6   " in  {
 
     val afrinic  = record("afrinic", "ipv6", "2001:db8::",  "64")
     val apnic    = record("apnic",   "ipv6", "2001:db8::", "68")
 
-    val (merged, conflicts) = combineResources(Iterable(List(afrinic), List(apnic)), List())
+    val previous  = record("afrinic", "ipv6", "2001:db8::",  "64")
 
-    val expectedMerge = apnic :: List(
-      record("afrinic", "ipv6", "2001:db8:0:0:1000::",  "68"),
-      record("afrinic", "ipv6", "2001:db8:0:0:2000::",  "67"),
-      record("afrinic", "ipv6", "2001:db8:0:0:4000::",  "66"),
-      record("afrinic", "ipv6", "2001:db8:0:0:8000::",  "65")
-    )
+    val (merged, conflicts) = combineResources(Iterable(List(afrinic), List(apnic)), List(previous))
 
-    assert(merged == expectedMerge)
+    val mergedSiblings = mergeSiblings(merged)
+
+    val expectedMerge = List(previous)
+    assert(mergedSiblings == expectedMerge)
     assert(conflicts == Conflict(afrinic, apnic)::Nil)
   }
 
@@ -196,11 +234,13 @@ class RecordsTest extends FlatSpec {
 
     val afrinic  = record("afrinic", "ipv4", "1.1.1.0",  "64")
     val apnic    = record("apnic",   "ipv4", "1.1.1.32", "64")
-    val ripencc  = record("ripencc", "ipv4", "1.1.1.32", "64")
 
-    val (merged, conflicts) = combineResources(Iterable(List(afrinic), List(apnic)), List(ripencc ))
 
-    val expectedMerge = record("afrinic", "ipv4", "1.1.1.0",  "32") :: ripencc :: Nil
+    val previous  = record("apnic", "ipv4", "1.1.1.32", "64")
+
+    val (merged, conflicts) = combineResources(Iterable(List(afrinic), List(apnic)), List(previous ))
+
+    val expectedMerge = record("afrinic", "ipv4", "1.1.1.0",  "32") :: previous :: Nil
 
     assert(merged == expectedMerge)
     assert(conflicts == Conflict(afrinic, apnic)::Nil)
