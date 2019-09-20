@@ -1,6 +1,5 @@
 package net.ripe.rpki.nro
 
-
 object Main extends App {
 
   val (rirs, iana) = Ports.fetchAndParse()
@@ -13,11 +12,11 @@ object Main extends App {
 
   // Note we are not checking conflicts with IANA only among RIRs
   println("Combine and detect conflict  ASNs")
-  val (asns,  asnConflicts)  = Records.combineResources(rirs.map(_.asn)  ++ Iterable(asnIetf) )
+  val (asns,  asnConflicts)  = Merger.combineResources(rirs.map(_.asn)  ++ Iterable(asnIetf) )
   println("Combine and detect conflict  IPv4")
-  val (ipv4s, ipv4Conflicts) = Records.combineResources(rirs.map(_.ipv4) ++ Iterable(ipv4Ietf) )
+  val (ipv4s, ipv4Conflicts) = Merger.combineResources(rirs.map(_.ipv4) ++ Iterable(ipv4Ietf) )
   println("Combine and detect conflict  IPv6")
-  val (ipv6s, ipv6Conflicts) = Records.combineResources(rirs.map(_.ipv6) ++ Iterable(ipv6Ietf)  )
+  val (ipv6s, ipv6Conflicts) = Merger.combineResources(rirs.map(_.ipv6) ++ Iterable(ipv6Ietf)  )
 
 
   println("Calculating IANAPOOL")
@@ -30,11 +29,11 @@ object Main extends App {
 
 
   println("Merging ASNs siblings ")
-  val asnMerged  = Records.mergeSiblings(asnCombined)
+  val asnMerged  = Merger.mergeSiblings(asnCombined)
   println("Merging IPv4 siblings ")
-  val ipv4Merged = Records.mergeSiblings(ipv4Combined)
+  val ipv4Merged = Merger.mergeSiblings(ipv4Combined)
   println("Merging IPv6 siblings ")
-  val ipv6Merged = Records.mergeSiblings(ipv6Combined)
+  val ipv6Merged = Merger.mergeSiblings(ipv6Combined)
 
   Ports.writeResult(asnCombined, ipv4Combined, ipv6Combined, "result/combined-stat")
   Ports.writeResult(asnMerged, ipv4Merged, ipv6Merged, "result/merged-stat")
