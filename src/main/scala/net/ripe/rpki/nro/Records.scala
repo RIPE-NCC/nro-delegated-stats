@@ -3,14 +3,7 @@ package net.ripe.rpki.nro
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
 
-case class Records(
-                    source: String,
-                    header: Line,
-                    summaries: List[Line],
-                    asn: List[AsnRecord],
-                    ipv4: List[Ipv4Record],
-                    ipv6: List[Ipv6Record]
-                  ) {
+case class Records(asn: List[AsnRecord], ipv4: List[Ipv4Record], ipv6: List[Ipv6Record]) {
 
   def fixIana: Records = {
     def fix[A <: Record : Updates]: A => A = (rec: A) => rec.status match {
@@ -34,12 +27,6 @@ case class Records(
     this.asn_(fix).ipv4_(fix).ipv6_(fix)
   }
 
-  override def toString: String =
-    s"""Source: $source \nHeader: ${header.mkString(",")} \nSummaries: \n${
-      summaries
-        .map(_.mkString(","))
-        .mkString("\n")
-    }\n\n"""
 
   // Map values wrapper
   def asn_(f: AsnRecord => AsnRecord)(implicit ev: Updates[AsnRecord]): Records =

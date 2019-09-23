@@ -2,32 +2,62 @@ package net.ripe.rpki.nro
 
 import java.io.{File, PrintWriter}
 
+import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
+import com.typesafe.config.ConfigFactory
 import net.ripe.rpki.nro.Defs._
 
+import scala.collection.immutable
 import scala.io.Source.fromFile
 
 // Importing data from remotes files and exporting to file.
 // Or maybe Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge.
 object Ports {
 
-  def parseLines(lines: List[String]): List[Line] = lines.map(_.split('|'))
+  val config = ConfigFactory.load()
 
+  val dataDirectory = config.getString("data.directory")
+  val resultDirectory = config.getString("result.directory")
+
+  val resultToday = s"$resultDirectory/$TODAY"
+
+  val todayDir = {
+      val resultFile = new File(resultToday)
+      if(!resultFile.exists()){
+        resultFile.mkdir()
+      }
+
+      resultFile
+  }
+
+  // This is weird no? Shouldn't I have configurable period to look back.
+  val previousConflicts = s"$resultDirectory/$TWODAYS_AGO"
+
+  implicit object PipeFormat extends DefaultCSVFormat {
+    override val delimiter = '|'
+  }
 
   def parseFileAsRecords(source: String): Records = {
 
-    using(fromFile(source)) { src =>
-      val lines = src.getLines.filter(!_.startsWith("#")).toList
-      val header = lines.head.split('|')
-      val summaries = parseLines(lines.filter(_.contains(SUMMARY)))
+    // What to do with header and summaries, do we want to check integrity?
 
-      val recordLines = lines.tail.filter(!_.contains(SUMMARY))
+    using(CSVReader.open(source)) { reader =>
+      val lines: List[List[String]] = reader.all()
+        .filter(!_.head.startsWith("#"))
+          .drop(4)
+      // FixME: Dropping header and summaries, for now.
+      // Better way is to parse it and verify/report error if summary does not match with the following records.
 
-      // Parse and create sorted map from range to record
-      val asn  = parseLines(recordLines.filter(_.contains(ASN)) ).map(AsnRecord .apply)
-      val ipv4 = parseLines(recordLines.filter(_.contains(IPV4))).map(Ipv4Record.apply)
-      val ipv6 = parseLines(recordLines.filter(_.contains(IPV6))).map(Ipv6Record.apply)
+      val records = lines.map(Record.apply)
 
-      Records(source, header, summaries, asn, ipv4, ipv6)
+      val (asn, ipv4, ipv6) = records.foldLeft((List[AsnRecord](), List[Ipv4Record](), List[Ipv6Record]())){
+        case ((curAsn, curIpv4, curIpv6), nextRecord) => nextRecord match {
+          case a : AsnRecord => (a :: curAsn, curIpv4, curIpv6)
+          case b : Ipv4Record => (curAsn, b::curIpv4, curIpv6)
+          case c : Ipv6Record => (curAsn, curIpv4, c::curIpv6)
+        }
+      }
+
+      Records(asn, ipv4, ipv6)
     }
   }
 
@@ -50,8 +80,8 @@ object Ports {
   def fetchAndParse(): (Iterable[Records], Records) = {
     val recordMaps = dataSources.map {
       case (name, url) =>
-        fetchLocally(url, s"data/$name")
-        (name, parseFileAsRecords(s"data/$name"))
+        fetchLocally(url, s"$dataDirectory/$name")
+        (name, parseFileAsRecords(s"$dataDirectory/$name"))
     }
     // Adjusting and fixing record fields conforming to what is done by geoff.
     val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs).values.seq
@@ -59,7 +89,7 @@ object Ports {
     (rirs, iana)
   }
 
-  def writeResult(asn: ListRecords, ipv4: ListRecords, ipv6: ListRecords, outputFile: String = "result/combined-stat") {
+  def writeResult(asn: ListRecords, ipv4: ListRecords, ipv6: ListRecords, outputFile: String = s"$resultToday/combined-stat") {
     using(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
@@ -77,15 +107,18 @@ object Ports {
     }
   }
 
-  def writeConflicts(conflicts: List[Conflict], outputFile: String = "result/conflicts"): Unit = {
-    using(new PrintWriter(new File(outputFile))) { writer =>
-      writer.write(conflicts.mkString("\n"))
-      if(conflicts.nonEmpty){
-        println("Conflicts found:")
-        println(conflicts.mkString("\n"))
-      }
+  def writeConflicts(conflicts: List[Conflict], outputFile: String = s"$resultToday/conflicts"): Unit = {
+    using( CSVWriter.open(new File(outputFile))) { writer =>
+      writer.writeAll(conflicts.map(_.asList))
     }
   }
+
+  def readConflicts(conflictFile: String): immutable.Seq[Conflict] = {
+    using(CSVReader.open(new File(conflictFile))){ reader =>
+        reader.all().map(Conflict.apply)
+    }
+  }
+
   def using[A, B <: {def close(): Unit}] (closeable: B) (f: B => A): A =
     try { f(closeable) } finally { closeable.close() }
 

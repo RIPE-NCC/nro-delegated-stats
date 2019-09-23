@@ -16,14 +16,23 @@ sealed trait Record {
   def update(key: collect.Range[BigInteger]): Record
 
   def registry: String
+
   def cc: String
+
   def lType: String
+
   def start: String
+
   def length: String
+
   def date: String
+
   def status: String
+
   def oid: String
+
   def ext: String
+
   def range: IpResource
 
   def key: collect.Range[BigInteger] =
@@ -44,11 +53,37 @@ sealed trait Record {
       this.status == that.status
   }
 
-  override def toString: String =
-    List(registry, cc, lType, start, length, date, status, oid, ext).mkString("|")
+  def asList = List(registry, cc, lType, start, length, date, status, oid, ext)
+
+  override def toString: String = {
+    asList.mkString("|")
+  }
 }
 
 object Record {
+
+  def apply(line: List[String]): Record = line match {
+
+    case List(registry, cc, ltype, start, length, date, status, oid, ext) => ltype match {
+      case "asn" => AsnRecord(registry, cc, "asn", start, length, date, status, oid, ext)
+      case "ipv4" => Ipv4Record(registry, cc, "ipv4", start, length, date, status, oid, ext)
+      case "ipv6" => Ipv6Record(registry, cc, "ipv6", start, length, date, status, oid, ext)
+    }
+
+    case List(registry, cc, ltype, start, length, date, status, oid) => ltype match {
+      case "asn" => AsnRecord(registry, cc, "asn", start, length, date, status, oid)
+      case "ipv4" => Ipv4Record(registry, cc, "ipv4", start, length, date, status, oid)
+      case "ipv6" => Ipv6Record(registry, cc, "ipv6", start, length, date, status, oid
+      )
+    }
+
+    case List(registry, cc, ltype, start, length, date, status) => ltype match {
+      case "asn" => AsnRecord(registry, cc, "asn", start, length, date, status)
+      case "ipv4" => Ipv4Record(registry, cc, "ipv4", start, length, date, status)
+      case "ipv6" => Ipv6Record(registry, cc, "ipv6", start, length, date, status)
+    }
+
+  }
 
   def length(r: IpResource): BigInteger =
     r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
@@ -75,23 +110,18 @@ object Record {
   implicit val recordOrder: Ordering[Record] = (a: Record, b: Record) => a.range.compareTo(b.range)
 }
 
-case class Conflict(a: Record, b: Record, kind: String = "inter-rir") {
-  override def toString: String = s"\n$kind:\n<$a\n>$b"
-
-  def rirsInvolved = s"${a.registry}--${b.registry}"
-}
 
 case class Ipv4Record(
-    registry: String,
-    cc: String,
-    lType: String,
-    start: String,
-    length: String,
-    date: String,
-    status: String,
-    oid: String,
-    ext: String = DEFAULT_EXT
-) extends Record {
+                       registry: String,
+                       cc: String,
+                       lType: String,
+                       start: String,
+                       length: String,
+                       date: String,
+                       status: String,
+                       oid: String = "",
+                       ext: String = DEFAULT_EXT
+                     ) extends Record {
   val range: IpResource = {
     val startAddr = IpAddress.parse(start).getValue
     val endAddr = new BigInteger(length).add(startAddr).subtract(BigInteger.ONE)
@@ -112,16 +142,16 @@ case class Ipv4Record(
 }
 
 case class Ipv6Record(
-    registry: String,
-    cc: String,
-    lType: String,
-    start: String,
-    length: String,
-    date: String,
-    status: String,
-    oid: String,
-    ext: String = DEFAULT_EXT
-) extends Record {
+                       registry: String,
+                       cc: String,
+                       lType: String,
+                       start: String,
+                       length: String,
+                       date: String,
+                       status: String,
+                       oid: String = "",
+                       ext: String = DEFAULT_EXT
+                     ) extends Record {
 
   val range: IpResource = {
     IpResource.parse(start + "/" + length)
@@ -150,16 +180,16 @@ case class Ipv6Record(
 }
 
 case class AsnRecord(
-    registry: String,
-    cc: String,
-    lType: String,
-    start: String,
-    length: String,
-    date: String,
-    status: String,
-    oid: String,
-    ext: String = DEFAULT_EXT
-) extends Record {
+                      registry: String,
+                      cc: String,
+                      lType: String,
+                      start: String,
+                      length: String,
+                      date: String,
+                      status: String,
+                      oid: String = "",
+                      ext: String = DEFAULT_EXT
+                    ) extends Record {
   val range: IpResource = {
     val iLength = length.toLong
     val iStart = start.toLong
@@ -178,32 +208,24 @@ case class AsnRecord(
   }
 }
 
-object Ipv4Record {
-  def apply(rec: Array[String]): Ipv4Record = {
-    val oid = if (rec.length > 7) rec(7) else ""
-    new Ipv4Record(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid)
-  }
-}
 
 object Ipv6Record {
-  def apply(rec: Array[String]): Ipv6Record = {
-    val oid = if (rec.length > 7) rec(7) else ""
-    // Normalize data from iana input 4000:0000 into 4000::
-    val ipv6 = IpResourceRange.parse(rec(3) + "/" + rec(4))
-    val Array(start, prefix) = ipv6.toString.split("/")
-    new Ipv6Record(rec(0), rec(1), rec(2), start, prefix, rec(5), rec(6), oid)
-  }
-
-
   def splitPrefixes(range: Range[BigInteger]): mutable.Buffer[Ipv6Range] = {
     val (start, end) = Record.toInterval(range)
     Ipv6Range.from(start).to(end).splitToPrefixes().asScala
   }
 }
 
-object AsnRecord {
-  def apply(rec: Array[String]): AsnRecord = {
-    val oid = if (rec.length > 7) rec(7) else ""
-    new AsnRecord(rec(0), rec(1), rec(2), rec(3), rec(4), rec(5), rec(6), oid)
+case class Conflict(a: Record, b: Record, kind: String = "inter-rir") {
+  override def toString: String = s"\n$kind:\n<$a\n>$b"
+
+  def asList: List[String] = a.asList ++ List("\t<== Conflicts with ==>\t") ++ b.asList
+
+  def rirsInvolved = s"${a.registry}--${b.registry}"
+}
+
+object Conflict {
+  def apply(input: List[String]): Conflict = {
+    Conflict(Record(input.take(9)), Record(input.takeRight(9)))
   }
 }

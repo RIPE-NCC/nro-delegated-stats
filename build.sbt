@@ -11,7 +11,11 @@ libraryDependencies += "com.google.guava" % "guava" % "28.1-jre"
 libraryDependencies += "net.ripe.commons" % "commons-ip-math" % "1.23"
 
 libraryDependencies += "com.lihaoyi" %% "requests" % "0.2.0"
+libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.3.6"
+libraryDependencies += "com.typesafe" % "config" % "1.3.4"
 
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.8"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 
+libraryDependencies += "com.typesafe.play" %% "play-mailer" % "6.0.1"
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"

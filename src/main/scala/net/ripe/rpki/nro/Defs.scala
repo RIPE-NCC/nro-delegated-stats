@@ -1,5 +1,7 @@
 package net.ripe.rpki.nro
 
+import java.time.temporal.TemporalUnit
+
 import net.ripe.ipresource.IpResource
 
 object Defs {
@@ -38,7 +40,8 @@ object Defs {
   val ALL_IPV6: IpResource = IpResource.parse("::/0")
   val ALL_ASNS: IpResource = IpResource.parse("AS0-AS4200000000")
 
-  val TODAY: String = java.time.LocalDate.now.toString.replaceAll("-", "")
+  val TODAY: String = "20190920"//java.time.LocalDate.now.toString.replaceAll("-", "")
+  val TWODAYS_AGO: String = java.time.LocalDate.now.minusDays(2).toString.replaceAll("-", "")
 
   type Line = Array[String]
   type ListRecords = List[Record]
