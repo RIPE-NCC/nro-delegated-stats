@@ -1,8 +1,9 @@
 package net.ripe.rpki.nro
 
 import net.ripe.ipresource.IpResource
-import net.ripe.rpki.nro.Defs.{ALL_IPV4, ALL_IPV6, ASN, DEFAULT_CC, IANA, IANAPOOL, IPV4, IPV4_IANA_POOL_DATE, IPV6, TODAY}
-import net.ripe.rpki.nro.Ports.parseFileAsRecords
+import net.ripe.rpki.nro.Defs.{ALL_IPV4, ALL_IPV6, ASN, DEFAULT_CC, IANA, IANAPOOL, IPV4, IPV4_IANA_POOL_DATE, IPV6}
+import net.ripe.rpki.nro.Ports.parseRecordFile
+import net.ripe.rpki.nro.Configs._
 import org.scalatest.FlatSpec
 
 class IanaTest extends FlatSpec {
@@ -25,7 +26,7 @@ class IanaTest extends FlatSpec {
   }
 
   "Filter non RIRs data from iana" should "give either ietf or iana status" in {
-    val iana = parseFileAsRecords(getClass.getResource("/data/iana").getFile)
+    val iana = parseRecordFile(getClass.getResource("/data/iana").getFile)
     val (asn, ipv4, ipv6) = Iana.filterNonRIRs(iana.fixIana)
 
     // Iana test file is simplified only to contain one non rir data for each type

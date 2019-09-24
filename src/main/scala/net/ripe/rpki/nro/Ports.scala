@@ -3,40 +3,22 @@ package net.ripe.rpki.nro
 import java.io.{File, PrintWriter}
 
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
-import com.typesafe.config.ConfigFactory
 import net.ripe.rpki.nro.Defs._
 
 import scala.collection.immutable
-import scala.io.Source.fromFile
+import Configs._
+import org.slf4j.LoggerFactory
 
 // Importing data from remotes files and exporting to file.
 // Or maybe Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge.
 object Ports {
-
-  val config = ConfigFactory.load()
-
-  val dataDirectory = config.getString("data.directory")
-  val resultDirectory = config.getString("result.directory")
-
-  val resultToday = s"$resultDirectory/$TODAY"
-
-  val todayDir = {
-      val resultFile = new File(resultToday)
-      if(!resultFile.exists()){
-        resultFile.mkdir()
-      }
-
-      resultFile
-  }
-
-  // This is weird no? Shouldn't I have configurable period to look back.
-  val previousConflicts = s"$resultDirectory/$TWODAYS_AGO"
+  val logger = LoggerFactory.getLogger(Ports.getClass)
 
   implicit object PipeFormat extends DefaultCSVFormat {
     override val delimiter = '|'
   }
 
-  def parseFileAsRecords(source: String): Records = {
+  def parseRecordFile(source: String): Records = {
 
     // What to do with header and summaries, do we want to check integrity?
 
@@ -48,48 +30,51 @@ object Ports {
       // Better way is to parse it and verify/report error if summary does not match with the following records.
 
       val records = lines.map(Record.apply)
+      var asn  : Vector[AsnRecord]  = Vector[AsnRecord]  ()
+      var ipv4 : Vector[Ipv4Record] = Vector[Ipv4Record] ()
+      var ipv6 : Vector[Ipv6Record] = Vector[Ipv6Record] ()
 
-      val (asn, ipv4, ipv6) = records.foldLeft((List[AsnRecord](), List[Ipv4Record](), List[Ipv6Record]())){
-        case ((curAsn, curIpv4, curIpv6), nextRecord) => nextRecord match {
-          case a : AsnRecord => (a :: curAsn, curIpv4, curIpv6)
-          case b : Ipv4Record => (curAsn, b::curIpv4, curIpv6)
-          case c : Ipv6Record => (curAsn, curIpv4, c::curIpv6)
-        }
+      records.foreach {
+        case rec: AsnRecord   => asn  = asn :+ rec
+        case rec: Ipv4Record  => ipv4 = ipv4 :+ rec
+        case rec: Ipv6Record  => ipv6 = ipv6 :+ rec
       }
 
-      Records(asn, ipv4, ipv6)
+      Records(asn.toList, ipv4.toList, ipv6.toList)
     }
   }
 
   // Fetch only if data file is not yet downloaded.
   def fetchLocally(source: String, dest: String) {
     if (new File(dest).isFile) {
-      System.err.println(s"     File $dest exist, not fetching")
+      logger.warn(s"     File $dest exist, not fetching")
       return
     }
-    System.err.println(s"---Fetching $source into $dest---")
+    logger.info(s"---Fetching $source into $dest---")
     val response = requests.get(source)
 
     using(new PrintWriter(new File(dest))) { writer =>
       writer.write(response.text())
-      System.err.println(s"---Done fetching $source into $dest---\n\n\n")
+      logger.info(s"---Done fetching $source into $dest---\n\n\n")
     }
   }
 
   // Assumes a data directory existed to store fetched data.
-  def fetchAndParse(): (Iterable[Records], Records) = {
+  //TODO: Refactor this, and also fetch previous conflicts.
+  def fetchAndParse(): (Iterable[Records], Records, List[Conflict]) = {
     val recordMaps = dataSources.map {
       case (name, url) =>
         fetchLocally(url, s"$dataDirectory/$name")
-        (name, parseFileAsRecords(s"$dataDirectory/$name"))
+        (name, parseRecordFile(s"$dataDirectory/$name"))
     }
     // Adjusting and fixing record fields conforming to what is done by geoff.
     val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs).values.seq
     val iana = recordMaps("iana").fixIana
-    (rirs, iana)
+    val oldConflict = readConflicts(s"$previousConflictFile")
+    (rirs, iana, oldConflict)
   }
 
-  def writeResult(asn: ListRecords, ipv4: ListRecords, ipv6: ListRecords, outputFile: String = s"$resultToday/combined-stat") {
+  def writeResult(asn: ListRecords, ipv4: ListRecords, ipv6: ListRecords, outputFile: String = s"$resultFileName") {
     using(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
@@ -107,13 +92,14 @@ object Ports {
     }
   }
 
-  def writeConflicts(conflicts: List[Conflict], outputFile: String = s"$resultToday/conflicts"): Unit = {
+  def writeConflicts(conflicts: List[Conflict], outputFile: String = s"$currentConflictFile"): Unit = {
     using( CSVWriter.open(new File(outputFile))) { writer =>
       writer.writeAll(conflicts.map(_.asList))
     }
   }
 
-  def readConflicts(conflictFile: String): immutable.Seq[Conflict] = {
+  def readConflicts(conflictFile: String = s"$previousConflictFile"): List[Conflict] = {
+    logger.debug(s"Reading conflicts from $previousConflictFile")
     using(CSVReader.open(new File(conflictFile))){ reader =>
         reader.all().map(Conflict.apply)
     }

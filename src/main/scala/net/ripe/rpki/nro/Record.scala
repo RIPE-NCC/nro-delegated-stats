@@ -55,6 +55,8 @@ sealed trait Record {
 
   def asList = List(registry, cc, lType, start, length, date, status, oid, ext)
 
+  def noDate = List(registry, cc, lType, start, length, status, oid, ext)
+
   override def toString: String = {
     asList.mkString("|")
   }
@@ -216,16 +218,21 @@ object Ipv6Record {
   }
 }
 
-case class Conflict(a: Record, b: Record, kind: String = "inter-rir") {
-  override def toString: String = s"\n$kind:\n<$a\n>$b"
+case class Conflict(a: Record, b: Record) {
+
 
   def asList: List[String] = a.asList ++ List("\t<== Conflicts with ==>\t") ++ b.asList
 
   def rirsInvolved = s"${a.registry}--${b.registry}"
+
+  def key: List[String] = a.noDate ++ b.noDate
 }
 
+
 object Conflict {
+
   def apply(input: List[String]): Conflict = {
     Conflict(Record(input.take(9)), Record(input.takeRight(9)))
   }
+
 }

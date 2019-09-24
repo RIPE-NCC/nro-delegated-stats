@@ -25,8 +25,6 @@ class MergerTest extends FlatSpec with TestUtil {
 
     assert(conflicts.size == 1)
     assert(merged.size == 3)
-    assert(conflicts.head.rirsInvolved == "apnic--ripencc")
-    // last one prevails
     assert(merged.head == ripeRecords.head)
   }
 
@@ -54,10 +52,10 @@ class MergerTest extends FlatSpec with TestUtil {
 
   it should "be detected for afriaprin (fake RIR taking asn from afrinic, ipv4 from apnic, and ipv6 from arin)" in {
 
-    val apnic = parseFileAsRecords(getClass.getResource("/data/apnic").getFile)
-    val afrinic = parseFileAsRecords(getClass.getResource("/data/afrinic").getFile)
-    val arin = parseFileAsRecords(getClass.getResource("/data/arin").getFile)
-    val afriaprin = parseFileAsRecords(getClass.getResource("/data/afriaprin").getFile)
+    val apnic = parseRecordFile(getResourceFile("/data/apnic"))
+    val afrinic = parseRecordFile(getResourceFile("/data/afrinic"))
+    val arin = parseRecordFile(getResourceFile("/data/arin"))
+    val afriaprin = parseRecordFile(getResourceFile("/data/afriaprin"))
 
     val rirs = Iterable(apnic, afrinic, arin, afriaprin).map(_.fixRIRs)
 

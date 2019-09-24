@@ -1,0 +1,3 @@
+arin|US|ipv4|192.111.100.0|256|19910611|assigned|9a635cea571ac6041d5608e2bdf95856|e-stats|	<== Conflicts with ==>	|ripencc|GB|ipv4|192.111.100.0|256|19910611|assigned|2bd8e4b2-4553-4780-b185-12702f237774|e-stats
+apnic|ZZ|ipv4|203.0.113.0|256|20190920|reserved||e-stats|	<== Conflicts with ==>	|iana|ZZ|ipv4|203.0.113.0|256|20090714|ietf|ietf|iana
+apnic|ZZ|ipv4|198.51.100.0|256|20190920|reserved||e-stats|	<== Conflicts with ==>	|iana|ZZ|ipv4|198.51.100.0|256|20090714|ietf|ietf|iana

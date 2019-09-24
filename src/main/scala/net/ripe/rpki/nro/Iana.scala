@@ -7,6 +7,7 @@ import net.ripe.rpki.nro.Record.length
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterable, Iterator}
+import net.ripe.rpki.nro.Configs._
 
 object Iana {
 
