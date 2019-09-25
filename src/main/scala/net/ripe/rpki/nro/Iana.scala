@@ -49,8 +49,7 @@ object Iana {
   }
 
   def ipv4Pool(ipv4: IpResource) =
-    Ipv4Record( IANA, DEFAULT_CC, IPV4, s"${ipv4.getStart}", s"${length(ipv4) }", IPV4_IANA_POOL_DATE, IANAPOOL, "",
-  IANA)
+    Ipv4Record( IANA, DEFAULT_CC, IPV4, s"${ipv4.getStart}", s"${length(ipv4) }", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)
 
   def asnPool(asn: IpResource) =
     AsnRecord( IANA, DEFAULT_CC, ASN, s"${asn.getStart.getValue}", s"${length(asn)}", TODAY, IANAPOOL, "", IANA)
