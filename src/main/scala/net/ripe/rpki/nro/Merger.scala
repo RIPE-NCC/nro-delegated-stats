@@ -3,6 +3,8 @@ package net.ripe.rpki.nro
 import java.math.BigInteger
 
 import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
+
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
 object Merger {
@@ -58,6 +60,7 @@ object Merger {
     (updatedRecords, conflicts)
   }
 
+  @tailrec
   def mergeSiblings(records: List[Record]): List[Record] = {
 
     val sortedRecords = records.sorted
