@@ -4,7 +4,6 @@ import java.math.BigInteger
 
 import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
 
-import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
 object Merger {
@@ -60,28 +59,28 @@ object Merger {
     (updatedRecords, conflicts)
   }
 
-  @tailrec
   def mergeSiblings(records: List[Record]): List[Record] = {
 
     val sortedRecords = records.sorted
 
     var result: List[Record] = Nil
     var lastRecord = sortedRecords.head
-    var changed = false
+
     sortedRecords.tail foreach { nextRecord =>
       if (lastRecord.canMerge(nextRecord)) {
         lastRecord = lastRecord.merge(nextRecord)
-        changed = true
+        while(result.nonEmpty && result.head.canMerge(lastRecord)) {
+          lastRecord = result.head.merge(lastRecord)
+          result = result.tail
+        }
       }
       else {
         result = lastRecord :: result
         lastRecord = nextRecord
       }
-    }
-    val currentResult = (lastRecord :: result).reverse
 
-    if(!changed) currentResult
-    else mergeSiblings(currentResult)
+    }
+    (lastRecord :: result).reverse
   }
 }
 
