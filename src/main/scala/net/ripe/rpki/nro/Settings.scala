@@ -5,6 +5,7 @@ import java.time.LocalDate
 
 import com.typesafe.config.{Config, ConfigFactory}
 import courier.Mailer
+import net.ripe.rpki.nro.Defs.{AFRINIC, APNIC, ARIN, GEOFF, IANA, LACNIC, RIPENCC}
 
 import scala.collection.JavaConverters._
 
@@ -38,14 +39,8 @@ object Settings {
   val currentConflictFile: String = s"$resultDirectory/$TODAY/$conflictFileName"
   val previousConflictFile: String = s"$resultDirectory/$PREV_CONFLICT_DAY/$conflictFileName"
 
-  val todayDir: File = {
-    val resultFile = new File(s"$resultDirectory/$TODAY")
-    if(!resultFile.exists()){
-      resultFile.mkdir()
-    }
-
-    resultFile
-  }
+  val todayDataDirectory: File = createIfNeeded(s"$dataDirectory/$TODAY")
+  val todayResultDirectory: File = createIfNeeded(s"$resultDirectory/$TODAY")
 
   val mail: Config = config.getConfig("mail")
   val host: String = mail.getString("host")
@@ -59,5 +54,25 @@ object Settings {
     .startTls(true)
     .debug(true)()
 
+  val data: Config = config.getConfig("data")
+
+  val sources: Map[String, String] = Map[String, String](
+    APNIC   -> data.getString(APNIC  ),
+    AFRINIC -> data.getString(AFRINIC),
+    ARIN    -> data.getString(ARIN   ),
+    LACNIC  -> data.getString(LACNIC ),
+    RIPENCC -> data.getString(RIPENCC),
+    IANA    -> data.getString(IANA   ),
+    GEOFF   -> data.getString(GEOFF  )
+  )
+
   def formatDate(date: LocalDate): String = date.toString.replaceAll("-", "")
+
+  def createIfNeeded(path: String) = {
+    val resultFile = new File(s"$path")
+    if(!resultFile.exists()){
+      resultFile.mkdir()
+    }
+    resultFile
+  }
 }

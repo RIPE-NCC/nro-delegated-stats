@@ -58,10 +58,10 @@ object Ports {
   }
 
   def fetchAndParse(): (Iterable[Records], Records, List[Conflict]) = {
-    val recordMaps = dataSources.map {
+    val recordMaps = sources.map {
       case (name, url) =>
-        fetchLocally(url, s"$dataDirectory/$name")
-        (name, parseRecordFile(s"$dataDirectory/$name"))
+        fetchLocally(url, s"$todayDataDirectory/$name")
+        (name, parseRecordFile(s"$todayDataDirectory/$name"))
     }
     // Adjusting and fixing record fields conforming to what is done by geoff.
     val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs).values.seq

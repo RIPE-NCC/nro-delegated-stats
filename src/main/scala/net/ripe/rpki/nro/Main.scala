@@ -45,8 +45,8 @@ object Main extends App {
   val currentConflicts = asnConflicts ++ ipv4Conflicts ++ ipv6Conflicts
 
   Ports.writeResult(asnCombined, ipv4Combined, ipv6Combined, currentResultFile)
-  Ports.writeResult(asnMerged, ipv4Merged, ipv6Merged, mergedFileName)
-  Ports.writeConflicts(currentConflicts)
+  Ports.writeResult(asnMerged, ipv4Merged, ipv6Merged, currentMergedFile)
+  Ports.writeConflicts(currentConflicts, currentConflictFile)
 
 
   notifer.notifyConflicts(currentConflicts, previousConflicts)
