@@ -7,7 +7,7 @@ import net.ripe.rpki.nro.Record.length
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterable, Iterator}
-import net.ripe.rpki.nro.Configs._
+import net.ripe.rpki.nro.Settings._
 
 object Iana {
 
@@ -19,7 +19,7 @@ object Iana {
 
   // Filter for iana data not allocated for RIRs
   // Note: iana.status is actually registry
-  def filterNonRIRs(iana: Records): (ListRecords, ListRecords, ListRecords) = {
+  def filterNonRIRs(iana: Records): (List[Record], List[Record], List[Record]) = {
 
     val nonRirData: Record => Boolean = r => !RIRS.contains(r.status)
 
@@ -34,7 +34,7 @@ object Iana {
   def ianaPools(usedAsns: Iterable[IpResource],
                 usedIpv4s: Iterable[IpResource],
                 usedIpv6s: Iterable[IpResource]):
-      (ListRecords, ListRecords, ListRecords) = {
+      (List[Record], List[Record], List[Record]) = {
 
     val asn  = subtractRanges(ALL_ASNS, usedAsns) .map(asnPool).toList
     val ipv4 = subtractRanges(ALL_IPV4, usedIpv4s).map(ipv4Pool).toList

@@ -3,16 +3,14 @@ package net.ripe.rpki.nro
 import java.io.{File, PrintWriter}
 
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
+import net.ripe.rpki.nro.Settings._
 import net.ripe.rpki.nro.Defs._
-
-import scala.collection.immutable
-import Configs._
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 // Importing data from remotes files and exporting to file.
 // Or maybe Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge.
 object Ports {
-  val logger = LoggerFactory.getLogger(Ports.getClass)
+  val logger: Logger = LoggerFactory.getLogger(Ports.getClass)
 
   implicit object PipeFormat extends DefaultCSVFormat {
     override val delimiter = '|'
@@ -59,8 +57,6 @@ object Ports {
     }
   }
 
-  // Assumes a data directory existed to store fetched data.
-  //TODO: Refactor this, and also fetch previous conflicts.
   def fetchAndParse(): (Iterable[Records], Records, List[Conflict]) = {
     val recordMaps = dataSources.map {
       case (name, url) =>
@@ -74,7 +70,7 @@ object Ports {
     (rirs, iana, oldConflict)
   }
 
-  def writeResult(asn: ListRecords, ipv4: ListRecords, ipv6: ListRecords, outputFile: String = s"$resultFileName") {
+  def writeResult(asn: List[Record], ipv4: List[Record], ipv6: List[Record], outputFile: String = s"$resultFileName") {
     using(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
@@ -94,14 +90,22 @@ object Ports {
 
   def writeConflicts(conflicts: List[Conflict], outputFile: String = s"$currentConflictFile"): Unit = {
     using( CSVWriter.open(new File(outputFile))) { writer =>
-      writer.writeAll(conflicts.map(_.asList))
+      conflicts.foreach(c => {
+        writer.writeRow(c.a.asList)
+        writer.writeRow(c.b.asList)
+        writer.writeRow(List())
+      })
     }
   }
 
   def readConflicts(conflictFile: String = s"$previousConflictFile"): List[Conflict] = {
     logger.debug(s"Reading conflicts from $previousConflictFile")
     using(CSVReader.open(new File(conflictFile))){ reader =>
-        reader.all().map(Conflict.apply)
+      reader.all()
+        .filter(_.size>1)
+        .sliding(2,2).map {
+        case List(a,b) => Conflict(Record(a),Record(b))
+      }.toList
     }
   }
 

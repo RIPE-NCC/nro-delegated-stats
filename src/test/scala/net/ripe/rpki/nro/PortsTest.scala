@@ -1,12 +1,9 @@
 package net.ripe.rpki.nro
 
-import java.io.{File, StringReader}
+import java.io.File
 
-import com.github.tototoshi.csv.CSVReader
 import net.ripe.rpki.nro.Ports._
 import org.scalatest.FlatSpec
-
-import scala.collection.immutable
 
 class PortsTest extends FlatSpec with TestUtil {
 

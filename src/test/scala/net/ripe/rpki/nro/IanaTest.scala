@@ -3,7 +3,7 @@ package net.ripe.rpki.nro
 import net.ripe.ipresource.IpResource
 import net.ripe.rpki.nro.Defs.{ALL_IPV4, ALL_IPV6, ASN, DEFAULT_CC, IANA, IANAPOOL, IPV4, IPV4_IANA_POOL_DATE, IPV6}
 import net.ripe.rpki.nro.Ports.parseRecordFile
-import net.ripe.rpki.nro.Configs._
+import net.ripe.rpki.nro.Settings._
 import org.scalatest.FlatSpec
 
 class IanaTest extends FlatSpec {

@@ -1,9 +1,8 @@
 package net.ripe.rpki.nro
 
+import net.ripe.rpki.nro.Merger._
 import net.ripe.rpki.nro.Ports._
 import org.scalatest.FlatSpec
-import Merger._
-import net.ripe.rpki.nro.Defs.Line
 
 class MergerTest extends FlatSpec with TestUtil {
 
@@ -27,7 +26,6 @@ class MergerTest extends FlatSpec with TestUtil {
     assert(merged.size == 3)
     assert(merged.head == ripeRecords.head)
   }
-
 
   it should "detect partial conflicts" in {
     val apnic =
@@ -245,7 +243,7 @@ class MergerTest extends FlatSpec with TestUtil {
 
   def combineTest(olderLines: String,
                   newerLines: String,
-                  previousLines: String = "") = {
+                  previousLines: String = ""): (List[Record], List[Conflict]) = {
 
     val olderRecords = toRecords(olderLines)
     val newerRecords = toRecords(newerLines)
@@ -257,7 +255,6 @@ class MergerTest extends FlatSpec with TestUtil {
     val records = Iterable(olderRecords, newerRecords)
     combineResources(records, previousRecords)
   }
-
 
   def record(rir: String, resourceType: String, start: String, length: String): Record = {
     val line = s"""$rir|ZZ|$resourceType|$start|$length|20110811|assigned|ID"""

@@ -14,8 +14,15 @@ libraryDependencies += "com.lihaoyi" %% "requests" % "0.2.0"
 libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.3.6"
 libraryDependencies += "com.typesafe" % "config" % "1.3.4"
 
-libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.8"
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test"
+libraryDependencies += "com.github.daddykotex" %% "courier" % "2.0.0"
 
-libraryDependencies += "com.typesafe.play" %% "play-mailer" % "6.0.1"
+
+
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
+
+
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test
+libraryDependencies += "org.jvnet.mock-javamail" % "mock-javamail" % "1.9" % Test
+
+// SBT bug OOM prevention according to error logs.
+ThisBuild / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.ScalaLibrary

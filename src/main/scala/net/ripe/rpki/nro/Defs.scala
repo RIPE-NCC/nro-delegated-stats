@@ -1,7 +1,5 @@
 package net.ripe.rpki.nro
 
-import java.time.temporal.TemporalUnit
-
 import net.ripe.ipresource.IpResource
 
 object Defs {
@@ -39,11 +37,6 @@ object Defs {
   val ALL_IPV4: IpResource = IpResource.parse("0.0.0.0/0")
   val ALL_IPV6: IpResource = IpResource.parse("::/0")
   val ALL_ASNS: IpResource = IpResource.parse("AS0-AS4200000000")
-
-
-  type Line = Array[String]
-  type ListRecords = List[Record]
-  type RecordsAndConflicts = (ListRecords, List[Conflict])
 
   
   val dataSources: Map[String, String] = Map[String, String](

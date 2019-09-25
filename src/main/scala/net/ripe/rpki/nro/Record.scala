@@ -220,19 +220,9 @@ object Ipv6Record {
 
 case class Conflict(a: Record, b: Record) {
 
-
-  def asList: List[String] = a.asList ++ List("\t<== Conflicts with ==>\t") ++ b.asList
-
+  override def toString: String = s"$a\n$b"
   def rirsInvolved = s"${a.registry}--${b.registry}"
 
   def key: List[String] = a.noDate ++ b.noDate
 }
 
-
-object Conflict {
-
-  def apply(input: List[String]): Conflict = {
-    Conflict(Record(input.take(9)), Record(input.takeRight(9)))
-  }
-
-}

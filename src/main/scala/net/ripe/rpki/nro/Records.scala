@@ -2,7 +2,7 @@ package net.ripe.rpki.nro
 
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Updates._
-import net.ripe.rpki.nro.Configs._
+import net.ripe.rpki.nro.Settings._
 
 case class Records(asn: List[AsnRecord], ipv4: List[Ipv4Record], ipv6: List[Ipv6Record]) {
 

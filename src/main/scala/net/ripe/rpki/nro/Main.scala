@@ -1,12 +1,15 @@
 package net.ripe.rpki.nro
 
 import org.slf4j.LoggerFactory
+import Settings._
 
 object Main extends App {
 
   val logger = LoggerFactory.getLogger(Main.getClass)
 
   val (rirs, iana, previousConflicts) = Ports.fetchAndParse()
+
+  val notifer = new Notifier(Settings.mailer)
 
   logger.info(s"\n\n---  Combining RIRs data and checking for conflicts among RIRs ---\n\n")
 
@@ -41,11 +44,11 @@ object Main extends App {
 
   val currentConflicts = asnConflicts ++ ipv4Conflicts ++ ipv6Conflicts
 
-  Ports.writeResult(asnCombined, ipv4Combined, ipv6Combined, "result/combined-stat")
-  Ports.writeResult(asnMerged, ipv4Merged, ipv6Merged, "result/merged-stat")
+  Ports.writeResult(asnCombined, ipv4Combined, ipv6Combined, currentResultFile)
+  Ports.writeResult(asnMerged, ipv4Merged, ipv6Merged, mergedFileName)
   Ports.writeConflicts(currentConflicts)
 
 
-  Alert.alertConflicts(currentConflicts, previousConflicts)
+  notifer.notifyConflicts(currentConflicts, previousConflicts)
 
 }
