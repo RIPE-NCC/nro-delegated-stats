@@ -1,10 +1,10 @@
-name := "nro-combined-stats"
+name := "nro-delegated-stats"
 
 version := "0.1"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.13.1"
 
-
+//TODO Organize these deps
 libraryDependencies += "net.ripe.ipresource" % "ipresource" % "1.46"
 libraryDependencies += "com.google.guava" % "guava" % "28.1-jre"
 

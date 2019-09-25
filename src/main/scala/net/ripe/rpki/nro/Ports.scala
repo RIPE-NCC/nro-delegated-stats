@@ -6,9 +6,12 @@ import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Settings._
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.util.Using
+
 // Importing data from remotes files and exporting to file.
 // Or maybe Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge.
 object Ports {
+
   val logger: Logger = LoggerFactory.getLogger(Ports.getClass)
 
   implicit object PipeFormat extends DefaultCSVFormat {
@@ -18,8 +21,7 @@ object Ports {
   def parseRecordFile(source: String): Records = {
 
     // What to do with header and summaries, do we want to check integrity?
-
-    using(CSVReader.open(source)) { reader =>
+    Using.resource(CSVReader.open(source)) { reader =>
       val lines: List[List[String]] = reader.all()
         .filter(!_.head.startsWith("#"))
           .drop(4)
@@ -50,7 +52,7 @@ object Ports {
     logger.info(s"---Fetching $source into $dest---")
     val response = requests.get(source)
 
-    using(new PrintWriter(new File(dest))) { writer =>
+    Using.resource(new PrintWriter(new File(dest))) { writer =>
       writer.write(response.text())
       logger.info(s"---Done fetching $source into $dest---\n\n\n")
     }
@@ -70,7 +72,7 @@ object Ports {
   }
 
   def writeResult(asn: List[Record], ipv4: List[Record], ipv6: List[Record], outputFile: String = s"$resultFileName") {
-    using(new PrintWriter(new File(outputFile))) { writer =>
+    Using.resource(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
       val SERIAL = 19821213
@@ -88,7 +90,7 @@ object Ports {
   }
 
   def writeConflicts(conflicts: List[Conflict], outputFile: String = s"$currentConflictFile"): Unit = {
-    using( CSVWriter.open(new File(outputFile))) { writer =>
+    Using.resource( CSVWriter.open(new File(outputFile))) { writer =>
       conflicts.foreach(c => {
         writer.writeRow(c.a.asList)
         writer.writeRow(c.b.asList)
@@ -99,7 +101,7 @@ object Ports {
 
   def readConflicts(conflictFile: String = s"$previousConflictFile"): List[Conflict] = {
     logger.debug(s"Reading conflicts from $previousConflictFile")
-    using(CSVReader.open(new File(conflictFile))){ reader =>
+    Using.resource(CSVReader.open(new File(conflictFile))){ reader =>
       reader.all()
         .filter(_.size>1)
         .sliding(2,2).map {
@@ -107,8 +109,4 @@ object Ports {
       }.toList
     }
   }
-
-  def using[A, B <: {def close(): Unit}] (closeable: B) (f: B => A): A =
-    try { f(closeable) } finally { closeable.close() }
-
 }

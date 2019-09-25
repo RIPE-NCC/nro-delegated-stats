@@ -8,7 +8,7 @@ import net.ripe.commons.ip.{Ipv6Range, PrefixUtils}
 import net.ripe.ipresource._
 import net.ripe.rpki.nro.Defs._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 
 sealed trait Record {

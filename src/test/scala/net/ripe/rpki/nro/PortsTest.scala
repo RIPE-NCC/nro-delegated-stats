@@ -35,9 +35,10 @@ class PortsTest extends FlatSpec with TestUtil {
     val apnicRecs = toRecords(apnic)
 
     val original = ripeRecs.zip(apnicRecs).map { case (a, b) => Conflict(a, b) }
-    writeConflicts(original, "output")
+    val tempOutput = File.createTempFile("conflict","txt")
 
-    val readBack = readConflicts("output")
+    writeConflicts(original, tempOutput.toString)
+    val readBack = readConflicts(tempOutput.toString)
 
     assert(readBack == original)
 

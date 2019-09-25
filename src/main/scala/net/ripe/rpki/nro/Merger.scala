@@ -4,7 +4,7 @@ import java.math.BigInteger
 
 import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object Merger {
 
