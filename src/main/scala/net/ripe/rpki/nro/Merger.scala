@@ -64,17 +64,21 @@ object Merger {
 
     var result: List[Record] = Nil
     var lastRecord = sortedRecords.head
-
+    var changed = false
     sortedRecords.tail foreach { nextRecord =>
       if (lastRecord.canMerge(nextRecord)) {
         lastRecord = lastRecord.merge(nextRecord)
+        changed = true
       }
       else {
         result = lastRecord :: result
         lastRecord = nextRecord
       }
     }
-    (lastRecord :: result).reverse
+    val currentResult = (lastRecord :: result).reverse
+
+    if(!changed) currentResult
+    else mergeSiblings(currentResult)
   }
 }
 

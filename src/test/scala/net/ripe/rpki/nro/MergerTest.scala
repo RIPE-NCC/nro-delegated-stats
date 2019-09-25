@@ -127,6 +127,43 @@ class MergerTest extends FlatSpec with TestUtil {
     assert(mergeSiblings(original) == original)
   }
 
+  it should "performs multiple allowed merge if necessary" in {
+    val ipv6s =
+     """|arin|US|ipv6|2001:500:60::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:61::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:62::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:63::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:64::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:65::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:66::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:67::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:68::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:69::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:6a::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:6b::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:6c::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:6d::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:6e::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:6f::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:70::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:71::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:72::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:73::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:74::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:75::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:76::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:77::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:78::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:79::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:7a::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+        |arin|US|ipv6|2001:500:7b::|48|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats""".stripMargin
+
+    val expected =
+      """|arin|US|ipv6|2001:500:60::|44|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+         |arin|US|ipv6|2001:500:70::|45|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats
+         |arin|US|ipv6|2001:500:78::|46|20090109|assigned|bfbf7b5fb987bbec05323e88fde8a507|e-stats""".stripMargin
+    assert(mergeSiblings(toRecords(ipv6s))== toRecords(expected))
+  }
 
   it should " split non overlapping ranges when merging for asn   " in {
 
