@@ -7,19 +7,17 @@ import com.typesafe.config.{Config, ConfigFactory}
 import courier.Mailer
 import net.ripe.rpki.nro.Defs.{AFRINIC, APNIC, ARIN, GEOFF, IANA, LACNIC, RIPENCC}
 
-import scala.collection.JavaConverters._
-
 object Settings {
 
   private val config: Config = ConfigFactory.load()
 
   val sender : String = config.getString("sender")
   val contacts: Map[String, String] = Map(
-    "ripencc" -> config.getString("ripencc.contact"),
-    "apnic" -> config.getString("apnic.contact"),
-    "arin" -> config.getString("arin.contact"),
-    "afrinic" -> config.getString("afrinic.contact"),
-    "lacnic" -> config.getString("lacnic.contact")
+    RIPENCC -> config.getString("ripencc.contact"),
+    APNIC -> config.getString("apnic.contact"),
+    ARIN -> config.getString("arin.contact"),
+    AFRINIC -> config.getString("afrinic.contact"),
+    LACNIC -> config.getString("lacnic.contact")
   )
 
   val gracePeriod: Int = config.getInt("grace.period")

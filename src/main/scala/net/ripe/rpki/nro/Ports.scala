@@ -4,7 +4,6 @@ import java.io.{File, PrintWriter}
 
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Settings._
-import net.ripe.rpki.nro.Defs._
 import org.slf4j.{Logger, LoggerFactory}
 
 // Importing data from remotes files and exporting to file.

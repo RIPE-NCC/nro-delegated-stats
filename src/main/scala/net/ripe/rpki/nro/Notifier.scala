@@ -1,18 +1,16 @@
 package net.ripe.rpki.nro
 
-import java.io.File
-
 import courier.Defaults._
 import courier._
-import org.slf4j.LoggerFactory
-import Settings._
+import net.ripe.rpki.nro.Settings._
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 class Notifier(mailer: Mailer) {
 
-  val logger = LoggerFactory.getLogger(this.getClass)
+  val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   def notifyConflicts(current: List[Conflict], previous: List[Conflict]): String = {
 
@@ -33,8 +31,8 @@ class Notifier(mailer: Mailer) {
 
   }
 
-  def sendConflicts(conflicts: Set[Conflict])={
-    val rsContacts = conflicts.flatMap(c => Set(c.a.registry, c.b.registry)).filter(_ != "iana").map(contacts).toArray
+  def sendConflicts(conflicts: Set[Conflict]): Unit ={
+    val rsContacts = conflicts.flatMap(c => Set(c.a.registry, c.b.registry)).filter(_ != Defs.IANA).map(contacts).toArray
     val envelope: Envelope = Envelope
       .from(sender.addr)
       .to(rsContacts.map(_.addr):_*)
