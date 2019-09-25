@@ -45,12 +45,15 @@ object Settings {
   val port: Int = mail.getInt("port")
   val username: String = mail.getString("username")
   val password: String = mail.getString("password")
+  val tls: Boolean = mail.getBoolean("tls")
+  val debug: Boolean = mail.getBoolean("debug")
+  val auth: Boolean = mail.getBoolean("auth")
 
   val mailer = Mailer(host, port)
     .as(username, password)
-    .auth(true)
-    .startTls(true)
-    .debug(true)()
+    .auth(auth)
+    .startTls(tls)
+    .debug(debug)()
 
   val data: Config = config.getConfig("data")
 
