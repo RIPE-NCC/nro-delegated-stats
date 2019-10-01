@@ -26,12 +26,16 @@ object Settings {
   val resultFileName: String = config.getString("result.fileName")
   val mergedFileName: String = config.getString("merged.fileName")
   val conflictFileName: String = config.getString("conflict.fileName")
+  val unclaimedFileName: String = config.getString("unclaimed.fileName")
+  val overclaimedFileName: String = config.getString("overclaimed.fileName")
 
   val TODAY: String = formatDate(java.time.LocalDate.now)
   val PREV_RESULT_DAY: String = formatDate(java.time.LocalDate.now.minusDays(1))
   val PREV_CONFLICT_DAY: String = formatDate(java.time.LocalDate.now.minusDays(gracePeriod))
 
   val currentResultFile: String = s"$resultDirectory/$TODAY/$resultFileName"
+  val currentUnclaimedFile: String = s"$resultDirectory/$TODAY/$unclaimedFileName"
+  val currentOverclaimedFile: String = s"$resultDirectory/$TODAY/$overclaimedFileName"
   val currentMergedFile: String = s"$resultDirectory/$TODAY/$mergedFileName"
   val previousResultFile: String = s"$resultDirectory/$PREV_RESULT_DAY/$resultFileName"
   val currentConflictFile: String = s"$resultDirectory/$TODAY/$conflictFileName"

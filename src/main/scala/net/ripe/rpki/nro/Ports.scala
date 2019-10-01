@@ -6,7 +6,7 @@ import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Settings._
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.util.Using
+import scala.util.{Try, Using}
 
 // Importing data from remotes files and exporting to file.
 // Or maybe Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge.
@@ -34,7 +34,7 @@ object Ports {
       var ipv6 : Vector[Ipv6Record] = Vector[Ipv6Record] ()
 
       records.foreach {
-        case rec: AsnRecord   => asn  = asn :+ rec
+        case rec: AsnRecord   => asn  = asn  :+ rec
         case rec: Ipv4Record  => ipv4 = ipv4 :+ rec
         case rec: Ipv6Record  => ipv6 = ipv6 :+ rec
       }
@@ -59,28 +59,36 @@ object Ports {
   }
 
   def fetchAndParse(): (Iterable[Records], Records, List[Conflict]) = {
-    val recordMaps = sources.map {
-      case (name, url) =>
+    val recordMaps: Map[String, Records] = sources.map {
+      case (name:String, url:String) =>
         fetchLocally(url, s"$todayDataDirectory/$name")
-        (name, parseRecordFile(s"$todayDataDirectory/$name"))
+        name -> parseRecordFile(s"$todayDataDirectory/$name")
     }
     // Adjusting and fixing record fields conforming to what is done by geoff.
-    val rirs = (recordMaps - "iana" - "geoff").mapValues(_.fixRIRs).values.seq
+    val rirs = (recordMaps - "iana" - "geoff").view.mapValues(_.fixRIRs).values
     val iana = recordMaps("iana").fixIana
-    val oldConflict = readConflicts(s"$previousConflictFile")
+    val oldConflict = Try(readConflicts(s"$previousConflictFile")).getOrElse(List())
     (rirs, iana, oldConflict)
   }
 
-  def writeResult(asn: List[Record], ipv4: List[Record], ipv6: List[Record], outputFile: String = s"$resultFileName") {
+  def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true): Unit = {
+      writeResult(records.asn, records.ipv4, records.ipv6, outputFile, header)
+  }
+
+  def writeResult(asn: List[Record], ipv4: List[Record], ipv6: List[Record], outputFile: String = s"$resultFileName",
+                  header:Boolean = true              ) {
     Using.resource(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
       val SERIAL = 19821213
+      if(totalSize == 0) return
+      if(header){
+        writer.write(s"2|nro|$TODAY|$totalSize|$SERIAL|$TODAY|+0000\n")
+        writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
+        writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
+        writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
+      }
 
-      writer.write(s"2|nro|$TODAY|$totalSize|$SERIAL|$TODAY|+0000\n")
-      writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
-      writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
-      writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
       writer.write(asn.map(_.toString).mkString("\n"))
       writer.write("\n")
       writer.write(ipv4.map(_.toString).mkString("\n"))
@@ -88,6 +96,8 @@ object Ports {
       writer.write(ipv6.map(_.toString).mkString("\n"))
     }
   }
+
+  def writeClaims(recs : Records, fileName: String): Unit = writeResult(recs.asn, recs.ipv4, recs.ipv6, fileName, false)
 
   def writeConflicts(conflicts: List[Conflict], outputFile: String = s"$currentConflictFile"): Unit = {
     Using.resource( CSVWriter.open(new File(outputFile))) { writer =>

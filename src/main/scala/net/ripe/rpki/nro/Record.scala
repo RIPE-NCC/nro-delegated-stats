@@ -2,18 +2,16 @@ package net.ripe.rpki.nro
 
 import java.math.BigInteger
 
-import com.google.common.collect
-import com.google.common.collect.{BoundType, DiscreteDomain, Range}
-import net.ripe.commons.ip.{Ipv6Range, PrefixUtils}
-import net.ripe.ipresource._
+import com.google.common.collect._
+import net.ripe.commons.ip.{Ipv4, Ipv6Range, PrefixUtils}
 import net.ripe.rpki.nro.Defs._
 
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 
-sealed trait Record {
+sealed trait Record extends Comparable[Record]{
 
-  def update(key: collect.Range[BigInteger]): Record
+  def update(key: Range[BigInteger]): Record
 
   def registry: String
 
@@ -33,14 +31,7 @@ sealed trait Record {
 
   def ext: String
 
-  def range: IpResource
-
-  def key: collect.Range[BigInteger] =
-    Range.closed(range.getStart.getValue, range.getEnd.getValue)
-
-  private val discreteBigInteger = DiscreteDomain.bigIntegers()
-
-  def empty: Boolean = key.canonical(discreteBigInteger).isEmpty
+  def range: RecordRange
 
   def merge(that: Record): Record
 
@@ -53,13 +44,13 @@ sealed trait Record {
       this.status == that.status
   }
 
-  def asList = List(registry, cc, lType, start, length, date, status, oid, ext)
+  def asList: List[String] = List(registry, cc, lType, start, length, date, status, oid, ext)
 
-  def noDate = List(registry, cc, lType, start, length, status, oid, ext)
+  def noDate: List[String] = List(registry, cc, lType, start, length, status, oid, ext)
 
-  override def toString: String = {
-    asList.mkString("|")
-  }
+  override def toString: String = asList.mkString("|")
+
+  override def compareTo(that: Record): Int = this.range.compareTo(that.range)
 }
 
 object Record {
@@ -71,47 +62,19 @@ object Record {
       case "ipv4" => Ipv4Record(registry, cc, "ipv4", start, length, date, status, oid, ext)
       case "ipv6" => Ipv6Record(registry, cc, "ipv6", start, length, date, status, oid, ext)
     }
-
     case List(registry, cc, ltype, start, length, date, status, oid) => ltype match {
       case "asn" => AsnRecord(registry, cc, "asn", start, length, date, status, oid)
       case "ipv4" => Ipv4Record(registry, cc, "ipv4", start, length, date, status, oid)
       case "ipv6" => Ipv6Record(registry, cc, "ipv6", start, length, date, status, oid
       )
     }
-
     case List(registry, cc, ltype, start, length, date, status) => ltype match {
       case "asn" => AsnRecord(registry, cc, "asn", start, length, date, status)
       case "ipv4" => Ipv4Record(registry, cc, "ipv4", start, length, date, status)
       case "ipv6" => Ipv6Record(registry, cc, "ipv6", start, length, date, status)
     }
-
   }
-
-  def length(r: IpResource): BigInteger =
-    r.getEnd.getValue.subtract(r.getStart.getValue).add(BigInteger.ONE)
-
-  def toInterval(r: collect.Range[BigInteger]): (BigInteger, BigInteger) = {
-    val start = if (r.lowerBoundType() == BoundType.CLOSED) {
-      r.lowerEndpoint()
-    } else {
-      r.lowerEndpoint().add(BigInteger.ONE)
-    }
-    val end = if (r.upperBoundType() == BoundType.CLOSED) {
-      r.upperEndpoint()
-    } else {
-      r.upperEndpoint().subtract(BigInteger.ONE)
-    }
-    (start, end)
-  }
-
-  def length(r: collect.Range[BigInteger]): BigInteger = {
-    val (start, end) = toInterval(r)
-    end.subtract(start).add(BigInteger.ONE)
-  }
-
-  implicit val recordOrder: Ordering[Record] = (a: Record, b: Record) => a.range.compareTo(b.range)
 }
-
 
 case class Ipv4Record(
                        registry: String,
@@ -124,21 +87,18 @@ case class Ipv4Record(
                        oid: String = "",
                        ext: String = DEFAULT_EXT
                      ) extends Record {
-  val range: IpResource = {
-    val startAddr = IpAddress.parse(start).getValue
-    val endAddr = new BigInteger(length).add(startAddr).subtract(BigInteger.ONE)
-    IpResourceRange.assemble(startAddr, endAddr, IpResourceType.IPv4)
-  }
+
+  val range: RecordRange = RecordRange.ipv4(start, length)
 
   override def merge(that: Record): Record = {
     val newLength = length.toLong + that.length.toLong
     this.copy(length = s"$newLength")
   }
 
-  override def update(key: collect.Range[BigInteger]): Ipv4Record = {
-    val start = Record.toInterval(key)._1.longValue()
-    val len = Record.length(key)
-    val startAddress = new Ipv4Address(start)
+  override def update(key: Range[BigInteger]): Ipv4Record = {
+    val start = RangeUtil.toInterval(key)._1.longValue()
+    val len = RangeUtil.length(key)
+    val startAddress = Ipv4.of(start)
     this.copy(start = s"$startAddress", length = s"$len")
   }
 }
@@ -155,12 +115,10 @@ case class Ipv6Record(
                        ext: String = DEFAULT_EXT
                      ) extends Record {
 
-  val range: IpResource = {
-    IpResource.parse(start + "/" + length)
-  }
+  val range: RecordRange = RecordRange.ipv6(start,length)
 
-  private def legalMerge(a: IpResource, b: IpResource): Boolean = {
-    PrefixUtils.isLegalPrefix(Ipv6Range.parse(a.merge(b).toString))
+  private def legalMerge(a: RecordRange, b: RecordRange): Boolean = {
+    PrefixUtils.isLegalPrefix(a.ipv6.merge(b.ipv6))
   }
 
   override def canMerge(that: Record): Boolean = {
@@ -168,13 +126,12 @@ case class Ipv6Record(
   }
 
   override def merge(that: Record): Record = {
-    val merged = this.range.merge(that.range)
-    val Array(start, length) = merged.toString.split("/")
+    val Array(start, length) = range.ipv6.merge(that.range.ipv6).toStringInCidrNotation.split("/")
     this.copy(start = s"$start", length = s"$length")
   }
 
-  override def update(key: collect.Range[BigInteger]): Record = {
-    val (begin, end) = Record.toInterval(key)
+  override def update(key: Range[BigInteger]): Record = {
+    val (begin, end) = RangeUtil.toInterval(key)
     val newRange: Ipv6Range = Ipv6Range.from(begin).to(end)
     val Array(start, prefix) = newRange.toStringInCidrNotation.split("/")
     this.copy(start = start, length = prefix)
@@ -192,28 +149,24 @@ case class AsnRecord(
                       oid: String = "",
                       ext: String = DEFAULT_EXT
                     ) extends Record {
-  val range: IpResource = {
-    val iLength = length.toLong
-    val iStart = start.toLong
-    IpResource.parse(s"AS$iStart-AS${iStart + iLength - 1}")
-  }
+
+  val range: RecordRange = RecordRange.asn(start, length)
 
   override def merge(that: Record): Record = {
     val newLength = length.toLong + that.length.toLong
     this.copy(length = s"$newLength")
   }
 
-  override def update(key: collect.Range[BigInteger]): Record = {
-    val start = Record.toInterval(key)._1
-    val length = Record.length(key)
+  override def update(key: Range[BigInteger]): Record = {
+    val start = RangeUtil.toInterval(key)._1
+    val length = RangeUtil.length(key)
     this.copy(start = s"$start", length = s"$length")
   }
 }
 
-
 object Ipv6Record {
-  def splitPrefixes(range: Range[BigInteger]): mutable.Buffer[Ipv6Range] = {
-    val (start, end) = Record.toInterval(range)
+  def splitPrefixes(range: Range[BigInteger]): mutable.Seq[Ipv6Range] = {
+    val (start, end) = RangeUtil.toInterval(range)
     Ipv6Range.from(start).to(end).splitToPrefixes().asScala
   }
 }
@@ -221,6 +174,7 @@ object Ipv6Record {
 case class Conflict(a: Record, b: Record) {
 
   override def toString: String = s"$a\n$b"
+
   def rirsInvolved = s"${a.registry}--${b.registry}"
 
   def key: List[String] = a.noDate ++ b.noDate

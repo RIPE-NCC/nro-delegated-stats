@@ -1,11 +1,13 @@
 package net.ripe.rpki.nro
 
 import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.RangeUtil._
+import net.ripe.rpki.nro.Records._
 import net.ripe.rpki.nro.Settings._
-import scala.util.chaining._
-import Records._
 
-case class Records(asn: List[AsnRecord], ipv4: List[Ipv4Record], ipv6: List[Ipv6Record]) {
+import scala.util.chaining._
+
+case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) {
 
   def fixIana: Records = {
     def fix[R]: Record => Record = (rec: Record) => rec.status match {
@@ -13,7 +15,6 @@ case class Records(asn: List[AsnRecord], ipv4: List[Ipv4Record], ipv6: List[Ipv6
       case IANA => rec.pipe(oid_(IANA)).pipe(status_(ASSIGNED)).pipe(ext_(IANA))
       case _    => rec.pipe(ext_(IANA))
     }
-
     fixRecords(fix)
   }
 
@@ -25,23 +26,43 @@ case class Records(asn: List[AsnRecord], ipv4: List[Ipv4Record], ipv6: List[Ipv6
       case ALLOCATED => rec.pipe(status_(ASSIGNED))
       case _ => rec
     }
-
     fixRecords(fix)
   }
 
-  def fixRecords(fix: Record => Record): Records = {
-    this.copy(
-      asn  = this.asn.map(fix) .map(_.asInstanceOf[AsnRecord]),
-      ipv4 = this.ipv4.map(fix).map(_.asInstanceOf[Ipv4Record]),
-      ipv6 = this.ipv6.map(fix).map(_.asInstanceOf[Ipv6Record])
-    )
+  def fixRecords(fix: Record => Record): Records = Records(
+    this.asn.map(fix),
+    this.ipv4.map(fix),
+    this.ipv6.map(fix))
+
+  def substract(that: Records): Records = {
+    val (thisAsn, thisIpv4, thisIpv6) = (asRangeMap(this.asn), asRangeMap(this.ipv4), asRangeMap(this.ipv6))
+    val (thatAsn, thatIpv4, thatIpv6) = (asRangeMap(that.asn), asRangeMap(that.ipv4), asRangeMap(that.ipv6))
+
+    thatAsn.asMapOfRanges() .forEach { case (key, _) => thisAsn.remove(key) }
+    thatIpv4.asMapOfRanges().forEach { case (key, _) => thisIpv4.remove(key) }
+    thatIpv6.asMapOfRanges().forEach { case (key, _) => thisIpv6.remove(key) }
+
+    Records(updateMap(thisAsn), updateMap(thisIpv4), updateMap(thisIpv6))
   }
 
+  def append(that: Records): Records =
+    Records(this.asn ++ that.asn, this.ipv4 ++ that.ipv4, this.ipv6 ++ that.ipv6)
+
+  def sorted() : Records =
+    Records(this.asn.sorted, this.ipv4.sorted, this.ipv6.sorted)
+
+  def partition(criteria: Record => Boolean): (Records, Records) = {
+    val (asnRirs,  asnNonRirs)  = this.asn.partition (criteria)
+    val (ipv4Rirs, ipv4NonRirs) = this.ipv4.partition(criteria)
+    val (ipv6Rirs, ipv6NonRirs) = this.ipv6.partition(criteria)
+
+    (Records(asnRirs, ipv4Rirs, ipv6Rirs), Records(asnNonRirs, ipv4NonRirs, ipv6NonRirs) )
+  }
 }
 
-// Exposing copy so that we can do generic update operations on Record (Asn, Ipv4, Ipv6)
 object Records {
 
+  // Exposing copy so that we can do generic update operations on Record (Asn, Ipv4, Ipv6)
   def oid_(oid: String): Record => Record = (r: Record) => r match {
     case a: AsnRecord => a.copy(oid = oid)
     case a: Ipv4Record => a.copy(oid = oid)
