@@ -1,55 +1,74 @@
 package net.ripe.rpki.nro
 
 import net.ripe.rpki.nro.Defs._
-import net.ripe.rpki.nro.Updates._
+import net.ripe.rpki.nro.Settings._
+import scala.util.chaining._
+import Records._
 
-case class Records(
-                    source: String,
-                    header: Line,
-                    summaries: List[Line],
-                    asn: List[AsnRecord],
-                    ipv4: List[Ipv4Record],
-                    ipv6: List[Ipv6Record]
-                  ) {
+case class Records(asn: List[AsnRecord], ipv4: List[Ipv4Record], ipv6: List[Ipv6Record]) {
 
   def fixIana: Records = {
-    def fix[A <: Record : Updates]: A => A = (rec: A) => rec.status match {
-      case IETF => rec.oid_(IETF).ext_(IANA)
-      case IANA => rec.oid_(IANA).status_(ASSIGNED).ext_(IANA)
-      case _ => rec.ext_(IANA)
+    def fix[R]: Record => Record = (rec: Record) => rec.status match {
+      case IETF => rec.pipe(oid_(IETF)).pipe(ext_(IANA))
+      case IANA => rec.pipe(oid_(IANA)).pipe(status_(ASSIGNED)).pipe(ext_(IANA))
+      case _    => rec.pipe(ext_(IANA))
     }
-    this.asn_(fix).ipv4_(fix).ipv6_(fix)
+
+    fixRecords(fix)
   }
 
-  // Reserved and available records normally have neither country code nor date,
-  // when combined it will be filled with ZZ and today's date.
   def fixRIRs: Records = {
-    def fix[A <: Record : Updates]: A => A = (rec: A) => rec.status match {
+    def fix: Record => Record = (rec: Record) => rec.status match {
       // RESERVED and AVAILABLE has neither date nor country (except AFRINIC with ZZ)
-      case RESERVED | AVAILABLE => rec.date_(TODAY).cc_(DEFAULT_CC)
+      case RESERVED | AVAILABLE => rec.pipe(date_(TODAY)).pipe(cc_(DEFAULT_CC))
       // Whatever allocated in original RIR file appears as ASSIGNED
-      case ALLOCATED => rec.status_(ASSIGNED)
+      case ALLOCATED => rec.pipe(status_(ASSIGNED))
       case _ => rec
     }
-    this.asn_(fix).ipv4_(fix).ipv6_(fix)
+
+    fixRecords(fix)
   }
 
-  override def toString: String =
-    s"""Source: $source \nHeader: ${header.mkString(",")} \nSummaries: \n${
-      summaries
-        .map(_.mkString(","))
-        .mkString("\n")
-    }\n\n"""
-
-  // Map values wrapper
-  def asn_(f: AsnRecord => AsnRecord)(implicit ev: Updates[AsnRecord]): Records =
-    this.copy(asn = this.asn.map(f))
-
-  def ipv4_(f: Ipv4Record => Ipv4Record)(implicit ev: Updates[Ipv4Record]): Records =
-    this.copy(ipv4 = this.ipv4.map(f))
-
-  def ipv6_(f: Ipv6Record => Ipv6Record)(implicit ev: Updates[Ipv6Record]): Records =
-    this.copy(ipv6 = this.ipv6.map(f))
+  def fixRecords(fix: Record => Record): Records = {
+    this.copy(
+      asn  = this.asn.map(fix) .map(_.asInstanceOf[AsnRecord]),
+      ipv4 = this.ipv4.map(fix).map(_.asInstanceOf[Ipv4Record]),
+      ipv6 = this.ipv6.map(fix).map(_.asInstanceOf[Ipv6Record])
+    )
+  }
 
 }
 
+// Exposing copy so that we can do generic update operations on Record (Asn, Ipv4, Ipv6)
+object Records {
+
+  def oid_(oid: String): Record => Record = (r: Record) => r match {
+    case a: AsnRecord => a.copy(oid = oid)
+    case a: Ipv4Record => a.copy(oid = oid)
+    case a: Ipv6Record => a.copy(oid = oid)
+  }
+
+  def ext_(ext: String): Record => Record = (r: Record) => r match {
+    case a: AsnRecord => a.copy(ext = ext)
+    case a: Ipv4Record => a.copy(ext = ext)
+    case a: Ipv6Record => a.copy(ext = ext)
+  }
+
+  def date_(date: String): Record => Record = (r: Record) => r match {
+    case a: AsnRecord => a.copy(date = date)
+    case a: Ipv4Record => a.copy(date = date)
+    case a: Ipv6Record => a.copy(date = date)
+  }
+
+  def status_(status: String): Record => Record = (r: Record) => r match {
+    case a: AsnRecord => a.copy(status = status)
+    case a: Ipv4Record => a.copy(status = status)
+    case a: Ipv6Record => a.copy(status = status)
+  }
+
+  def cc_(cc: String): Record => Record = (r: Record) => r match {
+    case a: AsnRecord => a.copy(cc = cc)
+    case a: Ipv4Record => a.copy(cc = cc)
+    case a: Ipv6Record => a.copy(cc = cc)
+  }
+}

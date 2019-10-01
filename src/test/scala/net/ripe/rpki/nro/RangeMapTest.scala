@@ -1,9 +1,9 @@
 package net.ripe.rpki.nro
 
-import com.google.common.collect.{RangeMap, TreeRangeMap}
+import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
 import org.scalatest.FlatSpec
-import com.google.common.collect.Range
-import scala.collection.JavaConverters._
+
+import scala.jdk.CollectionConverters._
 
 // Illustrating how Range Map behaves.
 // [A..B] means closed interval including A and B

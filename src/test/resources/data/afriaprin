@@ -3,7 +3,6 @@
 # Afrinic contributes 100 ASN lines that will be detected as conflicts.
 # Apnic   contributes 100 Ipv4 lines that will be detected as conflicts.
 # Arin    contributes 100 Ipv6 lines that will be detected as conflicts.
-
 2.3|afriaprin|1567951216119|300|19700101|20190908|-0400
 afriaprin|*|asn|*|100|summary
 afriaprin|*|ipv4|*|100|summary

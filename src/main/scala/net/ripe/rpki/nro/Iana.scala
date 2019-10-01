@@ -5,8 +5,9 @@ import net.ripe.ipresource._
 import net.ripe.rpki.nro.Defs._
 import net.ripe.rpki.nro.Record.length
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.{Iterable, Iterator}
+import net.ripe.rpki.nro.Settings._
 
 object Iana {
 
@@ -18,7 +19,7 @@ object Iana {
 
   // Filter for iana data not allocated for RIRs
   // Note: iana.status is actually registry
-  def filterNonRIRs(iana: Records): (ListRecords, ListRecords, ListRecords) = {
+  def filterNonRIRs(iana: Records): (List[Record], List[Record], List[Record]) = {
 
     val nonRirData: Record => Boolean = r => !RIRS.contains(r.status)
 
@@ -33,7 +34,7 @@ object Iana {
   def ianaPools(usedAsns: Iterable[IpResource],
                 usedIpv4s: Iterable[IpResource],
                 usedIpv6s: Iterable[IpResource]):
-      (ListRecords, ListRecords, ListRecords) = {
+      (List[Record], List[Record], List[Record]) = {
 
     val asn  = subtractRanges(ALL_ASNS, usedAsns) .map(asnPool).toList
     val ipv4 = subtractRanges(ALL_IPV4, usedIpv4s).map(ipv4Pool).toList
@@ -48,10 +49,10 @@ object Iana {
   }
 
   def ipv4Pool(ipv4: IpResource) =
-    Ipv4Record( IANA, DEFAULT_CC, IPV4, ipv4.getStart + "", length(ipv4) + "", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)
+    Ipv4Record( IANA, DEFAULT_CC, IPV4, s"${ipv4.getStart}", s"${length(ipv4) }", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)
 
   def asnPool(asn: IpResource) =
-    AsnRecord( IANA, DEFAULT_CC, ASN, asn.getStart.getValue + "", length(asn) + "", TODAY, IANAPOOL, "", IANA)
+    AsnRecord( IANA, DEFAULT_CC, ASN, s"${asn.getStart.getValue}", s"${length(asn)}", TODAY, IANAPOOL, "", IANA)
 
   def ipv6Pool(ipv6: IpResource): Ipv6Record = {
     val Array(start, prefix) = ipv6.toString.split("/")

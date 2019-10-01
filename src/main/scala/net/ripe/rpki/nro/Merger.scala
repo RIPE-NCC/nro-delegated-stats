@@ -3,7 +3,8 @@ package net.ripe.rpki.nro
 import java.math.BigInteger
 
 import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
-import scala.collection.JavaConverters._
+
+import scala.jdk.CollectionConverters._
 
 object Merger {
 
@@ -12,14 +13,14 @@ object Merger {
                       previousMap: RangeMap[BigInteger, Record]
                      ): List[Conflict] = {
 
-    val currentOverlaps = currentMap.subRangeMap(newRange).asMapOfRanges()
+    val currentOverlaps = currentMap.subRangeMap(newRange).asMapOfRanges().asScala
     if (currentOverlaps.isEmpty) {
       currentMap.put(newRange, newRecord)
       List[Conflict]()
     } else {
-      val newConflicts = currentOverlaps.asScala.map {
-        case (_, conflict) => Conflict(conflict, newRecord)
-      }
+
+      val newConflicts = currentOverlaps.values.map(Conflict(_, newRecord))
+
       val previousOverlaps = previousMap.subRangeMap(newRange)
       if (!previousOverlaps.asMapOfRanges().isEmpty) {
         currentMap.putAll(previousOverlaps)
@@ -68,11 +69,16 @@ object Merger {
     sortedRecords.tail foreach { nextRecord =>
       if (lastRecord.canMerge(nextRecord)) {
         lastRecord = lastRecord.merge(nextRecord)
+        while(result.nonEmpty && result.head.canMerge(lastRecord)) {
+          lastRecord = result.head.merge(lastRecord)
+          result = result.tail
+        }
       }
       else {
         result = lastRecord :: result
         lastRecord = nextRecord
       }
+
     }
     (lastRecord :: result).reverse
   }
