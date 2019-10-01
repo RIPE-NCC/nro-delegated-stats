@@ -55,15 +55,17 @@ class MergerTest extends FlatSpec with TestUtil {
     val arin = parseRecordFile(getResourceFile("/data/arin"))
     val afriaprin = parseRecordFile(getResourceFile("/data/afriaprin"))
 
-    val rirs = Iterable(apnic, afrinic, arin, afriaprin).map(_.fixRIRs)
+    val rirs: Iterable[Records] = Iterable(apnic, afrinic, arin, afriaprin).map(_.fixRIRs)
 
-    val (asns, asnConflicts) = combineResources(rirs.map(_.asn))
-    val (ipv4s, ipv4Conflicts) = combineResources(rirs.map(_.ipv4))
-    val (ipv6s, ipv6Conflicts) = combineResources(rirs.map(_.ipv6))
+    val (result, conflicts) = combineRecords(rirs)
 
-    assert(asns.size == 300)
-    assert(ipv4s.size == 300)
-    assert(ipv6s.size == 300)
+    assert(result.asn.size == 300)
+    assert(result.ipv4.size == 300)
+    assert(result.ipv6.size == 300)
+
+    val asnConflicts = conflicts.filter(_.a.lType == "asn")
+    val ipv4Conflicts = conflicts.filter(_.a.lType == "ipv4")
+    val ipv6Conflicts = conflicts.filter(_.a.lType == "ipv6")
 
     assert(asnConflicts.size == 100)
     assert(ipv4Conflicts.size == 100)
@@ -77,6 +79,11 @@ class MergerTest extends FlatSpec with TestUtil {
 
     // IPV4 conflicts are all between arin and afriaprin
     assert(ipv6Conflicts.filter(_.rirsInvolved == "arin--afriaprin") == ipv6Conflicts)
+
+    val merged = mergeRecords(result)
+    assert(merged.asn.size == 295)
+    assert(merged.ipv4.size == 242)
+    assert(merged.ipv6.size == 300)
   }
 
   "Merge siblings" should "merge adjacent asn entries" in {

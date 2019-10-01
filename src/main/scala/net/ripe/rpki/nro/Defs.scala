@@ -1,6 +1,6 @@
 package net.ripe.rpki.nro
 
-import net.ripe.ipresource.IpResource
+import net.ripe.commons.ip.{AsnRange, Ipv4Range, Ipv6Range}
 
 object Defs {
 
@@ -34,9 +34,9 @@ object Defs {
 
   val SUMMARY = "summary"
 
-  val ALL_IPV4: IpResource = IpResource.parse("0.0.0.0/0")
-  val ALL_IPV6: IpResource = IpResource.parse("::/0")
-  val ALL_ASNS: IpResource = IpResource.parse("AS0-AS4200000000")
+  val ALL_ASNS: AsnRange  = AsnRange.parse("AS0-AS4200000000")
+  val ALL_IPV6: Ipv6Range = Ipv6Range.parse("::/0")
+  val ALL_IPV4: Ipv4Range = Ipv4Range.parse("0.0.0.0/0")
 
   val RIRS = List(APNIC, AFRINIC, ARIN, LACNIC, RIPENCC)
 }

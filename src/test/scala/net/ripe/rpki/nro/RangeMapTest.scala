@@ -44,4 +44,19 @@ class RangeMapTest extends FlatSpec{
     // (10..11) is actually an empty interval.
   }
 
+  it can "remove ranges" in {
+    map.remove(Range.closed(1,10))
+    map.remove(Range.open(10,11))
+    map.remove(Range.closed(11,20))
+    assert(map.asMapOfRanges().asScala.mkString(", ") ==
+      "[21..25] -> E, (25..30] -> D")
+
+  }
+
+  it can "remove partial ranges" in {
+    map.remove(Range.closed(21,23))
+    assert(map.asMapOfRanges().asScala.mkString(", ") ==
+      "(23..25] -> E, (25..30] -> D")
+  }
+
 }

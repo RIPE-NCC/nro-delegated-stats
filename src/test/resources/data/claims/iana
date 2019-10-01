@@ -1,0 +1,51 @@
+######################################################################
+#
+#       CONDITIONS OF USE
+# __________________________________________________________________
+# 
+# 
+# These files are freely available for download and use on the condition 
+# that APNIC will not be held responsible for any loss or damage 
+# arising from the use of the information contained in these reports.
+# 
+# This report is not an authoritative report, as it includes a
+# re-formatting of data contained in the IANA-administered number resource
+# registries. The IANA registries remain the authoritative source of
+# resource allocations made by the IANA.
+# 
+# In particular, it should be noted that these reports seek to 
+# indicate where resources were first allocated or assigned. It is not
+# intended that these reports be considered as an authoritative 
+# statement of the location in which any specific resource may 
+# currently be in use.
+# 
+# For more information see: 
+#
+#       http://www.apnic.net/db/rir-stats-format.html
+# or
+#       ftp://ftp.apnic.net/pub/apnic/stats/apnic/README.TXT
+#
+######################################################################
+#
+2|iana|20190911|18|19830101|20190612|+0000
+iana|*|asn|*|6|summary
+iana|*|ipv4|*|6|summary
+iana|*|ipv6|*|6|summary
+iana|ZZ|asn|0|1|19920101|ietf
+iana|ZZ|asn|1|1876|19920101|arin
+iana|ZZ|asn|1877|25|19920501|ripencc
+iana|ZZ|asn|1902|141|19920601|lacnic
+iana|ZZ|asn|2043|1|19921201|afrinic
+iana|ZZ|asn|2044|3|19921201|apnic
+iana|ZZ|ipv4|0.0.0.0|16777216|19830101|ietf
+iana|ZZ|ipv4|1.0.0.0|16777216|20100119|apnic
+iana|ZZ|ipv4|2.0.0.0|16777216|20090918|ripencc
+iana|ZZ|ipv4|3.0.0.0|16777216|19880223|arin
+iana|ZZ|ipv4|4.0.0.0|16777216|19840201|afrinic
+iana|ZZ|ipv4|5.0.0.0|16777216|20101130|lacnic
+iana|ZZ|ipv6|2001:0000::|23|19990701|iana
+iana|ZZ|ipv6|2001:0200::|23|19990701|apnic
+iana|ZZ|ipv6|2001:0400::|23|19990701|arin
+iana|ZZ|ipv6|2001:0600::|23|19990701|ripencc
+iana|ZZ|ipv6|2001:0800::|23|20020501|lacnic
+iana|ZZ|ipv6|2001:0a00::|23|20021102|afrinic
