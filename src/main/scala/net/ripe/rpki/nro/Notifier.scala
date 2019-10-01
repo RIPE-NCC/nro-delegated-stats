@@ -16,10 +16,10 @@ class Notifier(mailer: Mailer) {
 
     // Conflict records contains date,  we need to convert to keys without dates
     // to find persisting conflicts i.e intersection of previous and current conflicts
-    val currentMap = current.map(c => c.key -> c).toMap
+    val currentKeys = current.map(_.key).toSet
     val previousMap = previous.map(c => c.key -> c).toMap
 
-    val stickyConflicts = currentMap.keySet.intersect(previousMap.keySet).map(previousMap)
+    val stickyConflicts = currentKeys.intersect(previousMap.keySet).map(previousMap)
 
     if(stickyConflicts.nonEmpty) {
       logger.info("Found sticky conflicts from previous time")
