@@ -5,7 +5,8 @@ import java.time.LocalDate
 
 import com.typesafe.config.{Config, ConfigFactory}
 import courier.Mailer
-import net.ripe.rpki.nro.Defs.{AFRINIC, APNIC, ARIN, GEOFF, IANA, LACNIC, RIPENCC}
+import net.ripe.rpki.nro.Const.{AFRINIC, APNIC, ARIN, GEOFF, IANA, LACNIC, RIPENCC}
+import org.slf4j.LoggerFactory
 
 object Settings {
 
@@ -80,4 +81,8 @@ object Settings {
     }
     resultFile
   }
+}
+
+trait Logging {
+  val logger = LoggerFactory.getLogger(getClass.getName)
 }

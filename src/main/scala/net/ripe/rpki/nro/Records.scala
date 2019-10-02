@@ -1,13 +1,21 @@
 package net.ripe.rpki.nro
 
-import net.ripe.rpki.nro.Defs._
-import net.ripe.rpki.nro.RangeUtil._
+import net.ripe.rpki.nro.Const._
+import net.ripe.rpki.nro.Ranges._
 import net.ripe.rpki.nro.Records._
 import net.ripe.rpki.nro.Settings._
 
 import scala.util.chaining._
 
 case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) {
+
+  def fixUnavailable: Records = {
+    def fix[R]: Record => Record = (rec: Record) => {
+      val registry = rec.status
+      rec.pipe(date_(TODAY)).pipe(status_(AVAILABLE)).pipe(registry_(registry))
+    }
+    fixRecords(fix)
+  }
 
   def fixIana: Records = {
     def fix[R]: Record => Record = (rec: Record) => rec.status match {
@@ -91,5 +99,11 @@ object Records {
     case a: AsnRecord => a.copy(cc = cc)
     case a: Ipv4Record => a.copy(cc = cc)
     case a: Ipv6Record => a.copy(cc = cc)
+  }
+
+  def registry_(registry: String): Record => Record = (r: Record) => r match {
+    case a: AsnRecord => a.copy (registry = registry)
+    case a: Ipv4Record => a.copy(registry = registry)
+    case a: Ipv6Record => a.copy(registry = registry)
   }
 }

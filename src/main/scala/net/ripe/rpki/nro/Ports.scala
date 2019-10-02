@@ -4,15 +4,14 @@ import java.io.{File, PrintWriter}
 
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Settings._
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.{Try, Using}
 
-// Importing data from remotes files and exporting to file.
-// Or maybe Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge.
-object Ports {
-
-  val logger: Logger = LoggerFactory.getLogger(Ports.getClass)
+/**
+ Importing data from remotes files and exporting to file.
+ Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
+ */
+object Ports extends Logging {
 
   implicit object PipeFormat extends DefaultCSVFormat {
     override val delimiter = '|'

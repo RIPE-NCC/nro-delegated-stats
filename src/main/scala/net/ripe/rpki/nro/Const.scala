@@ -2,7 +2,7 @@ package net.ripe.rpki.nro
 
 import net.ripe.commons.ip.{AsnRange, Ipv4Range, Ipv6Range}
 
-object Defs {
+object Const {
 
   val IANA = "iana"
   val IETF = "ietf"

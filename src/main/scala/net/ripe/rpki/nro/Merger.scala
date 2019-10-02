@@ -3,14 +3,11 @@ package net.ripe.rpki.nro
 import java.math.BigInteger
 
 import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
-import net.ripe.rpki.nro.RangeUtil._
-import org.slf4j.{Logger, LoggerFactory}
+import net.ripe.rpki.nro.Ranges._
 
 import scala.jdk.CollectionConverters._
 
-object Merger {
-
-  val logger: Logger = LoggerFactory.getLogger(Merger.getClass)
+object Merger extends Logging {
 
   def resolveConflict(newRange: Range[BigInteger], newRecord: Record,
                       currentMap: RangeMap[BigInteger, Record],

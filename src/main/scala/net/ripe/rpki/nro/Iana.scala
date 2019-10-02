@@ -1,7 +1,7 @@
 package net.ripe.rpki.nro
 
 import net.ripe.commons.ip._
-import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.Settings._
 
 import scala.jdk.CollectionConverters._

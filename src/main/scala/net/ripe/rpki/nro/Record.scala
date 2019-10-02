@@ -4,7 +4,7 @@ import java.math.BigInteger
 
 import com.google.common.collect._
 import net.ripe.commons.ip.{Ipv4, Ipv6Range, PrefixUtils}
-import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Const._
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -96,8 +96,8 @@ case class Ipv4Record(
   }
 
   override def update(key: Range[BigInteger]): Ipv4Record = {
-    val start = RangeUtil.toInterval(key)._1.longValue()
-    val len = RangeUtil.length(key)
+    val start = Ranges.toInterval(key)._1.longValue()
+    val len = Ranges.length(key)
     val startAddress = Ipv4.of(start)
     this.copy(start = s"$startAddress", length = s"$len")
   }
@@ -131,7 +131,7 @@ case class Ipv6Record(
   }
 
   override def update(key: Range[BigInteger]): Record = {
-    val (begin, end) = RangeUtil.toInterval(key)
+    val (begin, end) = Ranges.toInterval(key)
     val newRange: Ipv6Range = Ipv6Range.from(begin).to(end)
     val Array(start, prefix) = newRange.toStringInCidrNotation.split("/")
     this.copy(start = start, length = prefix)
@@ -158,15 +158,15 @@ case class AsnRecord(
   }
 
   override def update(key: Range[BigInteger]): Record = {
-    val start = RangeUtil.toInterval(key)._1
-    val length = RangeUtil.length(key)
+    val start = Ranges.toInterval(key)._1
+    val length = Ranges.length(key)
     this.copy(start = s"$start", length = s"$length")
   }
 }
 
 object Ipv6Record {
   def splitPrefixes(range: Range[BigInteger]): mutable.Seq[Ipv6Range] = {
-    val (start, end) = RangeUtil.toInterval(range)
+    val (start, end) = Ranges.toInterval(range)
     Ipv6Range.from(start).to(end).splitToPrefixes().asScala
   }
 }

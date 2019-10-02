@@ -4,7 +4,11 @@ import java.math.BigInteger
 import com.google.common.collect._
 import scala.jdk.CollectionConverters._
 
-object RangeUtil {
+/**
+ * Range and RangeMap related utilities
+ */
+object Ranges {
+
 
   def asRangeMap(recs: List[Record]): RangeMap[BigInteger, Record] = {
     val result: RangeMap[BigInteger, Record] = TreeRangeMap.create[BigInteger, Record]()

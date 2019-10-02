@@ -14,7 +14,6 @@ trait TestUtil {
 
   def getResourceFile(fileName: String): String = getClass.getResource(fileName).getFile
 
-
   def getMockMailer() ={
     val mockedProperty = new Properties()
     mockedProperty.put("mail.transport.protocol.rfc822", "mocked")

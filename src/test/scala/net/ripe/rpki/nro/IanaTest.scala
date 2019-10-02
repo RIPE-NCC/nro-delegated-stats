@@ -1,7 +1,7 @@
 package net.ripe.rpki.nro
 
 import net.ripe.commons.ip.{AsnRange, Ipv4Range, Ipv6Range}
-import net.ripe.rpki.nro.Defs._
+import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.Ports.parseRecordFile
 import net.ripe.rpki.nro.Settings._
 import org.scalatest.FlatSpec
@@ -106,7 +106,6 @@ class IanaTest extends FlatSpec {
     assert(overclaimed.asn.size  == 1 && overclaimed.asn. head.length == "10")
     assert(overclaimed.ipv4.size == 1 && overclaimed.ipv4.head.length == "512")
     assert(overclaimed.ipv6.size == 1 && overclaimed.ipv6.head.length == "23")
-
   }
 
   it should " detect unclaimed " in {
