@@ -76,13 +76,13 @@ trait Merger extends Logging with Ranges {
   def combineRecords(currentRecords: Iterable[Records], previous: Option[Records] = None): (Records, List[Conflict]) = {
 
     logger.info("Combine and detect conflict Asn")
-    val (asns, asnConflicts)   = combineResources(currentRecords.map(_.asn))
+    val (asns, asnConflicts)   = combineResources(currentRecords.map(_.asn), previous.map(_.asn).getOrElse(List()))
 
     logger.info("Combine and detect conflict IPv4")
-    val (ipv4s, ipv4Conflicts) = combineResources(currentRecords.map(_.ipv4))
+    val (ipv4s, ipv4Conflicts) = combineResources(currentRecords.map(_.ipv4), previous.map(_.ipv4).getOrElse(List()))
 
     logger.info("Combine and detect conflict IPv6")
-    val (ipv6s, ipv6Conflicts) = combineResources(currentRecords.map(_.ipv6))
+    val (ipv6s, ipv6Conflicts) = combineResources(currentRecords.map(_.ipv6), previous.map(_.ipv6).getOrElse(List()))
 
     (Records(asns, ipv4s, ipv6s), asnConflicts ++ ipv4Conflicts ++ ipv6Conflicts)
   }

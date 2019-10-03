@@ -6,9 +6,9 @@ import net.ripe.rpki.nro.service.{Notifier, Ports}
 
 object Main extends Stats with App {
 
-  val (rirRecords, ianaRecord, previousConflicts) = Ports.fetchAndParse()
+  val (rirRecords, ianaRecord, previousResult, previousConflicts) = Ports.fetchAndParse()
 
-  val (results, mergedResults, currentConflicts, unclaimed, overclaimed) = process(rirRecords, ianaRecord, previousConflicts)
+  val (results, mergedResults, currentConflicts, unclaimed, overclaimed) = process(rirRecords, ianaRecord, previousResult, previousConflicts)
 
   val notifier = new Notifier(Settings.mailer)
   notifier.notifyConflicts(currentConflicts, previousConflicts)

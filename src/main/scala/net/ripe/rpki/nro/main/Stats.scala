@@ -7,7 +7,10 @@ import net.ripe.rpki.nro.model.{Conflict, Record, Records}
 trait Stats extends Logging with Merger {
 
   // Main steps of stats merging and conflict detections.
-  def process(rirRecords: Iterable[Records], ianaRecord: Records, previousConflicts: List[Conflict]): (Records, Records, List[Conflict], Records, Records) = {
+  def process(rirRecords: Iterable[Records],
+              ianaRecord: Records,
+              previousResult: Option[Records],
+              previousConflicts: List[Conflict]): (Records, Records, List[Conflict], Records, Records) = {
 
     logger.info(s"\n\n---  Combining RIRs data and checking for conflicts among RIRs ---\n\n")
 
@@ -15,7 +18,7 @@ trait Stats extends Logging with Merger {
     val isRirRecord: Record => Boolean = r => RIRS.contains(r.status)
     val (ianaRirs, ianaNonRirs) = ianaRecord.partition(isRirRecord)
 
-    val (combined, currentConflicts) = combineRecords(rirRecords ++ Iterable(ianaNonRirs))
+    val (combined, currentConflicts) = combineRecords(rirRecords ++ Iterable(ianaNonRirs), previousResult)
 
     logger.info("Calculate unclaimed")
     val unclaimed: Records = ianaRirs.substract(combined).fixUnclaimed

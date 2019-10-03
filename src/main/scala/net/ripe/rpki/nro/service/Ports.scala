@@ -4,7 +4,7 @@ import java.io.{File, PrintWriter}
 
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Logging
-import net.ripe.rpki.nro.Settings.{TODAY, currentConflictFile, previousConflictFile, resultFileName, sources, todayDataDirectory}
+import net.ripe.rpki.nro.Settings._
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
 import scala.util.{Try, Using}
@@ -20,11 +20,11 @@ object Ports extends Logging {
   }
 
   def parseRecordFile(source: String): Records = {
-
+    logger.info(s"Parsing local source $source")
     // What to do with header and summaries, do we want to check integrity?
     Using.resource(CSVReader.open(source)) { reader =>
       val lines: List[List[String]] = reader.all()
-        .filter(!_.head.startsWith("#"))
+        .filter(!_.head.startsWith("#")) // no comments
           .drop(4)
       // FixME: Dropping header and summaries, for now.
       // Better way is to parse it and verify/report error if summary does not match with the following records.
@@ -59,17 +59,19 @@ object Ports extends Logging {
     }
   }
 
-  def fetchAndParse(): (Iterable[Records], Records, List[Conflict]) = {
+  def fetchAndParse(): (Iterable[Records], Records, Option[Records], List[Conflict]) = {
     val recordMaps: Map[String, Records] = sources.map {
       case (name:String, url:String) =>
         fetchLocally(url, s"$todayDataDirectory/$name")
         name -> parseRecordFile(s"$todayDataDirectory/$name")
     }
-    // Adjusting and fixing record fields conforming to what is done by geoff.
+
     val rirs = (recordMaps - "iana" - "geoff").view.mapValues(_.fixRIRs).values
     val iana = recordMaps("iana").fixIana
+
+    val previousResult = Try(parseRecordFile(s"$previousResultFile")).toOption
     val oldConflict = Try(readConflicts(s"$previousConflictFile")).getOrElse(List())
-    (rirs, iana, oldConflict)
+    (rirs, iana, previousResult, oldConflict)
   }
 
   def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true): Unit = {
