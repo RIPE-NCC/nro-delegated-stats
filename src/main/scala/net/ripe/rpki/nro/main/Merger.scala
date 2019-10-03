@@ -1,13 +1,13 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.main
 
 import java.math.BigInteger
 
 import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
-
+import net.ripe.rpki.nro.Logging
+import net.ripe.rpki.nro.model.{Conflict, Record, Records}
 import scala.jdk.CollectionConverters._
-import Ranges._
 
-object Merger extends Logging {
+trait Merger extends Logging with Ranges {
 
   def resolveConflict(newRange: Range[BigInteger], newRecord: Record,
                       currentMap: RangeMap[BigInteger, Record],
@@ -44,7 +44,7 @@ object Merger extends Logging {
       resolveConflict(newRecord.range.key, newRecord, currentMap, previousMap)
     }
 
-    (updateMap(currentMap), conflicts)
+    (updateRecordRange(currentMap), conflicts)
   }
 
   def mergeSiblings(records: List[Record]): List[Record] = {
@@ -89,11 +89,11 @@ object Merger extends Logging {
 
   def mergeRecords(records: Records): Records = {
     logger.info("Merging ASNs siblings ")
-    val asnMerged = Merger.mergeSiblings(records.asn)
+    val asnMerged = mergeSiblings(records.asn)
     logger.info("Merging IPv4 siblings ")
-    val ipv4Merged = Merger.mergeSiblings(records.ipv4)
+    val ipv4Merged = mergeSiblings(records.ipv4)
     logger.info("Merging IPv6 siblings ")
-    val ipv6Merged = Merger.mergeSiblings(records.ipv6)
+    val ipv6Merged = mergeSiblings(records.ipv6)
 
     Records(asnMerged, ipv4Merged, ipv6Merged)
   }

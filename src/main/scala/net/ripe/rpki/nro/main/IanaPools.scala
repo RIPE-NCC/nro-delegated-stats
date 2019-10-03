@@ -1,8 +1,10 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.main
 
-import net.ripe.commons.ip._
-import net.ripe.rpki.nro.Const._
-import net.ripe.rpki.nro.Settings._
+import net.ripe.commons.ip.{Ipv4, Ipv6Range}
+import net.ripe.rpki.nro.Const.{ALL_ASNS, ALL_IPV4, ALL_IPV6, ASN, DEFAULT_CC, IANA, IANAPOOL, IPV4, IPV4_IANA_POOL_DATE, IPV6}
+import net.ripe.rpki.nro.Settings.TODAY
+import net.ripe.rpki.nro.model
+import net.ripe.rpki.nro.model.{AsnRecord, Ipv4Record, Ipv6Record, RecordRange, Records, Stat}
 
 object IanaPools {
 
@@ -20,6 +22,6 @@ object IanaPools {
 
   def ipv6Pool(ipv6: RecordRange): Ipv6Record = {
     val Array(start, prefix) = Ipv6Range.from(ipv6.rStart).to(ipv6.rEnd).toStringInCidrNotation.split("/")
-    Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, start, prefix, TODAY, IANAPOOL, "", IANA))
+    Ipv6Record(model.Stat(IANA, DEFAULT_CC, IPV6, start, prefix, TODAY, IANAPOOL, "", IANA))
   }
 }

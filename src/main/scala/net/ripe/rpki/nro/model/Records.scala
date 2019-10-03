@@ -1,9 +1,10 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.model
 
-import net.ripe.rpki.nro.Const._
-import net.ripe.rpki.nro.Settings._
-import net.ripe.rpki.nro.Ranges._
-case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) {
+import net.ripe.rpki.nro.Const.{ALLOCATED, ASSIGNED, AVAILABLE, DEFAULT_CC, IANA, IETF, RESERVED}
+import net.ripe.rpki.nro.Settings.TODAY
+import net.ripe.rpki.nro.main.Ranges
+
+case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) extends Ranges {
 
   def fixUnavailable: Records = {
     def fix[R]: Record => Record = (rec: Record) => {
@@ -49,7 +50,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) {
     thatIpv4.asMapOfRanges().forEach { case (key, _) => thisIpv4.remove(key) }
     thatIpv6.asMapOfRanges().forEach { case (key, _) => thisIpv6.remove(key) }
 
-    Records(updateMap(thisAsn), updateMap(thisIpv4), updateMap(thisIpv6))
+    Records(updateRecordRange(thisAsn), updateRecordRange(thisIpv4), updateRecordRange(thisIpv6))
   }
 
   def append(that: Records): Records =
@@ -66,4 +67,3 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) {
     (Records(asnRirs, ipv4Rirs, ipv6Rirs), Records(asnNonRirs, ipv4NonRirs, ipv6NonRirs))
   }
 }
-

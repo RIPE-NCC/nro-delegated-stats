@@ -1,9 +1,11 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.main
 
 import net.ripe.commons.ip.{AsnRange, Ipv4Range, Ipv6Range}
 import net.ripe.rpki.nro.Const._
-import net.ripe.rpki.nro.Ports.parseRecordFile
+import net.ripe.rpki.nro.service.Ports.parseRecordFile
 import net.ripe.rpki.nro.Settings._
+import net.ripe.rpki.nro.main.IanaPools
+import net.ripe.rpki.nro.model.{AsnRecord, Ipv4Record, Ipv6Record, Record, RecordRange, Records, Stat}
 import org.scalatest.FlatSpec
 
 class IanaPoolsTest extends FlatSpec {

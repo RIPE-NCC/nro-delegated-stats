@@ -1,8 +1,10 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.service
 
 import courier.Defaults._
 import courier._
 import net.ripe.rpki.nro.Settings._
+import net.ripe.rpki.nro.model.Conflict
+import net.ripe.rpki.nro.{Const, Logging}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

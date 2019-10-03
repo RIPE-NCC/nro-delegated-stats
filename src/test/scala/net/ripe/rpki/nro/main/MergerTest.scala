@@ -1,10 +1,11 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.main
 
-import net.ripe.rpki.nro.Merger._
-import net.ripe.rpki.nro.Ports._
+import net.ripe.rpki.nro.TestUtil
+import net.ripe.rpki.nro.service.Ports._
+import net.ripe.rpki.nro.model.{Conflict, Record, Records}
 import org.scalatest.FlatSpec
 
-class MergerTest extends FlatSpec with TestUtil {
+class MergerTest extends FlatSpec with TestUtil with Merger {
 
   "Conflicts" should "be detected for first lines of these data " in {
     val ripe =

@@ -1,8 +1,10 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.service
 
 import java.io.File
 
-import net.ripe.rpki.nro.Ports._
+import net.ripe.rpki.nro.TestUtil
+import net.ripe.rpki.nro.service.Ports._
+import net.ripe.rpki.nro.model.Conflict
 import org.scalatest.FlatSpec
 
 class PortsTest extends FlatSpec with TestUtil {

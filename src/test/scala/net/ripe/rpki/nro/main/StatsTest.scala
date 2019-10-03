@@ -1,6 +1,7 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.main
 
-import net.ripe.rpki.nro.Ports.parseRecordFile
+import net.ripe.rpki.nro.service.Ports.parseRecordFile
+import net.ripe.rpki.nro.{Logging, TestUtil}
 import org.scalatest.FlatSpec
 
 class StatsTest extends FlatSpec with Stats with TestUtil with Logging {

@@ -1,15 +1,17 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.service
 
 import java.io.{File, PrintWriter}
 
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
-import net.ripe.rpki.nro.Settings._
+import net.ripe.rpki.nro.Logging
+import net.ripe.rpki.nro.Settings.{TODAY, currentConflictFile, previousConflictFile, resultFileName, sources, todayDataDirectory}
+import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
 import scala.util.{Try, Using}
 
 /**
- Importing data from remotes files and exporting to file.
- Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
+ * Importing data from remotes files and exporting to file.
+ * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
  */
 object Ports extends Logging {
 

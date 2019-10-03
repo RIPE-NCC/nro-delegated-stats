@@ -1,6 +1,8 @@
 package net.ripe.rpki.nro
 
 import net.ripe.rpki.nro.Settings._
+import net.ripe.rpki.nro.main.Stats
+import net.ripe.rpki.nro.service.{Notifier, Ports}
 
 object Main extends Stats with App {
 

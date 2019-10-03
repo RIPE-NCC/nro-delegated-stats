@@ -1,4 +1,4 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.model
 
 import java.math.BigInteger
 

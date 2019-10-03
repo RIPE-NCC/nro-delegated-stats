@@ -1,12 +1,13 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.model
 
 import java.math.BigInteger
 
 import com.google.common.collect._
 import net.ripe.commons.ip.{Ipv4, Ipv6Range, PrefixUtils}
+import net.ripe.rpki.nro.main.Ranges
+import scala.jdk.CollectionConverters._
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
 
 case class Stat(registry: String, cc: String, lType: String, start: String, length: String, date: String, status: String, oid: String = "", ext: String = "e-stats") {
   def asList: List[String] = List(registry, cc, lType, start, length, date, status, oid, ext)
@@ -22,16 +23,15 @@ case class Conflict(a: Record, b: Record) {
   def key: List[String] = a.noDate ++ b.noDate
 }
 
-abstract class Record extends Comparable[Record] {
-
-  def update(key: Range[BigInteger]): Record
+trait Record extends Comparable[Record] with Ranges {
 
   def stat: Stat
-
   def range: RecordRange
 
-  def merge(that: Record): Record
+  def update(key: Range[BigInteger]): Record
+  def update(info: Stat): Record
 
+  def merge(that: Record): Record
   def canMerge(that: Record): Boolean = {
     this.range.adjacent(that.range) &&
       this.stat.cc == that.stat.cc &&
@@ -42,25 +42,16 @@ abstract class Record extends Comparable[Record] {
   }
 
   def asList: List[String] = stat.asList
-
   def noDate: List[String] = stat.noDate
-
   override def toString: String = asList.mkString("|")
 
   override def compareTo(that: Record): Int = this.range.compareTo(that.range)
 
-  def update(info: Stat): Record
-
   def start: String = stat.start
-
   def length: String = stat.length
-
   def registry: String = stat.registry
-
   def lType: String = stat.lType
-
   def status: String = stat.status
-
   def ext: String = stat.ext
 }
 
@@ -98,8 +89,8 @@ case class Ipv4Record(stat: Stat) extends Record {
   }
 
   override def update(key: Range[BigInteger]): Ipv4Record = {
-    val start = Ranges.toInterval(key)._1.longValue()
-    val len = Ranges.length(key)
+    val start = toInterval(key)._1.longValue()
+    val len = size(key)
     val startAddress = Ipv4.of(start)
     this.copy(stat = this.stat.copy(start = s"$startAddress", length = s"$len"))
   }
@@ -125,10 +116,15 @@ case class Ipv6Record(stat: Stat) extends Record {
   }
 
   override def update(key: Range[BigInteger]): Record = {
-    val (begin, end) = Ranges.toInterval(key)
+    val (begin, end) = toInterval(key)
     val newRange: Ipv6Range = Ipv6Range.from(begin).to(end)
     val Array(start, prefix) = newRange.toStringInCidrNotation.split("/")
     this.copy(stat = this.stat.copy(start = start, length = prefix))
+  }
+
+  def splitPrefixes(range: Range[BigInteger]): mutable.Seq[Ipv6Range] = {
+    val (start, end) = toInterval(range)
+    Ipv6Range.from(start).to(end).splitToPrefixes().asScala
   }
 }
 
@@ -144,16 +140,10 @@ case class AsnRecord(stat: Stat) extends Record {
   }
 
   override def update(key: Range[BigInteger]): Record = {
-    val start = Ranges.toInterval(key)._1
-    val length = Ranges.length(key)
+    val start = toInterval(key)._1
+    val length = size(key)
     this.copy(stat = this.stat.copy(start = s"$start", length = s"$length"))
   }
 }
 
-object Ipv6Record {
-  def splitPrefixes(range: Range[BigInteger]): mutable.Seq[Ipv6Range] = {
-    val (start, end) = Ranges.toInterval(range)
-    Ipv6Range.from(start).to(end).splitToPrefixes().asScala
-  }
-}
 

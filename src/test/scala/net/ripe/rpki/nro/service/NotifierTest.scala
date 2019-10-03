@@ -1,10 +1,11 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.service
 
 import javax.mail.Provider
 import javax.mail.internet.MimeMessage
+import net.ripe.rpki.nro.{Settings, TestUtil}
 import org.jvnet.mock_javamail._
 import org.scalatest.FlatSpec
-import Settings._
+import Settings.sender
 
 class MockedSMTPProvider extends Provider(Provider.Type.TRANSPORT, "mocked", classOf[MockTransport].getName, "Mock", null)
 
