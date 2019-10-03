@@ -2,8 +2,7 @@ package net.ripe.rpki.nro
 
 import net.ripe.rpki.nro.Const.RIRS
 
-
-object Stats extends Logging {
+trait Stats extends Logging {
 
   // Main steps of stats merging and conflict detections.
   def process(rirRecords: Iterable[Records], ianaRecord: Records, previousConflicts: List[Conflict]): (Records, Records, List[Conflict], Records, Records) = {
@@ -23,7 +22,7 @@ object Stats extends Logging {
     val overclaimed = combined.substract(ianaRecord)
 
     logger.info("Calculating IANA pool")
-    val ianaPools = Iana.ianaPools(combined.append(unclaimed))
+    val ianaPools = IanaPools(combined.append(unclaimed))
 
     val results = combined.append(ianaPools).append(unclaimed).sorted()
 

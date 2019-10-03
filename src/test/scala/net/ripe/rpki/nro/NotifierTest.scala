@@ -10,7 +10,7 @@ class MockedSMTPProvider extends Provider(Provider.Type.TRANSPORT, "mocked", cla
 
 class NotifierTest extends FlatSpec with TestUtil {
 
-  val subject = new Notifier(getMockMailer())
+  val subject = new Notifier(mockMailer)
 
   "Notifier test " should " let me know if there are persistent conflicts" in {
     val previousConflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))

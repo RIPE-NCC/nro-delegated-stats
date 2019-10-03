@@ -3,9 +3,9 @@ package net.ripe.rpki.nro
 import java.math.BigInteger
 
 import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
-import net.ripe.rpki.nro.Ranges._
 
 import scala.jdk.CollectionConverters._
+import Ranges._
 
 object Merger extends Logging {
 
@@ -98,4 +98,3 @@ object Merger extends Logging {
     Records(asnMerged, ipv4Merged, ipv6Merged)
   }
 }
-

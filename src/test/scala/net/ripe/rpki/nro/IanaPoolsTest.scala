@@ -6,40 +6,40 @@ import net.ripe.rpki.nro.Ports.parseRecordFile
 import net.ripe.rpki.nro.Settings._
 import org.scalatest.FlatSpec
 
-class IanaTest extends FlatSpec {
+class IanaPoolsTest extends FlatSpec {
 
   "Removing half of ipv6" should "produce the other half" in {
-    val actual = Iana.subtractRanges(ALL_IPV6, Iterable(RecordRange.from(Ipv6Range.parse("::/1")))).toList.map(_.ipv6)
+    val actual  = IanaPools(Records(List(), List(), List(IanaPools.ipv6Pool(RecordRange.from(Ipv6Range.parse("::/1"))))))
     val expected = Iterator(RecordRange.from(Ipv6Range.parse("8000::/1"))).toList.map(_.ipv6)
-    assert(actual === expected)
+    assert(actual.ipv6.map(_.range.ipv6) === expected)
   }
 
   "Removing half of ipv4 " should "produce the other half" in {
-    val actual = Iana.subtractRanges(ALL_IPV4, Iterable(RecordRange.from(Ipv4Range.parse("0.0.0.0/1")))).toList.map(_.ipv4)
+    val actual = IanaPools(Records(List(), List(IanaPools.ipv6Pool(RecordRange.from(Ipv4Range.parse("0.0.0.0/1")))), List()))
     val expected = Iterator(RecordRange.from(Ipv4Range.parse("128.0.0.0/1"))).toList.map(_.ipv4)
-    assert(actual === expected)
+    assert(actual.ipv4.map(_.range.ipv4) === expected)
   }
 
   "Calculating iana pools " should " when half of the internet is used should give the other half " in {
 
-    val (asn, ipv4, ipv6) = Iana.ianaPools(
-      List(RecordRange.from(AsnRange.parse("AS0-AS2100000000"))),
-      List(RecordRange.from(Ipv4Range.parse("0.0.0.0/1"))),
-      List(RecordRange.from(Ipv6Range.parse("::/1"))))
+    val pool = IanaPools(Records(
+      List(IanaPools.asnPool(RecordRange.from(AsnRange.parse("AS0-AS2100000000")))),
+      List(IanaPools.ipv4Pool(RecordRange.from(Ipv4Range.parse("0.0.0.0/1")))),
+      List(IanaPools.ipv6Pool(RecordRange.from(Ipv6Range.parse("::/1"))))))
 
-    assert(asn.head.range  == RecordRange.from(AsnRange.parse("AS2100000001-AS4200000000")))
-    assert(ipv4.head.range == RecordRange.from(Ipv4Range.parse("128.0.0.0/1")))
-    assert(ipv6.head.range == RecordRange.from(Ipv6Range.parse("8000::/1")))
+    assert(pool.asn.head.range  == RecordRange.from(AsnRange.parse("AS2100000001-AS4200000000")))
+    assert(pool.ipv4.head.range == RecordRange.from(Ipv4Range.parse("128.0.0.0/1")))
+    assert(pool.ipv6.head.range == RecordRange.from(Ipv6Range.parse("8000::/1")))
   }
 
   "Iana pools" should "be empty when calculated from appending original + calculated pools" in {
 
     val original: Records = parseRecordFile(getClass.getResource("/data/iana").getFile)
-    val pools: Records = Iana.ianaPools(original)
+    val pools: Records = IanaPools.apply(original)
 
     val all: Records = original.append(pools).sorted()
 
-    val empty = Iana.ianaPools(all)
+    val empty = IanaPools.apply(all)
     assert(empty.asn.isEmpty)
     assert(empty.ipv4.isEmpty)
     assert(empty.ipv6.isEmpty)
@@ -60,18 +60,18 @@ class IanaTest extends FlatSpec {
   }
 
   "Iana pool calculation" should "work for Asn" in {
-    assert(Iana.asnPool(RecordRange.from(AsnRange.parse("AS1000-AS2000"))) ==
-      AsnRecord( IANA, DEFAULT_CC, ASN, "1000", "1001" + "", TODAY, IANAPOOL, "", IANA))
+    assert(IanaPools.asnPool(RecordRange.from(AsnRange.parse("AS1000-AS2000"))) ==
+      AsnRecord( Stat(IANA, DEFAULT_CC, ASN, "1000", "1001" + "", TODAY, IANAPOOL, "", IANA)))
   }
 
   it should "work for Ipv4" in {
-    assert(Iana.ipv4Pool(RecordRange.from(Ipv4Range.parse("0.0.0.0/24"))) ==
-      Ipv4Record( IANA, DEFAULT_CC, IPV4, "0.0.0.0", "256", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA))
+    assert(IanaPools.ipv4Pool(RecordRange.from(Ipv4Range.parse("0.0.0.0/24"))) ==
+      Ipv4Record( Stat(IANA, DEFAULT_CC, IPV4, "0.0.0.0", "256", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)))
   }
 
   it should "work for Ipv6" in {
-    assert(Iana.ipv6Pool(RecordRange.from(Ipv6Range.parse("::/24"))) ==
-      Ipv6Record(IANA, DEFAULT_CC, IPV6, "::", "24", TODAY, IANAPOOL, "", IANA))
+    assert(IanaPools.ipv6Pool(RecordRange.from(Ipv6Range.parse("::/24"))) ==
+      Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, "::", "24", TODAY, IANAPOOL, "", IANA)))
   }
 
   "Claims verification " should  "be empty in case of proper combination" in {
