@@ -6,7 +6,7 @@ import net.ripe.rpki.nro.main.Ranges
 
 case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) extends Ranges {
 
-  def fixUnavailable: Records = {
+  def fixUnclaimed: Records = {
     def fix[R]: Record => Record = (rec: Record) => {
       val info = rec.stat.copy(date = TODAY, registry = rec.stat.status, status = AVAILABLE)
       rec.update(info)
@@ -17,8 +17,8 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
 
   def fixIana: Records = {
     def fix[R]: Record => Record = (rec: Record) => rec.stat.status match {
-      case IETF => rec.update(rec.stat.copy(oid =IETF, ext = IANA))
-      case IANA => rec.update(rec.stat.copy(oid =IANA, status = ASSIGNED, ext = IANA))
+      case IETF => rec.update(rec.stat.copy(oid = IETF, ext = IANA))
+      case IANA => rec.update(rec.stat.copy(oid = IANA, status = ASSIGNED, ext = IANA))
       case _ => rec.update(rec.stat.copy(ext = IANA))
     }
 
@@ -28,7 +28,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
   def fixRIRs: Records = {
     def fix: Record => Record = (rec: Record) => rec.stat.status match {
       // RESERVED and AVAILABLE has neither date nor country (except AFRINIC with ZZ)
-      case RESERVED | AVAILABLE => rec.update(rec.stat.copy(date =TODAY, cc = DEFAULT_CC))
+      case RESERVED | AVAILABLE => rec.update(rec.stat.copy(date = TODAY, cc = DEFAULT_CC))
       // Whatever allocated in original RIR file appears as ASSIGNED
       case ALLOCATED => rec.update(rec.stat.copy(status = ASSIGNED))
       case _ => rec

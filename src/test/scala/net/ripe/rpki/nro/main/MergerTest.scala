@@ -64,9 +64,9 @@ class MergerTest extends FlatSpec with TestUtil with Merger {
     assert(result.ipv4.size == 300)
     assert(result.ipv6.size == 300)
 
-    val asnConflicts = conflicts.filter(_.a.lType == "asn")
-    val ipv4Conflicts = conflicts.filter(_.a.lType == "ipv4")
-    val ipv6Conflicts = conflicts.filter(_.a.lType == "ipv6")
+    val asnConflicts = conflicts.filter(_.a.`type` == "asn")
+    val ipv4Conflicts = conflicts.filter(_.a.`type` == "ipv4")
+    val ipv6Conflicts = conflicts.filter(_.a.`type` == "ipv6")
 
     assert(asnConflicts.size == 100)
     assert(ipv4Conflicts.size == 100)

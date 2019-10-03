@@ -18,7 +18,7 @@ trait Stats extends Logging with Merger {
     val (combined, currentConflicts) = combineRecords(rirRecords ++ Iterable(ianaNonRirs))
 
     logger.info("Calculate unclaimed")
-    val unclaimed: Records = ianaRirs.substract(combined).fixUnavailable
+    val unclaimed: Records = ianaRirs.substract(combined).fixUnclaimed
 
     logger.info("Calculate overclaimed")
     val overclaimed = combined.substract(ianaRecord)
