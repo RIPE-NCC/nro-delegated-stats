@@ -29,7 +29,7 @@ class StatsTest extends FlatSpec with Stats with TestUtil with Logging {
     val afrinic = parseRecordFile(getResourceFile("/data/afrinic")).fixRIRs
     val arin = parseRecordFile(getResourceFile("/data/arin")).fixRIRs
     val previous = parseRecordFile(getResourceFile("/data/afriaprin")).fixRIRs
-    
+
     val (results, mergedResults, currentConflicts, unclaimed, overclaimed) = process(Iterable(apnic, afrinic, arin), iana, Some(previous), List())
 
     assert(mergedResults.size <= results.size)
