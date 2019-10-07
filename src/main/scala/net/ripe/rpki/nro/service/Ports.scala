@@ -21,18 +21,22 @@ object Ports extends Logging {
 
   def parseRecordFile(source: String): Records = {
     logger.info(s"Parsing local source $source")
-    // What to do with header and summaries, do we want to check integrity?
-    Using.resource(CSVReader.open(source)) { reader =>
-      val lines: List[List[String]] = reader.all()
-        .filter(!_.head.startsWith("#")) // no comments
-          .drop(4)
-      // FixME: Dropping header and summaries, for now.
-      // Better way is to parse it and verify/report error if summary does not match with the following records.
 
-      val records = lines.map(Record.apply)
+    val comments: List[String] => Boolean = _.head.startsWith("#")
+    val summary : List[String] => Boolean = _.last == "summary"
+
+    val version: String => Boolean = s => s.forall(c => c.isDigit || c == '.')
+    val header: List[String] => Boolean = line => version(line.head)
+
+    val isRecord: List[String] => Boolean = line => !(comments(line) || header(line) || summary(line))
+
+    Using.resource(CSVReader.open(source)) { reader =>
+
       var asn  : Vector[AsnRecord]  = Vector[AsnRecord]  ()
       var ipv4 : Vector[Ipv4Record] = Vector[Ipv4Record] ()
       var ipv6 : Vector[Ipv6Record] = Vector[Ipv6Record] ()
+
+      val records = reader.all().withFilter(isRecord).map(Record.apply)
 
       records.foreach {
         case rec: AsnRecord   => asn  = asn  :+ rec
