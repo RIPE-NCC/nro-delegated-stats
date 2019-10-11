@@ -24,15 +24,15 @@ trait Stats extends Logging with Merger {
     val unclaimed: Records = ianaRirs.substract(combined).fixUnclaimed
 
     logger.info("Calculate overclaimed")
-    val overclaimed = combined.substract(ianaRecord)
+    val overclaimed: Records = combined.substract(ianaRecord)
 
     logger.info("Calculating IANA pool")
-    val ianaPools = IanaPools(combined.append(unclaimed))
+    val ianaPools: Records = IanaPools(combined.append(unclaimed))
 
-    val results = combined.append(ianaPools).append(unclaimed).sorted()
+    val results: Records = combined.append(ianaPools).append(unclaimed).sorted()
 
     logger.info("Merging ASNs siblings ")
-    val mergedResults = mergeRecords(results)
+    val mergedResults: Records = mergeRecords(results)
 
     (results, mergedResults, currentConflicts, unclaimed, overclaimed)
   }

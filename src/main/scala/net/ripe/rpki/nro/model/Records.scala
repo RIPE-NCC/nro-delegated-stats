@@ -50,7 +50,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
     thatIpv4.asMapOfRanges().forEach { case (key, _) => thisIpv4.remove(key) }
     thatIpv6.asMapOfRanges().forEach { case (key, _) => thisIpv6.remove(key) }
 
-    Records(updateRecordRange(thisAsn), updateRecordRange(thisIpv4), updateRecordRange(thisIpv6))
+    Records(alignRecordWithMapRangeKeys(thisAsn), alignRecordWithMapRangeKeys(thisIpv4), alignRecordWithMapRangeKeys(thisIpv6))
   }
 
   def append(that: Records): Records =

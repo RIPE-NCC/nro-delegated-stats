@@ -44,7 +44,7 @@ trait Merger extends Logging with Ranges {
       resolveConflict(newRecord.range.key, newRecord, currentMap, previousMap)
     }
 
-    (updateRecordRange(currentMap), conflicts)
+    (alignRecordWithMapRangeKeys(currentMap), conflicts)
   }
 
   def mergeSiblings(records: List[Record]): List[Record] = {
