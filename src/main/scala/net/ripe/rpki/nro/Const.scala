@@ -38,6 +38,9 @@ object Const {
   val ALL_IPV6: Ipv6Range = Ipv6Range.parse("::/0")
   val ALL_IPV4: Ipv4Range = Ipv4Range.parse("0.0.0.0/0")
 
+  // Magic serial number, all previous delegated-extended-stat are using this serial number
+  val MAGIC_SERIAL_NUMBER = 19821213
+
   val RIRS = List(APNIC, AFRINIC, ARIN, LACNIC, RIPENCC)
 }
 

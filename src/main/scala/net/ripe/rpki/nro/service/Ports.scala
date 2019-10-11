@@ -5,6 +5,7 @@ import java.io.{File, PrintWriter}
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Logging
 import net.ripe.rpki.nro.Settings._
+import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
 import scala.util.{Try, Using}
@@ -87,10 +88,9 @@ object Ports extends Logging {
     Using.resource(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
-      val SERIAL = 19821213
       if(totalSize == 0) return
       if(header){
-        writer.write(s"2|nro|$TODAY|$totalSize|$SERIAL|$TODAY|+0000\n")
+        writer.write(s"2|nro|$TODAY|$totalSize|$MAGIC_SERIAL_NUMBER|$TODAY|+0000\n")
         writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
         writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
         writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
