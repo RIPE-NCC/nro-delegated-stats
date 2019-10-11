@@ -1,12 +1,13 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.main
 
 import java.math.BigInteger
 
 import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
-
+import net.ripe.rpki.nro.Logging
+import net.ripe.rpki.nro.model.{Conflict, Record, Records}
 import scala.jdk.CollectionConverters._
 
-object Merger {
+trait Merger extends Logging with Ranges {
 
   def resolveConflict(newRange: Range[BigInteger], newRecord: Record,
                       currentMap: RangeMap[BigInteger, Record],
@@ -19,15 +20,15 @@ object Merger {
       List[Conflict]()
     } else {
 
-      val newConflicts = currentOverlaps.values.map(Conflict(_, newRecord))
-
+      val newConflicts = currentOverlaps.values.map(Conflict(_, newRecord)).toList
       val previousOverlaps = previousMap.subRangeMap(newRange)
+
       if (!previousOverlaps.asMapOfRanges().isEmpty) {
         currentMap.putAll(previousOverlaps)
       } else {
         currentMap.put(newRange, newRecord)
       }
-      newConflicts.toList
+      newConflicts
     }
   }
 
@@ -35,28 +36,15 @@ object Merger {
                        previousRecords: List[Record] = List()
                       ): (List[Record], List[Conflict]) = {
 
-    val previousMap: RangeMap[BigInteger, Record] = TreeRangeMap.create[BigInteger, Record]()
-    previousRecords.foreach(record => previousMap.put(record.key, record))
-
+    val previousMap = asRangeMap(previousRecords)
     val currentMap = TreeRangeMap.create[BigInteger, Record]()
 
     // Detecting conflicts while adding new records. Latest one added prevails.
     val conflicts = rirRecords.flatten.toList.flatMap { newRecord =>
-      resolveConflict(newRecord.key, newRecord, currentMap, previousMap)
+      resolveConflict(newRecord.range.key, newRecord, currentMap, previousMap)
     }
 
-    // Records needs to be updated, because as result of put into range maps above,
-    // some new splitted ranges might be introduced. See RecordsTests
-    val updatedRecords = currentMap.asMapOfRanges().asScala.toList.flatMap {
-      case (_, record) if record.empty => List()
-      case (range, record: Ipv6Record) =>
-        Ipv6Record.splitPrefixes(range).map { ipv6 =>
-          record.update(Range.closed(ipv6.start().asBigInteger(), ipv6.end().asBigInteger()))
-        }
-      case (range, record) => List(record.update(range))
-    }
-
-    (updatedRecords, conflicts)
+    (alignRecordWithMapRangeKeys(currentMap), conflicts)
   }
 
   def mergeSiblings(records: List[Record]): List[Record] = {
@@ -69,18 +57,44 @@ object Merger {
     sortedRecords.tail foreach { nextRecord =>
       if (lastRecord.canMerge(nextRecord)) {
         lastRecord = lastRecord.merge(nextRecord)
-        while(result.nonEmpty && result.head.canMerge(lastRecord)) {
+        // look back and eat mergeable records
+        while (result.nonEmpty && result.head.canMerge(lastRecord)) {
           lastRecord = result.head.merge(lastRecord)
           result = result.tail
         }
       }
       else {
+        // keep non mergeable next records
         result = lastRecord :: result
         lastRecord = nextRecord
       }
-
     }
+    // list append head operations, need to be reversed
     (lastRecord :: result).reverse
   }
-}
 
+  def combineRecords(currentRecords: Iterable[Records], previous: Option[Records] = None): (Records, List[Conflict]) = {
+
+    logger.info("Combine and detect conflict Asn")
+    val (asns, asnConflicts)   = combineResources(currentRecords.map(_.asn), previous.map(_.asn).getOrElse(List()))
+
+    logger.info("Combine and detect conflict IPv4")
+    val (ipv4s, ipv4Conflicts) = combineResources(currentRecords.map(_.ipv4), previous.map(_.ipv4).getOrElse(List()))
+
+    logger.info("Combine and detect conflict IPv6")
+    val (ipv6s, ipv6Conflicts) = combineResources(currentRecords.map(_.ipv6), previous.map(_.ipv6).getOrElse(List()))
+
+    (Records(asns, ipv4s, ipv6s), asnConflicts ++ ipv4Conflicts ++ ipv6Conflicts)
+  }
+
+  def mergeRecords(records: Records): Records = {
+    logger.info("Merging ASNs siblings ")
+    val asnMerged = mergeSiblings(records.asn)
+    logger.info("Merging IPv4 siblings ")
+    val ipv4Merged = mergeSiblings(records.ipv4)
+    logger.info("Merging IPv6 siblings ")
+    val ipv6Merged = mergeSiblings(records.ipv6)
+
+    Records(asnMerged, ipv4Merged, ipv6Merged)
+  }
+}

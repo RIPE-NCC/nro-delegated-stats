@@ -1,7 +1,7 @@
 NRO Delegated Stats
 ===================
 
-Reverse engineering delegated stats normally produced by Jeff Houston from APNIC.
+Reverse engineering delegated stats normally produced by Geoff Houston from APNIC.
 
 Goal is to reproduce: https://www.nro.net/wp-content/uploads/apnic-uploads/delegated-extended [1]
 
@@ -32,6 +32,7 @@ There is `compare.sh` script that will try to compare it with `data/geoff` which
 Comparison is done ignoring country code (second column), since Jeff has special AS number mapping for EU country code.
 In this code we keep EU country code without trying to map it to the country.
 
+Building single jar assembly can be done with `sbt assembly` and look for `nro-delegated-stats.jar` in target directory.
 ##
 
 

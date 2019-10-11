@@ -1,0 +1,51 @@
+######################################################################
+#
+#       CONDITIONS OF USE
+# __________________________________________________________________
+# 
+# 
+# These files are freely available for download and use on the condition 
+# that APNIC will not be held responsible for any loss or damage 
+# arising from the use of the information contained in these reports.
+# 
+# This report is not an authoritative report, as it includes a
+# re-formatting of data contained in the IANA-administered number resource
+# registries. The IANA registries remain the authoritative source of
+# resource allocations made by the IANA.
+# 
+# In particular, it should be noted that these reports seek to 
+# indicate where resources were first allocated or assigned. It is not
+# intended that these reports be considered as an authoritative 
+# statement of the location in which any specific resource may 
+# currently be in use.
+# 
+# For more information see: 
+#
+#       http://www.apnic.net/db/rir-stats-format.html
+# or
+#       ftp://ftp.apnic.net/pub/apnic/stats/apnic/README.TXT
+#
+######################################################################
+#
+2|iana|20190911|18|19830101|20190612|+0000
+iana|*|asn|*|6|summary
+iana|*|ipv4|*|6|summary
+iana|*|ipv6|*|6|summary
+iana|ZZ|asn|0|1|19920101|ietf|ietf|iana
+arin|US|asn|1|1876|19920101|assigned|AS0000|e-stats
+ripencc|NL|asn|1877|25|19920501|assigned|AS1111|e-stats
+lacnic|ZZ|asn|1902|141|19920601|assigned|AS2222|e-stats
+afrinic|NI|asn|2043|1|19921201|assigned|AS3333|e-stats
+apnic|JP|asn|2044|3|19921201|assigned|AS4444|e-stats
+iana|ZZ|ipv4|0.0.0.0|16777216|19830101|ietf|ietf|iana
+apnic|ZZ|ipv4|1.0.0.0|16777216|20100119|assigned|V41111|e-stats
+ripencc|ZZ|ipv4|2.0.0.0|16777216|20090918|assigned|V42222|e-stats
+arin|ZZ|ipv4|3.0.0.0|16777216|19880223|assigned|V43333|e-stats
+lacnic|BR|ipv4|5.0.0.0|16777216|20101130|assigned|V44444|e-stats
+afrinic|NI|ipv4|4.0.0.0|16777216|19840201|assigned|V45555|e-stats
+iana|ZZ|ipv6|2001:0000::|23|19990701|assigned|iana|iana
+apnic|JP|ipv6|2001:0200::|23|19990701|assigned|V60000|e-stats
+arin|US|ipv6|2001:0400::|23|19990701|assigned|V61111|e-stats
+ripencc|NL|ipv6|2001:0600::|23|19990701|assigned|V62222|e-stats
+lacnic|BR|ipv6|2001:0800::|23|20020501|assigned|V63333|e-stats
+afrinic|NI|ipv6|2001:0a00::|23|20021102|assigned|V64444|e-stats

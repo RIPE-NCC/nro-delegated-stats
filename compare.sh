@@ -1,4 +1,9 @@
-TODAY=$(date "+%Y%m%d")
+if [ $# -eq 0 ] ; then 
+    TODAY=$(date "+%Y%m%d")
+else 
+    TODAY=$1 
+fi
+
 mkdir -p compare/$TODAY
 cat data/$TODAY/geoff | cut -d'|' -f1,3- > compare/$TODAY/geoff_nocc
 cat result/$TODAY/combined-stat| cut -d'|' -f1,3- > compare/$TODAY/combine_nocc

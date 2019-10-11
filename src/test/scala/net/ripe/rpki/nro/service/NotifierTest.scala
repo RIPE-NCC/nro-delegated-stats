@@ -1,16 +1,17 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.service
 
 import javax.mail.Provider
 import javax.mail.internet.MimeMessage
+import net.ripe.rpki.nro.{Settings, TestUtil}
 import org.jvnet.mock_javamail._
 import org.scalatest.FlatSpec
-import Settings._
+import Settings.sender
 
 class MockedSMTPProvider extends Provider(Provider.Type.TRANSPORT, "mocked", classOf[MockTransport].getName, "Mock", null)
 
 class NotifierTest extends FlatSpec with TestUtil {
 
-  val subject = new Notifier(getMockMailer())
+  val subject = new Notifier(mockMailer)
 
   "Notifier test " should " let me know if there are persistent conflicts" in {
     val previousConflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))

@@ -5,7 +5,9 @@ import java.util.Properties
 
 import com.github.tototoshi.csv.CSVReader
 import courier.Mailer
-import net.ripe.rpki.nro.Ports.PipeFormat
+import net.ripe.rpki.nro.model.Record
+import net.ripe.rpki.nro.service.MockedSMTPProvider
+import net.ripe.rpki.nro.service.Ports.PipeFormat
 
 trait TestUtil {
 
@@ -14,8 +16,7 @@ trait TestUtil {
 
   def getResourceFile(fileName: String): String = getClass.getResource(fileName).getFile
 
-
-  def getMockMailer() ={
+  lazy val mockMailer: Mailer = {
     val mockedProperty = new Properties()
     mockedProperty.put("mail.transport.protocol.rfc822", "mocked")
 

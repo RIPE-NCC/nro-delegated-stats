@@ -1,21 +1,23 @@
-package net.ripe.rpki.nro
+package net.ripe.rpki.nro.service
 
 import java.io.File
 
-import net.ripe.rpki.nro.Ports._
+import net.ripe.rpki.nro.TestUtil
+import net.ripe.rpki.nro.service.Ports._
+import net.ripe.rpki.nro.model.Conflict
 import org.scalatest.FlatSpec
 
 class PortsTest extends FlatSpec with TestUtil {
 
   "Parsing delegated " should "work for partial apnic data" in {
-    val apnic = parseRecordFile(getClass.getResource("/data/apnic").getFile)
+    val apnic = parseRecordFile(getResourceFile("/data/apnic"))
     assert(apnic.asn.size == 100)
     assert(apnic.ipv4.size == 100)
     assert(apnic.ipv6.size == 100)
   }
 
   it should "work for partial iana data" in {
-    val iana = parseRecordFile(getClass.getResource("/data/iana").getFile)
+    val iana = parseRecordFile(getResourceFile("/data/iana"))
     assert(iana.asn.size == 6)
     assert(iana.ipv4.size == 6)
     assert(iana.ipv6.size == 6)
