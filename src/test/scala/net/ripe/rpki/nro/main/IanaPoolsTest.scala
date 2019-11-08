@@ -1,11 +1,10 @@
 package net.ripe.rpki.nro.main
 
 import net.ripe.commons.ip.{AsnRange, Ipv4Range, Ipv6Range}
+import net.ripe.rpki.nro.Configs
 import net.ripe.rpki.nro.Const._
-import net.ripe.rpki.nro.service.Ports.parseRecordFile
-import net.ripe.rpki.nro.Settings._
-import net.ripe.rpki.nro.main.IanaPools
 import net.ripe.rpki.nro.model.{AsnRecord, Ipv4Record, Ipv6Record, Record, RecordRange, Records, Stat}
+import net.ripe.rpki.nro.service.Ports.parseRecordFile
 import org.scalatest.FlatSpec
 
 class IanaPoolsTest extends FlatSpec {
@@ -63,7 +62,7 @@ class IanaPoolsTest extends FlatSpec {
 
   "Iana pool calculation" should "work for Asn" in {
     assert(IanaPools.asnPool(RecordRange.from(AsnRange.parse("AS1000-AS2000"))) ==
-      AsnRecord( Stat(IANA, DEFAULT_CC, ASN, "1000", "1001" + "", TODAY, IANAPOOL, "", IANA)))
+      AsnRecord( Stat(IANA, DEFAULT_CC, ASN, "1000", "1001" + "", Configs.config.TODAY, IANAPOOL, "", IANA)))
   }
 
   it should "work for Ipv4" in {
@@ -73,7 +72,7 @@ class IanaPoolsTest extends FlatSpec {
 
   it should "work for Ipv6" in {
     assert(IanaPools.ipv6Pool(RecordRange.from(Ipv6Range.parse("::/24"))) ==
-      Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, "::", "24", TODAY, IANAPOOL, "", IANA)))
+      Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, "::", "24", Configs.config.TODAY, IANAPOOL, "", IANA)))
   }
 
   "Claims verification " should  "be empty in case of proper combination" in {

@@ -4,7 +4,7 @@ import java.io.{File, PrintWriter}
 
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Logging
-import net.ripe.rpki.nro.Settings._
+import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
@@ -67,15 +67,15 @@ object Ports extends Logging {
   def fetchAndParse(): (Iterable[Records], Records, Option[Records], List[Conflict]) = {
     val recordMaps: Map[String, Records] = sources.map {
       case (name:String, url:String) =>
-        fetchLocally(url, s"$todayDataDirectory/$name")
-        name -> parseRecordFile(s"$todayDataDirectory/$name")
+        fetchLocally(url, s"${config.todayDataDirectory}/$name")
+        name -> parseRecordFile(s"${config.todayDataDirectory}/$name")
     }
 
     val rirs = (recordMaps - "iana" - "geoff").view.mapValues(_.fixRIRs).values
     val iana = recordMaps("iana").fixIana
 
-    val previousResult = Try(parseRecordFile(s"$previousResultFile")).toOption
-    val oldConflict = Try(readConflicts(s"$previousConflictFile")).getOrElse(List())
+    val previousResult = Try(parseRecordFile(s"${config.previousResultFile}")).toOption
+    val oldConflict = Try(readConflicts(s"${config.previousConflictFile}")).getOrElse(List())
     (rirs, iana, previousResult, oldConflict)
   }
 
@@ -90,7 +90,7 @@ object Ports extends Logging {
       val totalSize = asn.size + ipv4.size + ipv6.size
       if(totalSize == 0) return
       if(header){
-        writer.write(s"2|nro|$TODAY|$totalSize|$MAGIC_SERIAL_NUMBER|$TODAY|+0000\n")
+        writer.write(s"2|nro|${config.TODAY}|$totalSize|$MAGIC_SERIAL_NUMBER|${config.TODAY}|+0000\n")
         writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
         writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
         writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
@@ -106,7 +106,7 @@ object Ports extends Logging {
 
   def writeClaims(recs : Records, fileName: String): Unit = writeResult(recs.asn, recs.ipv4, recs.ipv6, fileName, false)
 
-  def writeConflicts(conflicts: List[Conflict], outputFile: String = s"$currentConflictFile"): Unit = {
+  def writeConflicts(conflicts: List[Conflict], outputFile: String = s"${config.currentConflictFile}"): Unit = {
     Using.resource( CSVWriter.open(new File(outputFile))) { writer =>
       conflicts.foreach(c => {
         writer.writeRow(c.a.asList)
@@ -116,8 +116,8 @@ object Ports extends Logging {
     }
   }
 
-  def readConflicts(conflictFile: String = s"$previousConflictFile"): List[Conflict] = {
-    logger.debug(s"Reading conflicts from $previousConflictFile")
+  def readConflicts(conflictFile: String = s"${config.previousConflictFile}"): List[Conflict] = {
+    logger.debug(s"Reading conflicts from ${config.previousConflictFile}")
     Using.resource(CSVReader.open(new File(conflictFile))){ reader =>
       reader.all()
         .filter(_.size>1)

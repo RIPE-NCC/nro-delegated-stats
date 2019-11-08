@@ -2,10 +2,10 @@ package net.ripe.rpki.nro.service
 
 import javax.mail.Provider
 import javax.mail.internet.MimeMessage
-import net.ripe.rpki.nro.{Settings, TestUtil}
+import net.ripe.rpki.nro.TestUtil
 import org.jvnet.mock_javamail._
 import org.scalatest.FlatSpec
-import Settings.sender
+import net.ripe.rpki.nro.Configs._
 
 class MockedSMTPProvider extends Provider(Provider.Type.TRANSPORT, "mocked", classOf[MockTransport].getName, "Mock", null)
 
@@ -20,11 +20,11 @@ class NotifierTest extends FlatSpec with TestUtil {
     subject.notifyConflicts(currentConflicts, previousConflicts)
 
 
-    val inbox = Mailbox.get(Settings.contacts("apnic"))
+    val inbox = Mailbox.get(contacts("apnic"))
     assert(inbox.size === 1)
     val mimeMessage = inbox.get(0).asInstanceOf[MimeMessage]
     assert(mimeMessage.getFrom.head.toString === sender)
-    assert(mimeMessage.getSubject === s"There are conflicting delegated stats since ${Settings.PREV_CONFLICT_DAY}")
+    assert(mimeMessage.getSubject === s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
 
   }
 
