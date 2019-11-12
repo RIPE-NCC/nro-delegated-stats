@@ -66,6 +66,13 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
 
     (Records(asnRirs, ipv4Rirs, ipv6Rirs), Records(asnNonRirs, ipv4NonRirs, ipv6NonRirs))
   }
+  def filter(criteria: Record => Boolean): Records = {
+    val asns = this.asn.filter(criteria)
+    val ipv4s = this.ipv4.filter(criteria)
+    val ipv6s = this.ipv6.filter(criteria)
+
+    Records(asns, ipv4s, ipv6s)
+  }
 
   def size: Int = asn.size + ipv4.size + ipv6.size
 }

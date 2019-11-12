@@ -40,7 +40,11 @@ class StatsTest extends FlatSpec with Stats with TestUtil with Logging {
     // No longer shown as available.
     assert(unclaimed.asn.map(_.status).forall(_ == "assigned"))
     assert(unclaimed.ipv4.map(_.status).forall(_ == "assigned"))
-    assert(unclaimed.ipv6.map(_.status).forall(_ == "assigned"))
+
+    // Previous data for non ARIN ipv6 are all assigned, so resolve to assigned.
+    assert(unclaimed.ipv6.filter(_.registry != "arin").map(_.status).forall(_ == "assigned"))
+    // Previous data for ARIN ipv6 is ianapool, now it will resolve to available
+    assert(unclaimed.ipv6.filter(_.registry == "arin").map(_.status).forall(_ == "available"))
     
     
 

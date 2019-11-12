@@ -25,8 +25,8 @@ apnic|ZZ|ipv6|2001:26c::|30|20191107|assigned||12345
 apnic|ZZ|ipv6|2001:270::|28|20191107|assigned||12345
 apnic|ZZ|ipv6|2001:280::|25|20191107|assigned||12345
 apnic|ZZ|ipv6|2001:300::|24|20191107|assigned||12345
-arin|ZZ|ipv6|2001:4e0::|27|20191107|assigned||12345
-arin|US|ipv6|2001:500::|24|20191107|assigned||7de51f8320f65b1071a4ed68d44a35fc
+iana|ZZ|ipv6|2001:4e0::|27|20191107|ianapool||iana
+iana|ZZ|ipv6|2001:500::|24|20191107|ianapool||iana
 ripencc|ZZ|ipv6|2001:600::|23|20191107|assigned||12345
 lacnic|BR|ipv6|2001:800::|23|20191107|assigned||101379
 afrinic|ZZ|ipv6|2001:a00::|23|20191107|assigned||12345
