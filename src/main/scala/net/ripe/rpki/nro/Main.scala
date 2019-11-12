@@ -13,7 +13,9 @@ object Main extends Stats with App {
   val endDate   = Properties.propOrNone("endDate").map(LocalDate.parse).getOrElse(LocalDate.now)
 
   if(startDate.equals(endDate))
-    logger.info("Running for a single day ", startDate)
+    logger.info("Generating stats for a single day ", startDate)
+  else
+    logger.info(s"Generating stats from $startDate to $endDate")
 
   while(startDate.compareTo(endDate) <= 0) {
 
