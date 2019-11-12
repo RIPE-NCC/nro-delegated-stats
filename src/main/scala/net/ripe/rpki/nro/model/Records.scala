@@ -8,7 +8,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
 
   def fixUnclaimed: Records = {
     def fix[R]: Record => Record = (rec: Record) => {
-      val info = rec.stat.copy(date = config.TODAY, registry = rec.stat.status, status = AVAILABLE)
+      val info = rec.stat.copy(date = config.CURRENT_DAY, registry = rec.stat.status, status = AVAILABLE)
       rec.update(info)
     }
 
@@ -28,7 +28,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
   def fixRIRs: Records = {
     def fix: Record => Record = (rec: Record) => rec.stat.status match {
       // RESERVED and AVAILABLE has neither date nor country (except AFRINIC with ZZ)
-      case RESERVED | AVAILABLE => rec.update(rec.stat.copy(date = config.TODAY, cc = DEFAULT_CC))
+      case RESERVED | AVAILABLE => rec.update(rec.stat.copy(date = config.CURRENT_DAY, cc = DEFAULT_CC))
       // Whatever allocated in original RIR file appears as ASSIGNED
       case ALLOCATED => rec.update(rec.stat.copy(status = ASSIGNED))
       case _ => rec

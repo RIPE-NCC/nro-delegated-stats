@@ -67,8 +67,8 @@ object Ports extends Logging {
   def fetchAndParse(): (Iterable[Records], Records, Option[Records], List[Conflict]) = {
     val recordMaps: Map[String, Records] = sources.map {
       case (name:String, url:String) =>
-        fetchLocally(url, s"${config.todayDataDirectory}/$name")
-        name -> parseRecordFile(s"${config.todayDataDirectory}/$name")
+        fetchLocally(url, s"${config.currentDataDirectory}/$name")
+        name -> parseRecordFile(s"${config.currentDataDirectory}/$name")
     }
 
     val rirs = (recordMaps - "iana" - "geoff").view.mapValues(_.fixRIRs).values
@@ -90,7 +90,7 @@ object Ports extends Logging {
       val totalSize = asn.size + ipv4.size + ipv6.size
       if(totalSize == 0) return
       if(header){
-        writer.write(s"2|nro|${config.TODAY}|$totalSize|$MAGIC_SERIAL_NUMBER|${config.TODAY}|+0000\n")
+        writer.write(s"2|nro|${config.CURRENT_DAY}|$totalSize|$MAGIC_SERIAL_NUMBER|${config.CURRENT_DAY}|+0000\n")
         writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
         writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
         writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")

@@ -11,21 +11,21 @@ import org.slf4j.LoggerFactory
 class Configs(todayDate: LocalDate) {
   import Configs._
 
-  def TODAY: String = formatDate(todayDate)
+  def CURRENT_DAY: String = formatDate(todayDate)
 
   def PREV_RESULT_DAY: String = formatDate(todayDate.minusDays(1))
   def PREV_CONFLICT_DAY: String = formatDate(todayDate.minusDays(gracePeriod))
 
-  def currentResultFile: String = s"$resultDirectory/$TODAY/$resultFileName"
-  def currentUnclaimedFile: String = s"$resultDirectory/$TODAY/$unclaimedFileName"
-  def currentOverclaimedFile: String = s"$resultDirectory/$TODAY/$overclaimedFileName"
-  def currentMergedFile: String = s"$resultDirectory/$TODAY/$mergedFileName"
+  def currentResultFile: String = s"$resultDirectory/$CURRENT_DAY/$resultFileName"
+  def currentUnclaimedFile: String = s"$resultDirectory/$CURRENT_DAY/$unclaimedFileName"
+  def currentOverclaimedFile: String = s"$resultDirectory/$CURRENT_DAY/$overclaimedFileName"
+  def currentMergedFile: String = s"$resultDirectory/$CURRENT_DAY/$mergedFileName"
   def previousResultFile: String = s"$resultDirectory/$PREV_RESULT_DAY/$resultFileName"
-  def currentConflictFile: String = s"$resultDirectory/$TODAY/$conflictFileName"
+  def currentConflictFile: String = s"$resultDirectory/$CURRENT_DAY/$conflictFileName"
   def previousConflictFile: String = s"$resultDirectory/$PREV_CONFLICT_DAY/$conflictFileName"
 
-  def todayDataDirectory: File = createIfNeeded(s"$dataDirectory/$TODAY")
-  def todayResultDirectory: File = createIfNeeded(s"$resultDirectory/$TODAY")
+  def currentDataDirectory: File = createIfNeeded(s"$dataDirectory/$CURRENT_DAY")
+  def currentResultDirectory: File = createIfNeeded(s"$resultDirectory/$CURRENT_DAY")
 
   def formatDate(date: LocalDate): String = date.toString.replaceAll("-", "")
 
