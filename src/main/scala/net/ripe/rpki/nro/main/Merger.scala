@@ -15,19 +15,27 @@ trait Merger extends Logging with Ranges {
                      ): List[Conflict] = {
 
     val currentOverlaps = currentMap.subRangeMap(newRange).asMapOfRanges().asScala
+
+    // No overlaps between currentMap and newRange
     if (currentOverlaps.isEmpty) {
       currentMap.put(newRange, newRecord)
       List[Conflict]()
     } else {
 
+      // Recording new conflicts.
       val newConflicts = currentOverlaps.values.map(Conflict(_, newRecord)).toList
+
+      // Look up if new range is on previous Map
       val previousOverlaps = previousMap.subRangeMap(newRange)
 
       if (!previousOverlaps.asMapOfRanges().isEmpty) {
+        // Use previous values to resolve conflict.
         currentMap.putAll(previousOverlaps)
       } else {
+        // Can't resolve using previous map, use the new Range
         currentMap.put(newRange, newRecord)
       }
+
       newConflicts
     }
   }
@@ -36,7 +44,7 @@ trait Merger extends Logging with Ranges {
                        previousRecords: List[Record] = List()
                       ): (List[Record], List[Conflict]) = {
 
-    val previousMap = asRangeMap(previousRecords)
+    val previousMap: RangeMap[BigInteger, Record] = asRangeMap(previousRecords)
     val currentMap = TreeRangeMap.create[BigInteger, Record]()
 
     // Detecting conflicts while adding new records. Latest one added prevails.
@@ -97,4 +105,11 @@ trait Merger extends Logging with Ranges {
 
     Records(asnMerged, ipv4Merged, ipv6Merged)
   }
+
+  def resolveUnclaimed(unclaimed:Records, previous: Option[Records]) = {
+      // Let all unclaimed conflicted with itself and resolved to previous, discard conflict.
+      val (result, _) = combineRecords(Iterable(unclaimed, unclaimed), previous)
+      result 
+  }
+    
 }

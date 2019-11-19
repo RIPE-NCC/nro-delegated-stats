@@ -2,7 +2,7 @@ package net.ripe.rpki.nro.service
 
 import courier.Defaults._
 import courier._
-import net.ripe.rpki.nro.Settings._
+import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.model.Conflict
 import net.ripe.rpki.nro.{Const, Logging}
 
@@ -35,7 +35,7 @@ class Notifier(mailer: Mailer) extends Logging {
     val envelope: Envelope = Envelope
       .from(sender.addr)
       .to(rsContacts.map(_.addr):_*)
-      .subject(s"There are conflicting delegated stats since $PREV_CONFLICT_DAY")
+      .subject(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
       .content(Text(s"Please verify the following conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"))
     Await.result(mailer(envelope), Duration.Inf)
   }

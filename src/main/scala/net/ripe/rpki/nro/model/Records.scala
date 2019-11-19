@@ -1,14 +1,14 @@
 package net.ripe.rpki.nro.model
 
+import net.ripe.rpki.nro.Configs.config
 import net.ripe.rpki.nro.Const.{ALLOCATED, ASSIGNED, AVAILABLE, DEFAULT_CC, IANA, IETF, RESERVED}
-import net.ripe.rpki.nro.Settings.TODAY
 import net.ripe.rpki.nro.main.Ranges
 
 case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) extends Ranges {
 
   def fixUnclaimed: Records = {
     def fix[R]: Record => Record = (rec: Record) => {
-      val info = rec.stat.copy(date = TODAY, registry = rec.stat.status, status = AVAILABLE)
+      val info = rec.stat.copy(date = config.CURRENT_DAY, registry = rec.stat.status, status = AVAILABLE)
       rec.update(info)
     }
 
@@ -28,7 +28,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
   def fixRIRs: Records = {
     def fix: Record => Record = (rec: Record) => rec.stat.status match {
       // RESERVED and AVAILABLE has neither date nor country (except AFRINIC with ZZ)
-      case RESERVED | AVAILABLE => rec.update(rec.stat.copy(date = TODAY, cc = DEFAULT_CC))
+      case RESERVED | AVAILABLE => rec.update(rec.stat.copy(date = config.CURRENT_DAY, cc = DEFAULT_CC))
       // Whatever allocated in original RIR file appears as ASSIGNED
       case ALLOCATED => rec.update(rec.stat.copy(status = ASSIGNED))
       case _ => rec
@@ -65,6 +65,13 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
     val (ipv6Rirs, ipv6NonRirs) = this.ipv6.partition(criteria)
 
     (Records(asnRirs, ipv4Rirs, ipv6Rirs), Records(asnNonRirs, ipv4NonRirs, ipv6NonRirs))
+  }
+  def filter(criteria: Record => Boolean): Records = {
+    val asns = this.asn.filter(criteria)
+    val ipv4s = this.ipv4.filter(criteria)
+    val ipv6s = this.ipv6.filter(criteria)
+
+    Records(asns, ipv4s, ipv6s)
   }
 
   def size: Int = asn.size + ipv4.size + ipv6.size
