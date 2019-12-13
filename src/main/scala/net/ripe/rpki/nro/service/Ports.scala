@@ -6,6 +6,7 @@ import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Logging
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
+import net.ripe.rpki.nro.main.IanaMagic
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
 import scala.util.{Try, Using}
@@ -62,7 +63,7 @@ object Ports extends Logging {
     }
   }
 
-  def fetchAndParse(): (Iterable[Records], Records, Option[Records], List[Conflict]) = {
+  def fetchAndParse(ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records], List[Conflict]) = {
     val recordMaps: Map[String, Records] = sources.map {
       case (name:String, url:String) =>
         fetchLocally(url, s"${config.currentDataDirectory}/$name")
@@ -70,7 +71,7 @@ object Ports extends Logging {
     }
 
     val rirs = (recordMaps - "iana" - "geoff").view.mapValues(_.fixRIRs).values
-    val iana = recordMaps("iana").fixIana
+    val iana = if(ownmagic)  IanaMagic.fetchIanaRecords.fixIana else recordMaps("iana").fixIana
 
     val previousResult = Try(parseRecordFile(s"${config.previousResultFile}")).toOption
     val oldConflict = Try(readConflicts(s"${config.previousConflictFile}")).getOrElse(List())

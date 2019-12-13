@@ -11,6 +11,7 @@ object Main extends Stats with App {
 
   var startDate = Properties.propOrNone("startDate").map(LocalDate.parse).getOrElse(LocalDate.now)
   val endDate   = Properties.propOrNone("endDate").map(LocalDate.parse).getOrElse(LocalDate.now)
+  val ownMagic  = Properties.propOrNone("ownMagic").isDefined
 
   if(startDate.equals(endDate))
     logger.info("Generating stats for a single day ", startDate)
@@ -23,7 +24,7 @@ object Main extends Stats with App {
     logger.info("Data dir: "+Configs.config.currentDataDirectory)
     logger.info("Result dir: "+Configs.config.currentResultDirectory)
 
-    val (rirRecords, ianaRecord, previousResult, previousConflicts) = Ports.fetchAndParse()
+    val (rirRecords, ianaRecord, previousResult, previousConflicts) = Ports.fetchAndParse(ownMagic)
     val (results, mergedResults, currentConflicts, unclaimed, overclaimed) = process(rirRecords, ianaRecord, previousResult, previousConflicts)
 
     val notifier  = new Notifier(mailer)

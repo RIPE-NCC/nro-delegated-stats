@@ -4,12 +4,13 @@ import java.io.StringReader
 
 import com.github.tototoshi.csv.CSVReader
 import net.ripe.commons.ip.{Ipv4, Ipv4Range, Ipv6Range}
-import net.ripe.rpki.nro.model.Record
+import net.ripe.rpki.nro.Logging
+import net.ripe.rpki.nro.model.{Record, Records}
 import net.ripe.rpki.nro.service.Ports
 
-import scala.util.Using
+import scala.util.{Try, Using}
 
-object IanaMagic extends App with Merger {
+object IanaMagic extends  Merger with Logging{
   val RIRs = List("arin", "ripe", "apnic", "lacnic", "afrinic")
   val rangeRex = """(\d+)-(\d+)""".r
   val whoisRex = """whois.(\w+).net""".r
@@ -65,8 +66,9 @@ object IanaMagic extends App with Merger {
 
   def parseIpv4Special(ipv4Source: String) = {
     val ipv4Text = requests.get(ipv4Source).text()
-    // Skipping header here.
-    readCSV(ipv4Text).tail.map(buildIpv4SpecialRecord)
+    // Special treatment for special registry.
+    // Giving up trying to parse 192.0.0.0/24 [2] or 192.0.0.170/32, 192.0.0.171/32 where the rest are just normal ranges.
+    readCSV(ipv4Text).tail.flatMap(line => Try(buildIpv4SpecialRecord(line)).toOption)
   }
 
   def buildIpv4Record(ipv4Record: List[String]): List[String] = ipv4Record match {
@@ -110,8 +112,6 @@ object IanaMagic extends App with Merger {
       val r = Ipv4Range.parse(range)
       List(s"${r.start()}", s"${r.size()}")
     }
-    case "192.0.0.0/24 [2]" => List("192.0.0.0", "256")
-    case "192.0.0.170/32, 192.0.0.171/32" => List("192.0.0.170","1")
     case _ => throw new Exception(s"Can't parse this line: $range")
   }
 
@@ -134,27 +134,34 @@ object IanaMagic extends App with Merger {
   }
 
 
-  val asn16 = parseAsnRecords("https://www.iana.org/assignments/as-numbers/as-numbers-1.csv")
-  // Careful, IANA 32 contains this entry for 16 that needs to be skipped: iana|ZZ|asn|0|65536
-  val asn32 = parseAsnRecords("https://www.iana.org/assignments/as-numbers/as-numbers-2.csv").tail
-  val ipv4 = parseIpv4Records("https://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.csv")
-  val ipv6 = parseIpv6Records("https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space-1.csv")
-  val ipv6unicast = parseIpv6Records("https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.csv")
+   def fetchIanaRecords: Records = {
+    logger.info("Fetch ASN16")
+    val asn16 = parseAsnRecords("https://www.iana.org/assignments/as-numbers/as-numbers-1.csv")
+    // Careful, IANA 32 contains this entry for 16 that needs to be skipped: iana|ZZ|asn|0|65536
+     logger.info("Fetch ASN32")
+    val asn32 = parseAsnRecords("https://www.iana.org/assignments/as-numbers/as-numbers-2.csv").tail
+     logger.info("Fetch ipv4 address space")
+    val ipv4 = parseIpv4Records("https://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.csv")
+     logger.info("Fetch ipv6 address space")
+    val ipv6 = parseIpv6Records("https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space-1.csv")
+     logger.info("Fetch ipv6 unicast space")
+    val ipv6unicast = parseIpv6Records("https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.csv")
 
 
-  val originalIana = Ports.toRecords(asn16 ++ asn32 ++ ipv4 ++ ipv6).fixIana
+    val originalIana = Ports.toRecords(asn16 ++ asn32 ++ ipv4 ++ ipv6).fixIana
 
-  val ipv4Recovered1 = parseIpv4Recovered("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-1.csv")
-  val ipv4Recovered2 = parseIpv4Recovered("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-2.csv")
-  val ipv4SpecialReg = parseIpv4Special("https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry-1.csv")
+    val ipv4Recovered1 = parseIpv4Recovered("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-1.csv")
+    val ipv4Recovered2 = parseIpv4Recovered("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-2.csv")
+    val ipv4SpecialReg = parseIpv4Special("https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry-1.csv")
 
-  val recoverReserved = Ports.toRecords(ipv4Recovered1 ++ ipv4Recovered2 ++  ipv4SpecialReg ++ ipv6unicast).fixIana
+    val recoverReserved = Ports.toRecords(ipv4Recovered1 ++ ipv4Recovered2 ++ ipv4SpecialReg ++ ipv6unicast).fixIana
 
-  val test = originalIana.substract(recoverReserved).append(recoverReserved).sorted()
+    originalIana.substract(recoverReserved).append(recoverReserved).sorted()
+  }
+
+  val test = fetchIanaRecords
 
   def reformat(rec: Record) = rec.asList.init.init.mkString("|")
-
-
   test.asn.foreach(r => println(reformat(r)))
   test.ipv4.foreach(r => println(reformat(r)))
   test.ipv6.foreach(r => println(reformat(r)))
