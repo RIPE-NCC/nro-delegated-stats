@@ -24,7 +24,7 @@ object Main extends Stats with App {
     logger.info("Data dir: "+Configs.config.currentDataDirectory)
     logger.info("Result dir: "+Configs.config.currentResultDirectory)
 
-    val (rirRecords, ianaRecord, previousResult, previousConflicts) = Ports.fetchAndParse(ownMagic)
+    val (rirRecords, ianaRecord, previousResult, previousConflicts) = Ports.fetchAndParse()
     val (results, mergedResults, currentConflicts, unclaimed, overclaimed) = process(rirRecords, ianaRecord, previousResult, previousConflicts)
 
     val notifier  = new Notifier(mailer)
