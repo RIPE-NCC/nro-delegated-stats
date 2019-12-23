@@ -5,7 +5,7 @@ import java.time.LocalDate
 
 import com.typesafe.config.{Config, ConfigFactory}
 import courier.Mailer
-import net.ripe.rpki.nro.Const.{AFRINIC, APNIC, ARIN, GEOFF, IANA, LACNIC, RIPENCC}
+import net.ripe.rpki.nro.Const._
 import org.slf4j.LoggerFactory
 
 class Configs(todayDate: LocalDate) {
@@ -40,7 +40,7 @@ class Configs(todayDate: LocalDate) {
 
 object Configs {
   private val conf: Config = ConfigFactory.load()
-  val data: Config = conf.getConfig("data")
+  val urls: Config = conf.getConfig("urls")
   val sender : String = conf.getString("sender")
   val contacts: Map[String, String] = Map(
     RIPENCC -> conf.getString("ripencc.contact"),
@@ -59,14 +59,26 @@ object Configs {
   val unclaimedFileName: String = conf.getString("unclaimed.fileName")
   val overclaimedFileName: String = conf.getString("overclaimed.fileName")
   val sources: Map[String, String] = Map[String, String](
-    APNIC   -> data.getString(APNIC  ),
-    AFRINIC -> data.getString(AFRINIC),
-    ARIN    -> data.getString(ARIN   ),
-    LACNIC  -> data.getString(LACNIC ),
-    RIPENCC -> data.getString(RIPENCC),
-    IANA    -> data.getString(IANA   ),
-    GEOFF   -> data.getString(GEOFF  )
+    APNIC   -> urls.getString(APNIC  ),
+    AFRINIC -> urls.getString(AFRINIC),
+    ARIN    -> urls.getString(ARIN   ),
+    LACNIC  -> urls.getString(LACNIC ),
+    RIPENCC -> urls.getString(RIPENCC),
+    IANA    -> urls.getString(IANA   ),
+    GEOFF   -> urls.getString(GEOFF  )
   )
+
+  val ianaorg: Map[String, String] = Map[String, String](
+    ASN16      -> urls.getString(ASN16),
+    ASN32      -> urls.getString(ASN32),
+    IPV4_ADDRESS_SPACE      -> urls.getString(IPV4_ADDRESS_SPACE),
+    IPV6_ADDRESS_SPACE      -> urls.getString(IPV6_ADDRESS_SPACE),
+    IPV4_RECOVERED_SPACE    -> urls.getString(IPV4_RECOVERED_SPACE),
+    IPV4_REALLOCATED_SPACE  -> urls.getString(IPV4_REALLOCATED_SPACE),
+    IPV4_SPECIAL_REGISTRY   -> urls.getString(IPV4_SPECIAL_REGISTRY),
+    IPV6_UNICAST_ASSIGNMENT -> urls.getString(IPV6_UNICAST_ASSIGNMENT)
+  )
+
   val mail: Config = conf.getConfig("mail")
   val host: String = mail.getString("host")
   val port: Int = mail.getInt("port")

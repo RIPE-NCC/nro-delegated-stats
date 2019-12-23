@@ -4,8 +4,10 @@ import java.io.StringReader
 
 import com.github.tototoshi.csv.CSVReader
 import net.ripe.commons.ip.{Ipv4, Ipv4Range, Ipv6Range, PrefixUtils}
+import net.ripe.rpki.nro.Configs.ianaorg
+import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.Logging
-import net.ripe.rpki.nro.model.{Record, Records}
+import net.ripe.rpki.nro.model.Records
 import net.ripe.rpki.nro.service.Ports
 
 import scala.util.{Try, Using}
@@ -25,17 +27,17 @@ object IanaMagic extends Merger with Logging {
 
   def fetchAllIanaSpace(): Records = {
     logger.info("Fetch ASN16")
-    val asn16 = parseAsnRecords("https://www.iana.org/assignments/as-numbers/as-numbers-1.csv")
+    val asn16 = parseAsnRecords(ianaorg(ASN16))
 
     logger.info("Fetch ASN32")
     // Careful, IANA 32 contains this entry for 16 that needs to be skipped: iana|ZZ|asn|0|65536 => Explains the tail
-    val asn32 = parseAsnRecords("https://www.iana.org/assignments/as-numbers/as-numbers-2.csv").tail
+    val asn32 = parseAsnRecords(ianaorg(ASN32)).tail
 
     logger.info("Fetch ipv4 address space")
-    val ipv4 = parseIpv4Records("https://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.csv")
+    val ipv4 = parseIpv4Records(ianaorg(IPV4_ADDRESS_SPACE))
 
     logger.info("Fetch ipv6 address space")
-    val ipv6 = parseIpv6Records("https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space-1.csv")
+    val ipv6 = parseIpv6Records(ianaorg(IPV6_ADDRESS_SPACE))
 
     Ports.toRecords(asn16 ++ asn32 ++ ipv4 ++ ipv6).fixIana
   }
@@ -48,7 +50,7 @@ object IanaMagic extends Merger with Logging {
     val unicastV6 = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf"))).substract(includefirst16)
 
     // Recovered but not allocated
-    val ipv4Recovered = Ports.toRecords(parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-1.csv"))
+    val ipv4Recovered = Ports.toRecords(parseIpv4Reallocated(ianaorg(IPV4_RECOVERED_SPACE)))
 
     unicastV6.append(ipv4Recovered)
   }
@@ -56,16 +58,13 @@ object IanaMagic extends Merger with Logging {
   def fetchUnicastAssignmentV6ReallocatedSpecialV4(): Records = {
 
     // Recovered and reallocated, we need this.
-    val ipv4Reallocated = parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-2.csv")
+    val ipv4Reallocated = parseIpv4Reallocated(ianaorg(IPV4_REALLOCATED_SPACE))
 
     // Somehow not sure if needed but with some special 'care' we can include.
-    val ipv4SpecialRegistry = parseIpv4Special("https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry-1.csv")
+    val ipv4SpecialRegistry = parseIpv4Special(ianaorg(IPV4_SPECIAL_REGISTRY))
 
     logger.info("Fetch ipv6 unicast space, returning only those for RIRs")
-    val rirUnicastIpv6 = Ports.toRecords(parseIpv6Records("https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.csv")).fixIana
-
-    // Not included they are all ended up in IETF and only splitting. Not consistent here, why include ipv4 while ignoring this one?
-    // val ipv6SpecialRegistry = parseIpv6Special("https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry-1.csv")
+    val rirUnicastIpv6 = Ports.toRecords(parseIpv6Records(ianaorg(IPV6_UNICAST_ASSIGNMENT))).fixIana
 
     val reallocatedSpecial = Ports.toRecords(ipv4Reallocated ++ ipv4SpecialRegistry).fixIana
     reallocatedSpecial.append(rirUnicastIpv6)

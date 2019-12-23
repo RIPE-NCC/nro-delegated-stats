@@ -17,6 +17,22 @@ object Const {
   val DEFAULT_CC = "ZZ"
   val DEFAULT_EXT = "e-stats"
 
+
+  // IANA Source files
+
+  val ASN16 = "asn16"
+  val ASN32 = "asn32"
+
+  val IPV4_ADDRESS_SPACE = "ipv4-address-space"
+  val IPV6_ADDRESS_SPACE = "ipv6-address-space"
+
+  val IPV4_RECOVERED_SPACE   = "ipv4-recovered-space"
+  val IPV4_REALLOCATED_SPACE = "ipv4-reallocated-space"
+  val IPV4_SPECIAL_REGISTRY  = "ipv4-special-registry"
+
+  val IPV6_UNICAST_ASSIGNMENT  = "ipv6-unicast-assignment"
+
+
   // Ipv4 ianapool on Geoff's combined results always dated 20120801, Magic date, where is it from?
   val IPV4_IANA_POOL_DATE = "20120801"
 
