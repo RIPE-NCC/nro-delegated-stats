@@ -71,7 +71,7 @@ object Ports extends Logging {
     }
 
     val rirs = (recordMaps - "iana" - "geoff").view.mapValues(_.fixRIRs).values
-    val iana = if(ownmagic)  IanaMagic.fetchIanaRecords.fixIana else recordMaps("iana").fixIana
+    val iana = if(ownmagic)  IanaMagic.processIanaRecords.fixIana else recordMaps("iana").fixIana
     logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
 
     val previousResult = Try(parseRecordFile(s"${config.previousResultFile}")).toOption

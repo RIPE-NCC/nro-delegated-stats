@@ -12,45 +12,18 @@ import scala.util.{Try, Using}
 
 object IanaMagic extends Merger with Logging {
 
-  def fetchIanaRecords: Records = {
+  def processIanaRecords: Records = {
 
-    val excludeUnicast = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf")))
-    val exceptSlash16 = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List("19960801", "ietf")))
+    val originalIanaSpace: Records = fetchAllIanaSpace().substract(unicastV6AndRecoveredV4exclusion()).fixIana
+    val reallocatedAssigned: Records = fetchUnicastAssignmentV6ReallocatedSpecialV4()
 
-    val reallocatedAssigned: Records = fetchReallocatedAssigned()
-
-    // Recovered but not allocated, don't spit out in IANA
-    val ipv4Recovered = Ports.toRecords(parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-1.csv"))
-
-    val allIanaMinusGlobalUnicastAndRecovered: Records = fetchAsnIpv4Ipv6space().substract(excludeUnicast).append(exceptSlash16).substract(ipv4Recovered).fixIana
-
-    // discarding conflict while combining, basically overwriting with reallocated assigned.
-    val (ianaMagic, _) = combineRecords(Iterable(allIanaMinusGlobalUnicastAndRecovered, reallocatedAssigned), Some(reallocatedAssigned))
+    val (ianaMagic, _) = combineRecords(Seq(originalIanaSpace, reallocatedAssigned), Some(reallocatedAssigned))
     Ports.writeRecords(ianaMagic, "iana-own-magic")
 
     ianaMagic
   }
 
-  def fetchReallocatedAssigned(): Records = {
-
-
-    // Recovered and reallocated, we need this.
-    val ipv4Reallocated = parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-2.csv")
-
-    // Somehow not sure if needed but with some special 'care' we can include.
-    val ipv4SpecialRegistry = parseIpv4Special("https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry-1.csv")
-
-    logger.info("Fetch ipv6 unicast space, returning only those for RIRs")
-    val rirUnicastIpv6 = Ports.toRecords(parseIpv6Records("https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.csv")).fixIana
-
-    // Not included they are all ended up in IETF and only splitting. Not consistent here, why include ipv4 but exclude her?
-    // val ipv6SpecialRegistry = parseIpv6Special("https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry-1.csv")
-
-    val reallocatedSpecial = Ports.toRecords(ipv4Reallocated ++ ipv4SpecialRegistry).fixIana
-    reallocatedSpecial.append(rirUnicastIpv6)
-  }
-
-  def fetchAsnIpv4Ipv6space(): Records = {
+  def fetchAllIanaSpace(): Records = {
     logger.info("Fetch ASN16")
     val asn16 = parseAsnRecords("https://www.iana.org/assignments/as-numbers/as-numbers-1.csv")
 
@@ -65,6 +38,37 @@ object IanaMagic extends Merger with Logging {
     val ipv6 = parseIpv6Records("https://www.iana.org/assignments/ipv6-address-space/ipv6-address-space-1.csv")
 
     Ports.toRecords(asn16 ++ asn32 ++ ipv4 ++ ipv6).fixIana
+  }
+
+  private def unicastV6AndRecoveredV4exclusion() = {
+    // Exclude all global unicast, but include the first /16, don't really have explanation why.
+    val includefirst16 = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List("19960801", "ietf")))
+
+    // Whole global unicast 2000::/33 minus 2000::/16 since we want to include the latter.
+    val unicastV6 = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf"))).substract(includefirst16)
+
+    // Recovered but not allocated
+    val ipv4Recovered = Ports.toRecords(parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-1.csv"))
+
+    unicastV6.append(ipv4Recovered)
+  }
+
+  def fetchUnicastAssignmentV6ReallocatedSpecialV4(): Records = {
+
+    // Recovered and reallocated, we need this.
+    val ipv4Reallocated = parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-2.csv")
+
+    // Somehow not sure if needed but with some special 'care' we can include.
+    val ipv4SpecialRegistry = parseIpv4Special("https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry-1.csv")
+
+    logger.info("Fetch ipv6 unicast space, returning only those for RIRs")
+    val rirUnicastIpv6 = Ports.toRecords(parseIpv6Records("https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.csv")).fixIana
+
+    // Not included they are all ended up in IETF and only splitting. Not consistent here, why include ipv4 while ignoring this one?
+    // val ipv6SpecialRegistry = parseIpv6Special("https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry-1.csv")
+
+    val reallocatedSpecial = Ports.toRecords(ipv4Reallocated ++ ipv4SpecialRegistry).fixIana
+    reallocatedSpecial.append(rirUnicastIpv6)
   }
 
   val RIRs = List("arin", "ripe", "apnic", "lacnic", "afrinic")
@@ -145,7 +149,7 @@ object IanaMagic extends Merger with Logging {
   def buildIpv6Record(ipv6Record: List[String]): List[String] = ipv6Record match {
 
     // Skip reserved
-    case _ :: _ :: _ ::_ :: _ :: "RESERVED" :: _  => List()
+    case _ :: _ :: _ :: _ :: _ :: "RESERVED" :: _ => List()
 
     case range :: _ :: date :: whois :: _ =>
       List("iana", "ZZ", "ipv6") ++ toPrefixLength(range) ++ List(resolveDate(date), whoisRIR(whois))
@@ -208,6 +212,10 @@ object IanaMagic extends Merger with Logging {
     // and marked for future use.
     case "240.0.0.0/4" :: _ => List()
     case "255.255.255.255/32" :: _ => List()
+
+    // ARIN claims this special reg, geoff's iana does not include it.
+    // Without this special treatment I will have conflicts between arin and this iana magic.
+    case "192.175.48.0/24" :: _ => List()
 
     case "192.0.0.0/24 [2]" :: _ :: _ :: date :: _ =>
       List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.0/24") ++ List(resolveDate(date), "ietf")
