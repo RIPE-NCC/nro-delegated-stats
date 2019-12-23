@@ -14,11 +14,15 @@ object IanaMagic extends Merger with Logging {
 
   def fetchIanaRecords: Records = {
 
-    val globalIpv6Unicast = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf")))
+    val excludeUnicast = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf")))
+    val exceptSlash16 = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List("19960801", "iana")))
 
-    val allIanaSpaceWithoutGlobalUnicast: Records = fetchAsnIpv4Ipv6space().substract(globalIpv6Unicast)
+    val allIanaSpaceWithoutGlobalUnicast: Records = fetchAsnIpv4Ipv6space().substract(excludeUnicast).append(exceptSlash16).fixIana
 
     val reallocatedAssigned: Records = fetchReallocatedAssigned()
+
+    // Recovered but not allocated, don't spit out in IANA
+    val ipv4Recovered = Ports.toRecords(parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-1.csv"))
 
     // discarding conflict while combining, basically overwriting with reallocated assigned.
     val (ianaMagic, _) = combineRecords(Iterable(allIanaSpaceWithoutGlobalUnicast, reallocatedAssigned), Some(reallocatedAssigned))
@@ -29,12 +33,11 @@ object IanaMagic extends Merger with Logging {
     debug(ianaMagic.ipv4)
     debug(ianaMagic.ipv6)
 
-    ianaMagic
+    ianaMagic.substract(ipv4Recovered)
   }
 
   def fetchReallocatedAssigned(): Records = {
-    // Recovered but not allocated, don't spit out in IANA
-    val ipv4Recovered = Ports.toRecords(parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-1.csv"))
+
 
     // Recovered and reallocated, we need this.
     val ipv4Reallocated = parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-2.csv")
@@ -43,13 +46,12 @@ object IanaMagic extends Merger with Logging {
     val ipv4SpecialRegistry = parseIpv4Special("https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry-1.csv")
 
     logger.info("Fetch ipv6 unicast space, returning only those for RIRs")
-    val rirUnicastIpv6 = Ports.toRecords(parseIpv6Records("https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.csv"))
-      .filter(_.stat.status != "ietf").fixIana
+    val rirUnicastIpv6 = Ports.toRecords(parseIpv6Records("https://www.iana.org/assignments/ipv6-unicast-address-assignments/ipv6-unicast-address-assignments.csv")).fixIana
 
     // Not included they are all ended up in IETF and only splitting. Not consistent here, why include ipv4 but exclude her?
     // val ipv6SpecialRegistry = parseIpv6Special("https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry-1.csv")
 
-    val reallocatedSpecial = Ports.toRecords(ipv4Reallocated ++ ipv4SpecialRegistry).substract(ipv4Recovered).fixIana
+    val reallocatedSpecial = Ports.toRecords(ipv4Reallocated ++ ipv4SpecialRegistry).fixIana
     reallocatedSpecial.append(rirUnicastIpv6)
   }
 
@@ -146,8 +148,9 @@ object IanaMagic extends Merger with Logging {
   }
 
   def buildIpv6Record(ipv6Record: List[String]): List[String] = ipv6Record match {
-    // Already included in previous unicast assignment for 3000::/4
-    case "3ffe::/16" :: _ => List()
+
+    // Skip reserved
+    case _ :: _ :: _ ::_ :: _ :: "RESERVED" :: _  => List()
 
     case range :: _ :: date :: whois :: _ =>
       List("iana", "ZZ", "ipv6") ++ toPrefixLength(range) ++ List(resolveDate(date), whoisRIR(whois))
