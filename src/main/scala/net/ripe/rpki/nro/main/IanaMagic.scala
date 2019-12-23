@@ -15,25 +15,20 @@ object IanaMagic extends Merger with Logging {
   def fetchIanaRecords: Records = {
 
     val excludeUnicast = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf")))
-    val exceptSlash16 = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List("19960801", "iana")))
-
-    val allIanaSpaceWithoutGlobalUnicast: Records = fetchAsnIpv4Ipv6space().substract(excludeUnicast).append(exceptSlash16).fixIana
+    val exceptSlash16 = Ports.toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List("19960801", "ietf")))
 
     val reallocatedAssigned: Records = fetchReallocatedAssigned()
 
     // Recovered but not allocated, don't spit out in IANA
     val ipv4Recovered = Ports.toRecords(parseIpv4Reallocated("https://www.iana.org/assignments/ipv4-recovered-address-space/ipv4-recovered-address-space-1.csv"))
 
+    val allIanaMinusGlobalUnicastAndRecovered: Records = fetchAsnIpv4Ipv6space().substract(excludeUnicast).append(exceptSlash16).substract(ipv4Recovered).fixIana
+
     // discarding conflict while combining, basically overwriting with reallocated assigned.
-    val (ianaMagic, _) = combineRecords(Iterable(allIanaSpaceWithoutGlobalUnicast, reallocatedAssigned), Some(reallocatedAssigned))
+    val (ianaMagic, _) = combineRecords(Iterable(allIanaMinusGlobalUnicastAndRecovered, reallocatedAssigned), Some(reallocatedAssigned))
+    Ports.writeRecords(ianaMagic, "iana-own-magic")
 
-    def debug(rec: List[Record]) = rec.foreach(r => logger.debug(r.asList.init.init.mkString("|")))
-
-    debug(ianaMagic.asn)
-    debug(ianaMagic.ipv4)
-    debug(ianaMagic.ipv6)
-
-    ianaMagic.substract(ipv4Recovered)
+    ianaMagic
   }
 
   def fetchReallocatedAssigned(): Records = {
@@ -235,5 +230,4 @@ object IanaMagic extends Merger with Logging {
 
   def readCSV(str: String): List[List[String]] = Using.resource(CSVReader.open(new StringReader(str)))(_.all).filter(_.nonEmpty)
 
-  //TODO: Deal with extra e-stats, and check if it will affect the rest.
 }
