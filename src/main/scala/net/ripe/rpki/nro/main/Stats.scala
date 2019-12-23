@@ -2,6 +2,7 @@ package net.ripe.rpki.nro.main
 
 import net.ripe.rpki.nro.Const.RIRS
 import net.ripe.rpki.nro.Logging
+import net.ripe.rpki.nro.iana.IanaPools
 import net.ripe.rpki.nro.model.{Conflict, Record, Records}
 
 trait Stats extends Logging with Merger {

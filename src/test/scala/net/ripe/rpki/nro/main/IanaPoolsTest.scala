@@ -1,8 +1,9 @@
 package net.ripe.rpki.nro.main
 
 import net.ripe.commons.ip.{AsnRange, Ipv4Range, Ipv6Range}
-import net.ripe.rpki.nro.Configs
+import net.ripe.rpki.nro.{Configs, iana}
 import net.ripe.rpki.nro.Const._
+import net.ripe.rpki.nro.iana.IanaPools
 import net.ripe.rpki.nro.model.{AsnRecord, Ipv4Record, Ipv6Record, Record, RecordRange, Records, Stat}
 import net.ripe.rpki.nro.service.Ports.parseRecordFile
 import org.scalatest.FlatSpec
@@ -16,14 +17,14 @@ class IanaPoolsTest extends FlatSpec {
   }
 
   "Removing half of ipv4 " should "produce the other half" in {
-    val actual = IanaPools(Records(List(), List(IanaPools.ipv6Pool(RecordRange.from(Ipv4Range.parse("0.0.0.0/1")))), List()))
+    val actual = iana.IanaPools(Records(List(), List(IanaPools.ipv6Pool(RecordRange.from(Ipv4Range.parse("0.0.0.0/1")))), List()))
     val expected = Iterator(RecordRange.from(Ipv4Range.parse("128.0.0.0/1"))).toList.map(_.ipv4)
     assert(actual.ipv4.map(_.range.ipv4) === expected)
   }
 
   "Calculating iana pools " should " when half of the internet is used should give the other half " in {
 
-    val pool = IanaPools(Records(
+    val pool = iana.IanaPools(Records(
       List(IanaPools.asnPool(RecordRange.from(AsnRange.parse("AS0-AS2100000000")))),
       List(IanaPools.ipv4Pool(RecordRange.from(Ipv4Range.parse("0.0.0.0/1")))),
       List(IanaPools.ipv6Pool(RecordRange.from(Ipv6Range.parse("::/1"))))))

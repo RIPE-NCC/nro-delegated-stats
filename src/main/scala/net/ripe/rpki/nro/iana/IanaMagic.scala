@@ -1,12 +1,13 @@
-package net.ripe.rpki.nro.main
+package net.ripe.rpki.nro.iana
 
 import java.io.StringReader
 
 import com.github.tototoshi.csv.CSVReader
 import net.ripe.commons.ip.{Ipv4, Ipv4Range, Ipv6Range, PrefixUtils}
 import net.ripe.rpki.nro.Configs.ianaorg
-import net.ripe.rpki.nro.Const._
+import net.ripe.rpki.nro.Const.{ASN16, ASN32, IPV4_ADDRESS_SPACE, IPV4_REALLOCATED_SPACE, IPV4_RECOVERED_SPACE, IPV4_SPECIAL_REGISTRY, IPV6_ADDRESS_SPACE, IPV6_UNICAST_ASSIGNMENT}
 import net.ripe.rpki.nro.Logging
+import net.ripe.rpki.nro.main.Merger
 import net.ripe.rpki.nro.model.Records
 import net.ripe.rpki.nro.service.Ports
 
@@ -207,24 +208,21 @@ object IanaMagic extends Merger with Logging {
 
   def buildIpv4SpecialRecord(ipv4Record: List[String]): List[String] = ipv4Record match {
 
-    // These special ranges are not so special since they are already covered in original https://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.xhtml
-    // and marked for future use.
+    // Self conflicting and already marked as future use in ipv4-address-space, so skip.
     case "240.0.0.0/4" :: _ => List()
     case "255.255.255.255/32" :: _ => List()
 
-    // ARIN claims this special reg, geoff's iana does not include it.
-    // Without this special treatment I will have conflicts between arin and this iana magic.
+    // Special registry which is claimed by ARIN and not included in current IANA.
     case "192.175.48.0/24" :: _ => List()
 
-    case "192.0.0.0/24 [2]" :: _ :: _ :: date :: _ =>
-      List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.0/24") ++ List(resolveDate(date), "ietf")
+    // Can't parse this [reference], so special treatment.
+    case "192.0.0.0/24 [2]" :: _ :: _ :: date :: _ => List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.0/24") ++ List(resolveDate(date), "ietf")
 
-    // Some small ranges in special registry are already included on the lines before.
-    case range :: _ :: _ :: date :: _ => if (range.endsWith("/32") || range.endsWith("/29")) {
-      List()
-    } else {
-      List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) ++ List(resolveDate(date), "ietf")
-    }
+    // Self conflicting small ranges are skipped, they are subset of others.
+    case range :: _ :: _ :: date :: _  if (range.endsWith("/32") || range.endsWith("/29"))  => List()
+
+    case range :: _ :: _ :: date :: _  =>  List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) ++ List(resolveDate(date), "ietf")
+
     case _ => logger.error(s"Can't parse this line: $ipv4Record"); List()
   }
 

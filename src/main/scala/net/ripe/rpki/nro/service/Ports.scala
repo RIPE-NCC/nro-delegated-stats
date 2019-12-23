@@ -6,7 +6,7 @@ import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Logging
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
-import net.ripe.rpki.nro.main.IanaMagic
+import net.ripe.rpki.nro.iana.IanaMagic
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
 import scala.util.{Try, Using}
