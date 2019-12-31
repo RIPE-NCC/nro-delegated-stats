@@ -68,7 +68,7 @@ object Configs {
     GEOFF   -> urls.getString(GEOFF  )
   )
 
-  val ianaorg: Map[String, String] = Map[String, String](
+  val ianaOrgFileURL: Map[String, String] = Map[String, String](
     ASN16      -> urls.getString(ASN16),
     ASN32      -> urls.getString(ASN32),
     IPV4_ADDRESS_SPACE      -> urls.getString(IPV4_ADDRESS_SPACE),
