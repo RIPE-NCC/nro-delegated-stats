@@ -1,8 +1,8 @@
-package net.ripe.rpki.nro.main
+package net.ripe.rpki.nro.iana
 
 import net.ripe.commons.ip.{Ipv4, Ipv6Range}
+import net.ripe.rpki.nro.Configs.config
 import net.ripe.rpki.nro.Const.{ALL_ASNS, ALL_IPV4, ALL_IPV6, ASN, DEFAULT_CC, IANA, IANAPOOL, IPV4, IPV4_IANA_POOL_DATE, IPV6}
-import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.model
 import net.ripe.rpki.nro.model.{AsnRecord, Ipv4Record, Ipv6Record, RecordRange, Records, Stat}
 

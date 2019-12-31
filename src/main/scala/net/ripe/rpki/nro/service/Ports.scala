@@ -6,6 +6,7 @@ import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Logging
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
+import net.ripe.rpki.nro.iana.IanaMagic
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
 import scala.util.{Try, Using}
@@ -20,35 +21,33 @@ object Ports extends Logging {
     override val delimiter = '|'
   }
 
+  val comments: List[String] => Boolean = _.head.startsWith("#")
+  val summary : List[String] => Boolean = _.last == "summary"
+  val version: String => Boolean = s => s.forall(c => c.isDigit || c == '.')
+  val header: List[String] => Boolean = line => version(line.head)
+
+  val isRecord: List[String] => Boolean = line => !(comments(line) || header(line) || summary(line))
+
   def parseRecordFile(source: String): Records = {
     logger.info(s"Parsing local source $source")
-
-    val comments: List[String] => Boolean = _.head.startsWith("#")
-    val summary : List[String] => Boolean = _.last == "summary"
-
-    val version: String => Boolean = s => s.forall(c => c.isDigit || c == '.')
-    val header: List[String] => Boolean = line => version(line.head)
-
-    val isRecord: List[String] => Boolean = line => !(comments(line) || header(line) || summary(line))
-
-    Using.resource(CSVReader.open(source)) { reader =>
-
-      var asn  : Vector[AsnRecord]  = Vector[AsnRecord]  ()
-      var ipv4 : Vector[Ipv4Record] = Vector[Ipv4Record] ()
-      var ipv6 : Vector[Ipv6Record] = Vector[Ipv6Record] ()
-
-      val records = reader.all().withFilter(isRecord).map(Record.apply)
-
-      records.foreach {
-        case rec: AsnRecord   => asn  = asn  :+ rec
-        case rec: Ipv4Record  => ipv4 = ipv4 :+ rec
-        case rec: Ipv6Record  => ipv6 = ipv6 :+ rec
-      }
-
-      Records(asn.toList, ipv4.toList, ipv6.toList)
-    }
+    Using.resource(CSVReader.open(source))(reader => toRecords(reader.all()))
   }
 
+  def toRecords(lines : List[List[String]]) = {
+    var asn  : Vector[AsnRecord]  = Vector[AsnRecord]  ()
+    var ipv4 : Vector[Ipv4Record] = Vector[Ipv4Record] ()
+    var ipv6 : Vector[Ipv6Record] = Vector[Ipv6Record] ()
+
+    val records = lines.withFilter(isRecord).map(Record.apply)
+
+    records.foreach {
+      case rec: AsnRecord   => asn  = asn  :+ rec
+      case rec: Ipv4Record  => ipv4 = ipv4 :+ rec
+      case rec: Ipv6Record  => ipv6 = ipv6 :+ rec
+    }
+
+    Records(asn.toList, ipv4.toList, ipv6.toList)
+  }
   // Fetch only if data file is not yet downloaded.
   def fetchLocally(source: String, dest: String) {
     if (new File(dest).isFile) {
@@ -64,7 +63,7 @@ object Ports extends Logging {
     }
   }
 
-  def fetchAndParse(): (Iterable[Records], Records, Option[Records], List[Conflict]) = {
+  def fetchAndParse(ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records], List[Conflict]) = {
     val recordMaps: Map[String, Records] = sources.map {
       case (name:String, url:String) =>
         fetchLocally(url, s"${config.currentDataDirectory}/$name")
@@ -72,7 +71,8 @@ object Ports extends Logging {
     }
 
     val rirs = (recordMaps - "iana" - "geoff").view.mapValues(_.fixRIRs).values
-    val iana = recordMaps("iana").fixIana
+    val iana = if(ownmagic)  IanaMagic.processIanaRecords.fixIana else recordMaps("iana").fixIana
+    logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
 
     val previousResult = Try(parseRecordFile(s"${config.previousResultFile}")).toOption
     val oldConflict = Try(readConflicts(s"${config.previousConflictFile}")).getOrElse(List())

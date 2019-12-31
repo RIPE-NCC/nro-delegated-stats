@@ -11,22 +11,23 @@ object Main extends Stats with App {
 
   var startDate = Properties.propOrNone("startDate").map(LocalDate.parse).getOrElse(LocalDate.now)
   val endDate   = Properties.propOrNone("endDate").map(LocalDate.parse).getOrElse(LocalDate.now)
+  val ownMagic  = Properties.propOrNone("ownMagic").isDefined
 
-  if(startDate.equals(endDate))
+  if (startDate.equals(endDate)) {
     logger.info("Generating stats for a single day ", startDate)
-  else
+  } else {
     logger.info(s"Generating stats from $startDate to $endDate")
-
-  while(startDate.compareTo(endDate) <= 0) {
+  }
+  while (startDate.compareTo(endDate) <= 0) {
 
     Configs.config = new Configs(startDate)
-    logger.info("Data dir: "+Configs.config.currentDataDirectory)
-    logger.info("Result dir: "+Configs.config.currentResultDirectory)
+    logger.info("Data dir: " + Configs.config.currentDataDirectory)
+    logger.info("Result dir: " + Configs.config.currentResultDirectory)
 
-    val (rirRecords, ianaRecord, previousResult, previousConflicts) = Ports.fetchAndParse()
+    val (rirRecords, ianaRecord, previousResult, previousConflicts) = Ports.fetchAndParse(ownMagic)
     val (results, mergedResults, currentConflicts, unclaimed, overclaimed) = process(rirRecords, ianaRecord, previousResult, previousConflicts)
 
-    val notifier  = new Notifier(mailer)
+    val notifier = new Notifier(mailer)
     notifier.notifyConflicts(currentConflicts, previousConflicts)
 
     Ports.writeRecords(results, config.currentResultFile)
