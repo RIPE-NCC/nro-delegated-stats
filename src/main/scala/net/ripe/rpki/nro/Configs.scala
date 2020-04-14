@@ -65,7 +65,6 @@ object Configs {
     LACNIC  -> urls.getString(LACNIC ),
     RIPENCC -> urls.getString(RIPENCC),
     IANA    -> urls.getString(IANA   ),
-    GEOFF   -> urls.getString(GEOFF  )
   )
 
   val ianaOrgFileURL: Map[String, String] = Map[String, String](
