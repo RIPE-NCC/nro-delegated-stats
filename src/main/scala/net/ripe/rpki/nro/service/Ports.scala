@@ -10,12 +10,20 @@ import net.ripe.rpki.nro.iana.IanaMagic
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
 import scala.util.{Try, Using}
+import retry.Success
+import requests.Response
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 /**
  * Importing data from remotes files and exporting to file.
  * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
  */
 object Ports extends Logging {
+
+  // Success definition for retrying requests
+  implicit val okResponse = Success[Response](_.statusCode ==  200)
 
   implicit object PipeFormat extends DefaultCSVFormat {
     override val delimiter = '|'
@@ -50,12 +58,19 @@ object Ports extends Logging {
   }
   // Fetch only if data file is not yet downloaded.
   def fetchLocally(source: String, dest: String) {
+
     if (new File(dest).isFile) {
       logger.warn(s"     File $dest exist, not fetching")
       return
     }
     logger.info(s"---Fetching $source into $dest---")
-    val response = requests.get(source)
+
+    val attempts = retry.JitterBackoff(max=5).apply(() => Future {
+      logger.info(s"--Fetch with retry $source --")
+      requests.get(source)
+    })
+
+    val response = Await.result(attempts, Duration.Inf)
 
     Using.resource(new PrintWriter(new File(dest))) { writer =>
       writer.write(response.text())
