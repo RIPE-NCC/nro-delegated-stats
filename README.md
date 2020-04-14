@@ -21,15 +21,8 @@ Input files are data from RIRs, and IANA files which is also from Jeff.
 Merged results will be created in `result/combined-stat`
 If there are conflicting entries between RIRs it will be stored in `result/conflicts`
 
-When there is a conflict of resources contained in more than one RIRs it will be printed out in console for now.
-
-
-There is `compare.sh` script that will try to compare it with `data/geoff` which was the target file [1] we are trying
- to reverse engineer. Output of this script will be on `compare/difference_nocc`.
+We are not performing EU country code mapping that was done in the original NRO stats.
  
-Comparison is done ignoring country code (second column), since Jeff has special AS number mapping for EU country code.
-In this code we keep EU country code without trying to map it to the country.
-
 Building single jar assembly can be done with `sbt assembly` and look for `nro-delegated-stats.jar` in target directory.
 
 Once the jar is build, there is optional JVM parameter that you can give, startDate and endDate e.g:

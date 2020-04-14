@@ -71,6 +71,10 @@ object Ports extends Logging {
     })
 
     val response = Await.result(attempts, Duration.Inf)
+    if(response.statusCode != 200){
+      logger.error(s"Failed to fetch $source after 5 retries")
+      System.exit(1)
+    }
 
     Using.resource(new PrintWriter(new File(dest))) { writer =>
       writer.write(response.text())
@@ -85,7 +89,7 @@ object Ports extends Logging {
         name -> parseRecordFile(s"${config.currentDataDirectory}/$name")
     }
 
-    val rirs = (recordMaps - "iana" - "geoff").view.mapValues(_.fixRIRs).values
+    val rirs = (recordMaps - "iana").view.mapValues(_.fixRIRs).values
     val iana = if(ownmagic)  IanaMagic.processIanaRecords.fixIana else recordMaps("iana").fixIana
     logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
 
