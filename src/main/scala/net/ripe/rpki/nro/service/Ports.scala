@@ -9,8 +9,7 @@ import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.iana.IanaMagic
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
-import scala.util.{Try, Using}
-import retry.Success
+import scala.util.{Try, Using, Success}
 import requests.Response
 
 import scala.concurrent.{Await, Future}
@@ -23,7 +22,7 @@ import scala.concurrent.duration.Duration
 object Ports extends Logging {
 
   // Success definition for retrying requests
-  implicit val okResponse = Success[Response](_.statusCode ==  200)
+  implicit val okResponse = retry.Success[Response](_.statusCode ==  200)
 
   implicit object PipeFormat extends DefaultCSVFormat {
     override val delimiter = '|'
@@ -65,20 +64,22 @@ object Ports extends Logging {
     }
     logger.info(s"---Fetching $source into $dest---")
 
-    val attempts = retry.JitterBackoff(max=5).apply(() => Future {
+    val attempts: Future[Response] = retry.JitterBackoff(max=5).apply(() => Future {
       logger.info(s"--Fetch with retry $source --")
       requests.get(source)
     })
 
-    val response = Await.result(attempts, Duration.Inf)
-    if(response.statusCode != 200){
-      logger.error(s"Failed to fetch $source after 5 retries")
-      System.exit(1)
-    }
-
-    Using.resource(new PrintWriter(new File(dest))) { writer =>
-      writer.write(response.text())
-      logger.info(s"---Done fetching $source into $dest---\n\n\n")
+    Try(Await.result(attempts, Duration.Inf)) match {
+      case Success(response) if response.statusCode == 200 => {
+        Using.resource(new PrintWriter(new File(dest))) { writer =>
+          writer.write(response.text())
+          logger.info(s"---Done fetching $source into $dest---\n\n\n")
+        }
+      }
+      case _ =>{
+        logger.error(s"Failed to fetch $source after 5 retries")
+        System.exit(1)
+      }
     }
   }
 
