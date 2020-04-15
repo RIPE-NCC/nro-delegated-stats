@@ -3,9 +3,9 @@ if [[ $# -lt 3 ]]; then
 fi
 
 YYYY=$1
-MM=$2
-DD=$3
-BB=$((DD-1))
+MM=$(printf "%02d" $2)
+DD=$(printf "%02d" $3)
+BB=$(printf "%02d" $((DD-1)))
 
 THE_DAY=$YYYY$MM$DD
 DAY_BEFORE=$YYYY$MM$BB
