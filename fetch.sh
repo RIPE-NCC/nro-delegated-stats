@@ -5,10 +5,9 @@ fi
 YYYY=$1
 MM=$(printf "%02d" $2)
 DD=$(printf "%02d" $3)
-BB=$(printf "%02d" $((DD-1)))
 
 THE_DAY=$YYYY$MM$DD
-DAY_BEFORE=$YYYY$MM$BB
+DAY_BEFORE=$(date -d "$YYYY-$MM-$DD 1 day ago" +'%Y%m%d')
 
 mkdir -p data/$THE_DAY
 
