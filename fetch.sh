@@ -3,9 +3,13 @@ if [[ $# -lt 3 ]]; then
 fi
 
 YYYY=$1
+
+#Padding zeros
 MM=$(printf "%02d" $2)
 DD=$(printf "%02d" $3)
 
+#We're fetching archive, matching what we retrieved when
+#We run this job at 13:00 CEST.
 THE_DAY=$YYYY$MM$DD
 DAY_BEFORE=$(date -d "$YYYY-$MM-$DD 1 day ago" +'%Y%m%d')
 
@@ -19,6 +23,7 @@ curl http://ftp.afrinic.net/stats/afrinic/$YYYY/delegated-afrinic-extended-$THE_
 curl http://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-$DAY_BEFORE --output lacnic
 curl https://ftp.ripe.net/pub/stats/ripencc/$YYYY/delegated-ripencc-extended-$DAY_BEFORE.bz2 --output ripencc.bz2 
 
-bunzip2 ripencc.bz2
+# Will override existing bz2
+bunzip2 -f ripencc.bz2
 gunzip apnic.gz
 
