@@ -51,6 +51,7 @@ object Configs {
   )
 
   val gracePeriod: Int = conf.getInt("grace.period")
+  val maxRetries: Int = conf.getInt("max.retries")
   val dataDirectory: String = conf.getString("data.directory")
   val resultDirectory: String = conf.getString("result.directory")
   val resultFileName: String = conf.getString("result.fileName")

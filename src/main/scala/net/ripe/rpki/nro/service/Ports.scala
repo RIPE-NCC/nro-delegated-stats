@@ -64,20 +64,24 @@ object Ports extends Logging {
     }
     logger.info(s"---Fetching $source into $dest---")
 
-    val attempts: Future[Response] = retry.JitterBackoff(max=5).apply(() => Future {
+    val attempts: Future[Response] = retry.JitterBackoff(max = maxRetries).apply(() => Future {
       logger.info(s"--Fetch with retry $source --")
       requests.get(source)
     })
 
     Try(Await.result(attempts, Duration.Inf)) match {
       case Success(response) if response.statusCode == 200 => {
+        if(response.contents.length < 2000){
+          logger.error(s"Contents $source is too small, please investigate manually.")
+          System.exit(1)
+        }
         Using.resource(new PrintWriter(new File(dest))) { writer =>
           writer.write(response.text())
           logger.info(s"---Done fetching $source into $dest---\n\n\n")
         }
       }
       case _ =>{
-        logger.error(s"Failed to fetch $source after 5 retries")
+        logger.error(s"Failed to fetch $source after $maxRetries retries")
         System.exit(1)
       }
     }
