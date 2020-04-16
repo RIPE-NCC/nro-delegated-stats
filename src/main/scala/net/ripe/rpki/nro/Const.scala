@@ -46,8 +46,6 @@ object Const {
   val RESERVED = "reserved"
   val AVAILABLE = "available"
 
-  val GEOFF = "geoff"
-
   val SUMMARY = "summary"
 
   val ALL_ASNS: AsnRange  = AsnRange.parse("AS0-AS4200000000")

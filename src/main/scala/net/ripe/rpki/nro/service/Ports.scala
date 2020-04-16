@@ -9,13 +9,20 @@ import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.iana.IanaMagic
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
-import scala.util.{Try, Using}
+import scala.util.{Try, Using, Success}
+import requests.Response
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 /**
  * Importing data from remotes files and exporting to file.
  * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
  */
 object Ports extends Logging {
+
+  // Success definition for retrying requests
+  implicit val okResponse = retry.Success[Response](_.statusCode ==  200)
 
   implicit object PipeFormat extends DefaultCSVFormat {
     override val delimiter = '|'
@@ -50,16 +57,33 @@ object Ports extends Logging {
   }
   // Fetch only if data file is not yet downloaded.
   def fetchLocally(source: String, dest: String) {
+
     if (new File(dest).isFile) {
       logger.warn(s"     File $dest exist, not fetching")
       return
     }
     logger.info(s"---Fetching $source into $dest---")
-    val response = requests.get(source)
 
-    Using.resource(new PrintWriter(new File(dest))) { writer =>
-      writer.write(response.text())
-      logger.info(s"---Done fetching $source into $dest---\n\n\n")
+    val attempts: Future[Response] = retry.JitterBackoff(max = maxRetries).apply(() => Future {
+      logger.info(s"--Fetch with retry $source --")
+      requests.get(source)
+    })
+
+    Try(Await.result(attempts, Duration.Inf)) match {
+      case Success(response) if response.statusCode == 200 => {
+        if(response.contents.length < 2000){
+          logger.error(s"Contents $source is too small, please investigate manually.")
+          System.exit(1)
+        }
+        Using.resource(new PrintWriter(new File(dest))) { writer =>
+          writer.write(response.text())
+          logger.info(s"---Done fetching $source into $dest---\n\n\n")
+        }
+      }
+      case _ =>{
+        logger.error(s"Failed to fetch $source after $maxRetries retries")
+        System.exit(1)
+      }
     }
   }
 
@@ -70,7 +94,7 @@ object Ports extends Logging {
         name -> parseRecordFile(s"${config.currentDataDirectory}/$name")
     }
 
-    val rirs = (recordMaps - "iana" - "geoff").view.mapValues(_.fixRIRs).values
+    val rirs = (recordMaps - "iana").view.mapValues(_.fixRIRs).values
     val iana = if(ownmagic)  IanaMagic.processIanaRecords.fixIana else recordMaps("iana").fixIana
     logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
 
