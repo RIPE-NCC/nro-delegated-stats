@@ -5,19 +5,26 @@ import java.time.LocalDate
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.main.Stats
 import net.ripe.rpki.nro.service.{Notifier, Ports}
-import scala.util.Properties
+
+import scala.util.{Properties, Try}
+import ch.qos.logback.classic.joran.JoranConfigurator
+import ch.qos.logback.core.joran.spi.JoranException
 
 object Main extends Stats with App {
 
-  var startDate = Properties.propOrNone("startDate").map(LocalDate.parse).getOrElse(LocalDate.now)
-  val endDate   = Properties.propOrNone("endDate").map(LocalDate.parse).getOrElse(LocalDate.now)
-  val ownMagic  = Properties.propOrNone("ownMagic").isDefined
+  var startDate   = Properties.propOrNone("startDate").map(LocalDate.parse).getOrElse(LocalDate.now)
+  val endDate     = Properties.propOrNone("endDate").map(LocalDate.parse).getOrElse(LocalDate.now)
+  val ownMagic    = Properties.propOrNone("ownMagic").isDefined
+  val environment = Properties.propOrElse("environment", "local")
+
+  configureLogging()
 
   if (startDate.equals(endDate)) {
     logger.info("Generating stats for a single day ", startDate)
   } else {
     logger.info(s"Generating stats from $startDate to $endDate")
   }
+
   while (startDate.compareTo(endDate) <= 0) {
 
     Configs.config = new Configs(startDate)
@@ -38,5 +45,17 @@ object Main extends Stats with App {
     Ports.writeClaims(overclaimed, config.currentOverclaimedFile)
 
     startDate = startDate.plusDays(1)
+  }
+
+  def configureLogging(){
+    val configurator = new JoranConfigurator
+    val context = org.slf4j.LoggerFactory.getILoggerFactory.asInstanceOf[ch.qos.logback.classic.LoggerContext]
+    try{
+      configurator.setContext(context)
+      context.reset()
+      configurator.doConfigure(s"conf/logback-$environment.xml")
+    }catch {
+      case e: JoranException =>
+    }
   }
 }
