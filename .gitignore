@@ -4,4 +4,7 @@ target
 data/**
 result/**
 compare/**
+.idealog
 .idea
+.DS_Store
+log
