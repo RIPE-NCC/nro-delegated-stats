@@ -98,6 +98,12 @@ object Ports extends Logging {
     val iana = if(ownmagic)  IanaMagic.processIanaRecords.fixIana else recordMaps("iana").fixIana
     logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
 
+    val allSourceFileContainSomething = iana.size > 0 && rirs.forall(_.size > 0)
+    if(!allSourceFileContainSomething){
+      logger.error(s"Please check the input files in ${config.currentDataDirectory} some of them are empty.")
+      System.exit(1)
+    }
+
     val previousResult = Try(parseRecordFile(s"${config.previousResultFile}")).toOption
     val oldConflict = Try(readConflicts(s"${config.previousConflictFile}")).getOrElse(List())
     (rirs, iana, previousResult, oldConflict)
