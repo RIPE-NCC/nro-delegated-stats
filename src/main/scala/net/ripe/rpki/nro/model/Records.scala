@@ -17,8 +17,8 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
 
   def fixIana: Records = {
     def fix[R]: Record => Record = (rec: Record) => rec.stat.status match {
-      case IETF => rec.update(rec.stat.copy(oid = IETF, ext = IANA))
-      case IANA => rec.update(rec.stat.copy(oid = IANA, status = ASSIGNED, ext = IANA))
+      case IETF => rec.update(rec.stat.copy(status=RESERVED, oid = IETF, ext = IANA))
+      case IANA => rec.update(rec.stat.copy(status=ASSIGNED, oid = IANA, ext = IANA))
       case _ => rec.update(rec.stat.copy(ext = IANA))
     }
 
@@ -28,7 +28,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
   def fixRIRs: Records = {
     def fix: Record => Record = (rec: Record) => rec.stat.status match {
       // RESERVED and AVAILABLE has neither date nor country (except AFRINIC with ZZ)
-      case RESERVED | AVAILABLE => rec.update(rec.stat.copy(date = config.CURRENT_DAY, cc = DEFAULT_CC))
+      case RESERVED | AVAILABLE => rec.update(rec.stat.copy(date = config.CURRENT_DAY, cc = DEFAULT_CC, oid = rec.registry))
       // Whatever allocated in original RIR file appears as ASSIGNED
       case ALLOCATED => rec.update(rec.stat.copy(status = ASSIGNED))
       case _ => rec
