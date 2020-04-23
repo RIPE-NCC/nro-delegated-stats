@@ -73,7 +73,7 @@ class IanaPoolsTest extends FlatSpec {
 
   it should "work for Ipv6" in {
     assert(IanaPools.ipv6Pool(RecordRange.from(Ipv6Range.parse("::/24"))) ==
-      Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, "::", "24", Configs.config.CURRENT_DAY, IANAPOOL, IANA, IANA)))
+    Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, "::", "24", Configs.config.CURRENT_DAY, IANAPOOL, IANA, IANA)))
   }
 
   "Claims verification " should  "be empty in case of proper combination" in {

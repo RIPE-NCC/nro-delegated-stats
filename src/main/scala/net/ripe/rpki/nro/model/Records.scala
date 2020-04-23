@@ -19,7 +19,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
     def format[R]: Record => Record = (rec: Record) => rec.stat.status match {
       case IETF => rec.updateStat(rec.stat.copy(status=RESERVED, oid = IETF, ext = IANA))
       case IANA => rec.updateStat(rec.stat.copy(status=ASSIGNED, oid = IANA, ext = IANA))
-      case _ => rec.updateStat(rec.stat.copy(ext = IANA))
+      case _ => rec.updateStat(rec.stat.copy(oid=IANA, ext = IANA))
     }
 
     formatRecords(format)
@@ -37,7 +37,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
     formatRecords(format)
   }
 
-  def formatRecords(format: Record => Record): Records = Records(
+  private def formatRecords(format: Record => Record): Records = Records(
     this.asn.map(format),
     this.ipv4.map(format),
     this.ipv6.map(format))
