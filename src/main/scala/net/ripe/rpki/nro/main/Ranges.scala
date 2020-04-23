@@ -37,9 +37,9 @@ trait Ranges {
       case (key, _) if empty(key) => List()
       case (range, record: Ipv6Record) =>
         record.splitPrefixes(range).map { ipv6 =>
-          record.update(RecordRange.from(ipv6).key)
+          record.updateRange(RecordRange.from(ipv6).key)
         }
-      case (range, record) => List(record.update(range))
+      case (range, record) => List(record.updateRange(range))
     }
 
   def empty(key: Range[BigInteger]): Boolean = key.canonical(DiscreteDomain.bigIntegers()).isEmpty

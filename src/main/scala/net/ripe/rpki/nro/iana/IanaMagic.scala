@@ -23,7 +23,7 @@ object IanaMagic extends Merger with Logging with IanaParser {
     // For comparison purpose
     writeRecords(ianaMagic, "iana-magic")
 
-    ianaMagic.fixIana
+    ianaMagic.formatIana
   }
 
   def fetchAllIanaSpace(): Records = {

@@ -28,8 +28,8 @@ trait Record extends Comparable[Record] with Ranges {
   def stat: Stat
   def range: RecordRange
 
-  def update(key: Range[BigInteger]): Record
-  def update(info: Stat): Record
+  def updateRange(key: Range[BigInteger]): Record
+  def updateStat(stat: Stat): Record
 
   def merge(that: Record): Record
   def canMerge(that: Record): Boolean = {
@@ -79,7 +79,7 @@ object Record {
 
 case class Ipv4Record(stat: Stat) extends Record {
 
-  override def update(stat: Stat): Record = Ipv4Record(stat)
+  override def updateStat(stat: Stat): Record = Ipv4Record(stat)
 
   override def range: RecordRange = RecordRange.ipv4(start, length)
 
@@ -88,7 +88,7 @@ case class Ipv4Record(stat: Stat) extends Record {
     this.copy(stat = this.stat.copy(length = s"$newLength"))
   }
 
-  override def update(key: Range[BigInteger]): Ipv4Record = {
+  override def updateRange(key: Range[BigInteger]): Ipv4Record = {
     val start = toInterval(key)._1.longValue()
     val len = size(key)
     val startAddress = Ipv4.of(start)
@@ -98,7 +98,7 @@ case class Ipv4Record(stat: Stat) extends Record {
 
 case class Ipv6Record(stat: Stat) extends Record {
 
-  override def update(info: Stat): Record = Ipv6Record(info)
+  override def updateStat(info: Stat): Record = Ipv6Record(info)
 
   override def range: RecordRange = RecordRange.ipv6(start, length)
 
@@ -115,7 +115,7 @@ case class Ipv6Record(stat: Stat) extends Record {
     this.copy(stat = this.stat.copy(start = s"$start", length = s"$length"))
   }
 
-  override def update(key: Range[BigInteger]): Record = {
+  override def updateRange(key: Range[BigInteger]): Record = {
     val (begin, end) = toInterval(key)
     val newRange: Ipv6Range = Ipv6Range.from(begin).to(end)
     val Array(start, prefix) = newRange.toStringInCidrNotation.split("/")
@@ -130,7 +130,7 @@ case class Ipv6Record(stat: Stat) extends Record {
 
 case class AsnRecord(stat: Stat) extends Record {
 
-  override def update(info: Stat): Record = AsnRecord(info)
+  override def updateStat(info: Stat): Record = AsnRecord(info)
 
   override def range: RecordRange = RecordRange.asn(start, length)
 
@@ -139,7 +139,7 @@ case class AsnRecord(stat: Stat) extends Record {
     this.copy(stat = this.stat.copy(length = s"$newLength"))
   }
 
-  override def update(key: Range[BigInteger]): Record = {
+  override def updateRange(key: Range[BigInteger]): Record = {
     val start = toInterval(key)._1
     val length = size(key)
     this.copy(stat = this.stat.copy(start = s"$start", length = s"$length"))

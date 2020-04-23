@@ -56,7 +56,7 @@ class MergerTest extends FlatSpec with TestUtil with Merger {
     val arin = parseRecordFile(getResourceFile("/data/arin"))
     val afriaprin = parseRecordFile(getResourceFile("/data/afriaprin"))
 
-    val rirs: Iterable[Records] = Iterable(apnic, afrinic, arin, afriaprin).map(_.fixRIRs)
+    val rirs: Iterable[Records] = Iterable(apnic, afrinic, arin, afriaprin).map(_.formatRIRs)
 
     val (result, conflicts) = combineRecords(rirs)
 

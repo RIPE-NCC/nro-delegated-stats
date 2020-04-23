@@ -94,8 +94,8 @@ object Ports extends Logging {
         name -> parseRecordFile(s"${config.currentDataDirectory}/$name")
     }
 
-    val rirs = (recordMaps - "iana").view.mapValues(_.fixRIRs).values
-    val iana = if(ownmagic)  IanaMagic.processIanaRecords.fixIana else recordMaps("iana").fixIana
+    val rirs = (recordMaps - "iana").view.mapValues(_.formatRIRs).values
+    val iana = if(ownmagic)  IanaMagic.processIanaRecords.formatIana else recordMaps("iana").formatIana
     logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
 
     val allSourceFileContainSomething = iana.size > 0 && rirs.forall(_.size > 0)
