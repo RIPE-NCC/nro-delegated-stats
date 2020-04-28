@@ -253,6 +253,22 @@ class MergerTest extends FlatSpec with TestUtil with Merger {
     assert(conflicts == Conflict(afrinic, apnic) :: Nil)
   }
 
+  it should " resolve conflict to iana and ignore previous records" in {
+
+    val afrinic = record("afrinic", "asn", "1", "100")
+    val iana = record("iana", "asn", "1", "10")
+
+    val previous = record("afrinic", "asn", "1", "100")
+
+    val (merged, conflicts) = combineResources(Iterable(List(afrinic), List(iana)), List(previous))
+
+    val mergedSiblings = mergeSiblings(merged)
+
+    val expectedMerge = List(iana, record("afrinic","asn","11","90"))
+    assert(mergedSiblings == expectedMerge)
+    assert(conflicts == Conflict(afrinic, iana) :: Nil)
+  }
+
   it should " split non overlapping ranges when merging for ipv6   " in {
 
     val afrinic = record("afrinic", "ipv6", "2001:db8::", "64")

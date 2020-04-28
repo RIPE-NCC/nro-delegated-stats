@@ -6,6 +6,7 @@ import com.google.common.collect.{Range, RangeMap, TreeRangeMap}
 import net.ripe.rpki.nro.Logging
 import net.ripe.rpki.nro.model.{Conflict, Record, Records}
 import scala.jdk.CollectionConverters._
+import net.ripe.rpki.nro.Const._
 
 trait Merger extends Logging with Ranges {
 
@@ -25,15 +26,20 @@ trait Merger extends Logging with Ranges {
       // Recording new conflicts.
       val newConflicts = currentOverlaps.values.map(Conflict(_, newRecord)).toList
 
-      // Look up if new range is on previous Map
-      val previousOverlaps = previousMap.subRangeMap(newRange)
-
-      if (!previousOverlaps.asMapOfRanges().isEmpty) {
-        // Use previous values to resolve conflict.
-        currentMap.putAll(previousOverlaps)
-      } else {
-        // Can't resolve using previous map, use the new Range
+      // Iana always wins
+      if(newRecord.stat.registry == IANA){
         currentMap.put(newRange, newRecord)
+      } else {
+        // Look up if new range is on previous Map
+        val previousOverlaps = previousMap.subRangeMap(newRange)
+
+        if (!previousOverlaps.asMapOfRanges().isEmpty) {
+          // Use previous values to resolve conflict.
+          currentMap.putAll(previousOverlaps)
+        } else {
+          // Can't resolve using previous map, use the new Range
+          currentMap.put(newRange, newRecord)
+        }
       }
 
       newConflicts
