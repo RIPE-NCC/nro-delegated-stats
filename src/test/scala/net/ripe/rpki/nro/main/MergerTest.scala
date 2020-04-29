@@ -253,7 +253,7 @@ class MergerTest extends FlatSpec with TestUtil with Merger {
     assert(conflicts == Conflict(afrinic, apnic) :: Nil)
   }
 
-  it should " resolve conflict to iana and ignore previous records" in {
+  it should " prefer iana over the previous record when there is a conflict" in {
 
     val afrinic = record("afrinic", "asn", "1", "100")
     val iana = record("iana", "asn", "1", "10")
