@@ -9,7 +9,7 @@ import net.ripe.rpki.nro.Configs.config
 class RecordsFormatTest extends FlatSpec with TestUtil {
 
   "Records formatting" should " format IANA " in {
-    val iana  = parseRecordFile(getResourceFile("/data/iana")).formatIana
+    val iana  = parseRecordFile(getResourceFile("/data/iana"))
     val stats = iana.asn.map(_.stat) ++ iana.ipv4.map(_.stat) ++ iana.ipv6.map(_.stat)
 
     stats.foreach( stat ⇒

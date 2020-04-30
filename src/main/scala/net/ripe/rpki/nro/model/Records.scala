@@ -15,16 +15,6 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
     formatRecords(format)
   }
 
-  def formatIana: Records = {
-    def format[R]: Record => Record = (rec: Record) => rec.stat.status match {
-      case IETF => rec.updateStat(rec.stat.copy(status=RESERVED, oid = IETF, ext = IANA))
-      case IANA => rec.updateStat(rec.stat.copy(status=ASSIGNED, oid = IANA, ext = IANA))
-      case _ => rec.updateStat(rec.stat.copy(oid=IANA, ext = IANA))
-    }
-
-    formatRecords(format)
-  }
-
   def formatRIRs: Records = {
     def format: Record => Record = (rec: Record) => rec.stat.status match {
       // RESERVED and AVAILABLE has neither date nor country (except AFRINIC with ZZ)

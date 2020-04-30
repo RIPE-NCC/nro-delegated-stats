@@ -7,7 +7,7 @@ import org.scalatest.FlatSpec
 class StatsTest extends FlatSpec with Stats with TestUtil with Logging {
 
   "Stats sanity check " should "detects conflict, unclaimed, and claimed" in {
-    val iana = parseRecordFile(getResourceFile("/data/iana")).formatIana
+    val iana = parseRecordFile(getResourceFile("/data/iana"))
     val apnic = parseRecordFile(getResourceFile("/data/apnic")).formatRIRs
     val afrinic = parseRecordFile(getResourceFile("/data/afrinic")).formatRIRs
     val arin = parseRecordFile(getResourceFile("/data/arin")).formatRIRs
@@ -23,7 +23,7 @@ class StatsTest extends FlatSpec with Stats with TestUtil with Logging {
 
   it should "detect no conflict when using afriaprin as previous" in {
 
-    val iana = parseRecordFile(getResourceFile("/data/iana")).formatIana
+    val iana = parseRecordFile(getResourceFile("/data/iana"))
     val apnic = parseRecordFile(getResourceFile("/data/apnic")).formatRIRs
     val afrinic = parseRecordFile(getResourceFile("/data/afrinic")).formatRIRs
     val arin = parseRecordFile(getResourceFile("/data/arin")).formatRIRs

@@ -23,7 +23,7 @@ object IanaMagic extends Merger with Logging with IanaParser {
     // For comparison purpose
     writeRecords(ianaMagic, "iana-magic")
 
-    ianaMagic.formatIana
+    ianaMagic
   }
 
   def fetchAllIanaSpace(): Records = {
@@ -43,7 +43,7 @@ object IanaMagic extends Merger with Logging with IanaParser {
     toRecords(asn16 ++ asn32 ++ ipv4 ++ ipv6)
   }
 
-  private def excludeGlobalUnicastAndRecovered() = {
+  private def excludeGlobalUnicastAndRecovered(): Records = {
 
     // Whole global unicast 2000::/33 minus 2000::/16 since we want to include the latter.
     val globalUnicastV6 = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf")))

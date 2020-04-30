@@ -22,7 +22,7 @@ import scala.concurrent.duration.Duration
 object Ports extends Logging {
 
   // Success definition for retrying requests
-  implicit val okResponse = retry.Success[Response](_.statusCode ==  200)
+  implicit val okResponse: retry.Success[Response] = retry.Success[Response](_.statusCode ==  200)
 
   implicit object PipeFormat extends DefaultCSVFormat {
     override val delimiter = '|'
@@ -40,7 +40,7 @@ object Ports extends Logging {
     Using.resource(CSVReader.open(source))(reader => toRecords(reader.all()))
   }
 
-  def toRecords(lines : List[List[String]]) = {
+  def toRecords(lines : List[List[String]]): Records = {
     var asn  : Vector[AsnRecord]  = Vector[AsnRecord]  ()
     var ipv4 : Vector[Ipv4Record] = Vector[Ipv4Record] ()
     var ipv6 : Vector[Ipv6Record] = Vector[Ipv6Record] ()
@@ -70,7 +70,7 @@ object Ports extends Logging {
     })
 
     Try(Await.result(attempts, Duration.Inf)) match {
-      case Success(response) if response.statusCode == 200 => {
+      case Success(response) if response.statusCode == 200 =>
         if(response.contents.length < 2000){
           logger.error(s"Contents $source is too small, please investigate manually.")
           System.exit(1)
@@ -79,11 +79,9 @@ object Ports extends Logging {
           writer.write(response.text())
           logger.info(s"---Done fetching $source into $dest---\n\n\n")
         }
-      }
-      case _ =>{
+      case _ =>
         logger.error(s"Failed to fetch $source after $maxRetries retries")
         System.exit(1)
-      }
     }
   }
 
@@ -95,7 +93,7 @@ object Ports extends Logging {
     }
 
     val rirs = (recordMaps - "iana").view.mapValues(_.formatRIRs).values
-    val iana = if(ownmagic)  IanaMagic.processIanaRecords.formatIana else recordMaps("iana").formatIana
+    val iana = if(ownmagic)  IanaMagic.processIanaRecords else recordMaps("iana")
     logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
 
     val allSourceFileContainSomething = iana.size > 0 && rirs.forall(_.size > 0)
@@ -134,7 +132,7 @@ object Ports extends Logging {
     }
   }
 
-  def writeClaims(recs : Records, fileName: String): Unit = writeResult(recs.asn, recs.ipv4, recs.ipv6, fileName, false)
+  def writeClaims(recs : Records, fileName: String): Unit = writeResult(recs.asn, recs.ipv4, recs.ipv6, fileName, header = false)
 
   def writeConflicts(conflicts: List[Conflict], outputFile: String = s"${config.currentConflictFile}"): Unit = {
     Using.resource( CSVWriter.open(new File(outputFile))) { writer =>
