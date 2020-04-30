@@ -1,10 +1,9 @@
 package net.ripe.rpki.nro.main
 
-import net.ripe.rpki.nro.Const.RIRS
+import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.Logging
 import net.ripe.rpki.nro.iana.IanaPools
 import net.ripe.rpki.nro.model.{Conflict, Record, Records}
-
 trait Stats extends Logging with Merger {
 
   // Main steps of stats merging and conflict detections.
@@ -16,7 +15,7 @@ trait Stats extends Logging with Merger {
     logger.info(s"\n\n---  Combining RIRs data and checking for conflicts among RIRs ---\n\n")
 
     // Splitting iana into RIRs and non RIRs (IETF, IANA)
-    val isRirRecord: Record => Boolean = r => RIRS.contains(r.status)
+    val isRirRecord: Record => Boolean = r => r.stat.status == ALLOCATED
     val (ianaRirs, ianaNonRirs) = ianaRecord.partition(isRirRecord)
 
     val (combined, currentConflicts) = combineRecords(rirRecords ++ Iterable(ianaNonRirs), previousResult)

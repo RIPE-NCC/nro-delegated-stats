@@ -8,7 +8,7 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
 
   def fixUnclaimed: Records = {
     def fix[R]: Record => Record = (rec: Record) => {
-      val info = rec.stat.copy(date = config.CURRENT_DAY, registry = rec.stat.status, status = AVAILABLE)
+      val info = rec.stat.copy(date = config.CURRENT_DAY, registry = rec.stat.oid, status = AVAILABLE)
       rec.update(info)
     }
 
