@@ -113,9 +113,35 @@ trait Merger extends Logging with Ranges {
   }
 
   def resolveUnclaimed(unclaimed:Records, previous: Option[Records]) = {
-      // Let all unclaimed conflicted with itself and resolved to previous, discard conflict.
-      val (result, _) = combineRecords(Iterable(unclaimed, unclaimed), previous)
-      result 
+    def resolveUnclaimedResource(prevRecords: List[Record], currRecords: List[Record]) = {
+      val previousMap: RangeMap[BigInteger, Record] = asRangeMap(prevRecords)
+      val currentMap = TreeRangeMap.create[BigInteger, Record]()
+
+      currRecords.map { record ⇒
+        val range: Range[BigInteger] = record.range.key
+        val previousOverlaps = previousMap.subRangeMap(range)
+
+        if (!previousOverlaps.asMapOfRanges().isEmpty)
+          currentMap.putAll(previousOverlaps)
+        else {
+          currentMap.put(range, record)
+        }
+
+      }
+      alignRecordWithMapRangeKeys(currentMap)
+    }
+
+    if(previous.isEmpty) unclaimed
+      else {
+        val prevRecords = previous.get
+        val currRecords = unclaimed
+
+        Records(
+          resolveUnclaimedResource(prevRecords.asn, currRecords.asn),
+          resolveUnclaimedResource(prevRecords.ipv4, currRecords.ipv4),
+          resolveUnclaimedResource(prevRecords.ipv6, currRecords.ipv6))
+
+    }
   }
     
 }
