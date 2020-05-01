@@ -46,6 +46,15 @@ trait Merger extends Logging with Ranges {
     }
   }
 
+  /**
+   * Combine resources and detect conflict for certain type of resources of a Records (asn, ipv4 or ipv6).
+   *
+   * @param rirRecords        RIR's resources that we want to combine  e.g  Iterable( arin's ASN, ripe's ASN, ... )
+   * @param previousRecords   Delegated claims from previous day that will be used to resolve conflict.
+   * @return                  (combinedResources : List[Record], conflicts : List[Conflict])
+   *                          combinedResources will be non overlapping resources from all the RIRs
+   *                          conflicts: pairs of record that are conflicting.
+   */
   def combineResources(rirRecords: Iterable[List[Record]],
                        previousRecords: List[Record] = List()
                       ): (List[Record], List[Conflict]) = {
@@ -60,6 +69,23 @@ trait Merger extends Logging with Ranges {
 
     (alignRecordWithMapRangeKeys(currentMap), conflicts)
   }
+
+  /**
+   * Merge adjacent records, example from:
+   * apnic|ZZ|ipv4|0.0.0.0|256|20110412|assigned|A92319D5|e-stats
+   * apnic|ZZ|ipv4|1.1.9.0|256|20110412|assigned|A92319D5|e-stats
+   * apnic|ZZ|ipv4|1.1.10.0|512|20110412|assigned|A92319D5|e-stats
+   * apnic|ZZ|ipv4|1.1.12.0|1024|20110412|assigned|A92319D5|e-stats
+   * apnic|ZZ|ipv4|1.1.16.0|4096|20110412|assigned|A92319D5|e-stats
+   * apnic|ZZ|ipv4|1.1.32.0|8192|20110412|assigned|A92319D5|e-stats
+   *
+   * Becomes:
+   * apnic|ZZ|ipv4|0.0.0.0|256|20110412|assigned|A92319D5|e-stats
+   * apnic|ZZ|ipv4|1.1.9.0|14080|20110412|assigned|A92319D5|e-stats
+   *
+   * @param records
+   * @return
+   */
 
   def mergeSiblings(records: List[Record]): List[Record] = {
 
@@ -87,6 +113,12 @@ trait Merger extends Logging with Ranges {
     (lastRecord :: result).reverse
   }
 
+  /**
+   * Combine and detect conflict for each resource type. See combineResources for detail.
+   * @param currentRecords
+   * @param previous
+   * @return
+   */
   def combineRecords(currentRecords: Iterable[Records], previous: Option[Records] = None): (Records, List[Conflict]) = {
 
     logger.info("Combine and detect conflict Asn")
@@ -101,6 +133,11 @@ trait Merger extends Logging with Ranges {
     (Records(asns, ipv4s, ipv6s), asnConflicts ++ ipv4Conflicts ++ ipv6Conflicts)
   }
 
+  /**
+   * Merge adjacent records, see mergeSibling for detail.
+   * @param records
+   * @return
+   */
   def mergeRecords(records: Records): Records = {
     logger.info("Merging ASNs siblings ")
     val asnMerged = mergeSiblings(records.asn)
@@ -112,6 +149,13 @@ trait Merger extends Logging with Ranges {
     Records(asnMerged, ipv4Merged, ipv6Merged)
   }
 
+  /**
+   * Resolving the unclaimed ranges. Unclaimed => Allocated by IANA for certain RIR, but not claimed in their delegated stats.
+   * Here we wanted to find if any RIR claimed it the day before. The resolution of the unclaimed should refer to previous day.
+   * @param unclaimed
+   * @param previous
+   * @return
+   */
   def resolveUnclaimed(unclaimed:Records, previous: Option[Records]) = {
     def resolveUnclaimedResource(prevRecords: List[Record], currRecords: List[Record]) = {
       val previousMap: RangeMap[BigInteger, Record] = asRangeMap(prevRecords)
