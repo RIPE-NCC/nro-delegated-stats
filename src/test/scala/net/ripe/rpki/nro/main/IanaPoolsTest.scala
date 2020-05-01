@@ -48,9 +48,9 @@ class IanaPoolsTest extends FlatSpec {
   }
 
   "Filter non RIRs data from iana" should "give either ietf or iana status" in {
-    val isRirRecord: Record => Boolean = r => RIRS.contains(r.status)
+    val isRirRecord: Record => Boolean = r => r.stat.status == ALLOCATED
     val iana: Records = parseRecordFile(getClass.getResource("/data/iana").getFile)
-    val (rirs, nonRirs) = iana.fixIana.partition(isRirRecord)
+    val (rirs, nonRirs) = iana.partition(isRirRecord)
 
     assert(nonRirs.asn.size  == 1)
     assert(nonRirs.ipv4.size == 1)
@@ -63,17 +63,17 @@ class IanaPoolsTest extends FlatSpec {
 
   "Iana pool calculation" should "work for Asn" in {
     assert(IanaPools.asnPool(RecordRange.from(AsnRange.parse("AS1000-AS2000"))) ==
-      AsnRecord( Stat(IANA, DEFAULT_CC, ASN, "1000", "1001" + "", Configs.config.CURRENT_DAY, IANAPOOL, "", IANA)))
+      AsnRecord( Stat(IANA, DEFAULT_CC, ASN, "1000", "1001" + "", Configs.config.CURRENT_DAY, IANAPOOL, IANA , IANA)))
   }
 
   it should "work for Ipv4" in {
     assert(IanaPools.ipv4Pool(RecordRange.from(Ipv4Range.parse("0.0.0.0/24"))) ==
-      Ipv4Record( Stat(IANA, DEFAULT_CC, IPV4, "0.0.0.0", "256", IPV4_IANA_POOL_DATE, IANAPOOL, "", IANA)))
+      Ipv4Record( Stat(IANA, DEFAULT_CC, IPV4, "0.0.0.0", "256", IPV4_IANA_POOL_DATE, IANAPOOL, IANA, IANA)))
   }
 
   it should "work for Ipv6" in {
     assert(IanaPools.ipv6Pool(RecordRange.from(Ipv6Range.parse("::/24"))) ==
-      Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, "::", "24", Configs.config.CURRENT_DAY, IANAPOOL, "", IANA)))
+    Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, "::", "24", Configs.config.CURRENT_DAY, IANAPOOL, IANA, IANA)))
   }
 
   "Claims verification " should  "be empty in case of proper combination" in {

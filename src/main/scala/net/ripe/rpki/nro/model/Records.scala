@@ -6,41 +6,31 @@ import net.ripe.rpki.nro.main.Ranges
 
 case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) extends Ranges {
 
-  def fixUnclaimed: Records = {
-    def fix[R]: Record => Record = (rec: Record) => {
-      val info = rec.stat.copy(date = config.CURRENT_DAY, registry = rec.stat.status, status = AVAILABLE)
-      rec.update(info)
+  def formatUnclaimed: Records = {
+    def format[R]: Record => Record = (rec: Record) => {
+      val info = rec.stat.copy(date = config.CURRENT_DAY, registry = rec.stat.oid, status = AVAILABLE)
+      rec.updateStat(info)
     }
 
-    fixRecords(fix)
+    formatRecords(format)
   }
 
-  def fixIana: Records = {
-    def fix[R]: Record => Record = (rec: Record) => rec.stat.status match {
-      case IETF => rec.update(rec.stat.copy(oid = IETF, ext = IANA))
-      case IANA => rec.update(rec.stat.copy(oid = IANA, status = ASSIGNED, ext = IANA))
-      case _ => rec.update(rec.stat.copy(ext = IANA))
-    }
-
-    fixRecords(fix)
-  }
-
-  def fixRIRs: Records = {
-    def fix: Record => Record = (rec: Record) => rec.stat.status match {
+  def formatRIRs: Records = {
+    def format: Record => Record = (rec: Record) => rec.stat.status match {
       // RESERVED and AVAILABLE has neither date nor country (except AFRINIC with ZZ)
-      case RESERVED | AVAILABLE => rec.update(rec.stat.copy(date = config.CURRENT_DAY, cc = DEFAULT_CC))
+      case RESERVED | AVAILABLE => rec.updateStat(rec.stat.copy(date = config.CURRENT_DAY, cc = DEFAULT_CC, oid = rec.registry))
       // Whatever allocated in original RIR file appears as ASSIGNED
-      case ALLOCATED => rec.update(rec.stat.copy(status = ASSIGNED))
+      case ALLOCATED => rec.updateStat(rec.stat.copy(status = ASSIGNED))
       case _ => rec
     }
 
-    fixRecords(fix)
+    formatRecords(format)
   }
 
-  def fixRecords(fix: Record => Record): Records = Records(
-    this.asn.map(fix),
-    this.ipv4.map(fix),
-    this.ipv6.map(fix))
+  private def formatRecords(format: Record => Record): Records = Records(
+    this.asn.map(format),
+    this.ipv4.map(format),
+    this.ipv6.map(format))
 
   def substract(that: Records): Records = {
     val (thisAsn, thisIpv4, thisIpv6) = (asRangeMap(this.asn), asRangeMap(this.ipv4), asRangeMap(this.ipv6))
