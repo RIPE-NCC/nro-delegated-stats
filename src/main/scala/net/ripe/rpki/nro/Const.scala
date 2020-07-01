@@ -14,6 +14,8 @@ object Const {
   val AFRINIC = "afrinic"
   val RIPENCC = "ripencc"
 
+  val RSCG = "rscg"
+
   val DEFAULT_CC = "ZZ"
   val DEFAULT_EXT = "e-stats"
 

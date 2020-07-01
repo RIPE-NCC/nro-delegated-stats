@@ -6,6 +6,7 @@ import net.ripe.rpki.nro.TestUtil
 import org.jvnet.mock_javamail._
 import org.scalatest.FlatSpec
 import net.ripe.rpki.nro.Configs._
+import net.ripe.rpki.nro.Const.{APNIC, RSCG}
 
 class MockedSMTPProvider extends Provider(Provider.Type.TRANSPORT, "mocked", classOf[MockTransport].getName, "Mock", null)
 
@@ -13,18 +14,24 @@ class NotifierTest extends FlatSpec with TestUtil {
 
   val subject = new Notifier(mockMailer)
 
-  "Notifier test " should " let me know if there are persistent conflicts" in {
+  "Notifier test " should " notify relevant RIR contacts and RSCG coordinator if there is conflict" in {
     val previousConflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))
     val currentConflicts = Ports.readConflicts(getResourceFile("/currentConflicts"))
 
     subject.notifyConflicts(currentConflicts, previousConflicts)
 
 
-    val inbox = Mailbox.get(contacts("apnic"))
-    assert(inbox.size === 1)
-    val mimeMessage = inbox.get(0).asInstanceOf[MimeMessage]
+    val apnic = Mailbox.get(contacts(APNIC))
+    assert(apnic.size === 1)
+    val mimeMessage = apnic.get(0).asInstanceOf[MimeMessage]
     assert(mimeMessage.getFrom.head.toString === sender)
     assert(mimeMessage.getSubject === s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
+
+    val rscg = Mailbox.get(contacts(RSCG))
+    assert(rscg.size === 1)
+    val mimeMessageRscg = rscg.get(0).asInstanceOf[MimeMessage]
+    assert(mimeMessageRscg.getFrom.head.toString === sender)
+    assert(mimeMessageRscg.getSubject === s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
 
   }
 

@@ -47,7 +47,8 @@ object Configs {
     APNIC -> conf.getString("apnic.contact"),
     ARIN -> conf.getString("arin.contact"),
     AFRINIC -> conf.getString("afrinic.contact"),
-    LACNIC -> conf.getString("lacnic.contact")
+    LACNIC -> conf.getString("lacnic.contact"),
+    RSCG  -> conf.getString("rscg.contact")
   )
 
   val gracePeriod: Int = conf.getInt("grace.period")

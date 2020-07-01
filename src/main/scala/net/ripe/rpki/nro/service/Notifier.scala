@@ -3,6 +3,7 @@ package net.ripe.rpki.nro.service
 import courier.Defaults._
 import courier._
 import net.ripe.rpki.nro.Configs._
+import net.ripe.rpki.nro.Const.RSCG
 import net.ripe.rpki.nro.model.Conflict
 import net.ripe.rpki.nro.{Const, Logging}
 
@@ -31,7 +32,7 @@ class Notifier(mailer: Mailer) extends Logging {
   }
 
   def sendConflicts(conflicts: Set[Conflict]): Unit ={
-    val rsContacts = conflicts.flatMap(c => Set(c.a.registry, c.b.registry)).filter(_ != Const.IANA).map(contacts).toArray
+    var rsContacts: Array[String] = conflicts.flatMap(c => Set(c.a.registry, c.b.registry)).filter(_ != Const.IANA).map(contacts).toArray :+ contacts(RSCG)
     val envelope: Envelope = Envelope
       .from(sender.addr)
       .to(rsContacts.map(_.addr):_*)
