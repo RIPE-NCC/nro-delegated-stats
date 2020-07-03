@@ -15,6 +15,8 @@ import requests.Response
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import java.security.MessageDigest
+import java.math.BigInteger
 /**
  * Importing data from remotes files and exporting to file.
  * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
@@ -55,6 +57,13 @@ object Ports extends Logging {
 
     Records(asn.toList, ipv4.toList, ipv6.toList)
   }
+
+  def fetchWithRetries(target: String) = {
+    retry.JitterBackoff(max = maxRetries).apply(() => Future {
+      logger.info(s"--Fetch with retry $target --")
+      requests.get(target)
+    })
+  }
   // Fetch only if data file is not yet downloaded.
   def fetchLocally(source: String, dest: String) {
 
@@ -64,19 +73,31 @@ object Ports extends Logging {
     }
     logger.info(s"---Fetching $source into $dest---")
 
-    val attempts: Future[Response] = retry.JitterBackoff(max = maxRetries).apply(() => Future {
-      logger.info(s"--Fetch with retry $source --")
-      requests.get(source)
-    })
+    val sourceAttempts = fetchWithRetries(source)
+    val md5Attempts    = fetchWithRetries(s"${source}.md5")
 
-    Try(Await.result(attempts, Duration.Inf)) match {
-      case Success(response) if response.statusCode == 200 =>
+    val sourceMd5  = for {
+      sourceResponse ← sourceAttempts
+      md5Response    ← md5Attempts
+    } yield (sourceResponse, md5Response)
+
+    Try(Await.result(sourceMd5, Duration.Inf)) match {
+      case Success((response, md5response)) if response.statusCode == 200 =>
         if(response.contents.length < 2000){
           logger.error(s"Contents $source is too small, please investigate manually.")
           System.exit(1)
         }
+        val responseText = response.text()
+        val maybeMD5 = md5response.text().split(" ").filter(_.length == 32).headOption
+
+        // IANA have no md5, the rest should match.
+        if(maybeMD5.isDefined && !md5Match(responseText, maybeMD5.get)){
+          logger.error(s"MD5 does not match!")
+          System.exit(1)
+        }
+        logger.info("MD5 Match for "+ source)
         Using.resource(new PrintWriter(new File(dest))) { writer =>
-          writer.write(response.text())
+          writer.write(responseText)
           logger.info(s"---Done fetching $source into $dest---\n\n\n")
         }
       case _ =>
@@ -153,5 +174,11 @@ object Ports extends Logging {
         case List(a,b) => Conflict(Record(a),Record(b))
       }.toList
     }
+  }
+
+  def md5Match(text:String, md5: String): Boolean = {
+    val digest: Array[Byte] = MessageDigest.getInstance("MD5").digest(text.getBytes)
+    val hashedString = new BigInteger(1, digest).toString(16)
+    hashedString == md5
   }
 }
