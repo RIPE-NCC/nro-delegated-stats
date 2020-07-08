@@ -9,7 +9,7 @@ import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.iana.IanaMagic
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
-import scala.util.{Try, Using, Success}
+import scala.util.{Success, Try, Using}
 import requests.Response
 
 import scala.concurrent.{Await, Future}
@@ -17,6 +17,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import java.security.MessageDigest
 import java.math.BigInteger
+
+import net.ripe.rpki.nro.service.Ports.md5digest
 /**
  * Importing data from remotes files and exporting to file.
  * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
@@ -91,9 +93,15 @@ object Ports extends Logging {
         val maybeMD5 = md5response.text().split(" ").filter(_.length == 32).headOption
 
         // IANA have no md5, the rest should match.
-        if(maybeMD5.isDefined && !md5Match(responseText, maybeMD5.get)){
-          logger.error(s"MD5 does not match!")
-          System.exit(1)
+        if(maybeMD5.isDefined){
+          val computedMd5 = md5digest(responseText)
+          val retrievedMd5 = maybeMD5.get
+          if(computedMd5 != retrievedMd5){
+            logger.error(s"MD5 does not match!")
+            logger.error(s"    Computed : $computedMd5")
+            logger.error(s"    Retrieved: $retrievedMd5")
+            System.exit(1)
+          }
         }
         logger.info("MD5 Match for "+ source)
         Using.resource(new PrintWriter(new File(dest))) { writer =>
@@ -176,9 +184,10 @@ object Ports extends Logging {
     }
   }
 
-  def md5Match(text:String, md5: String): Boolean = {
+  def md5digest(text:String): String = {
     val digest: Array[Byte] = MessageDigest.getInstance("MD5").digest(text.getBytes)
-    val hashedString = new BigInteger(1, digest).toString(16)
-    hashedString == md5
+    val md5 = new BigInteger(1, digest).toString(16)
+    // pad with leading zero
+    md5.reverse.padTo(32, '0').reverse
   }
 }
