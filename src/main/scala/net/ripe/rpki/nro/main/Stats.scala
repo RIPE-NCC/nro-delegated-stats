@@ -15,7 +15,7 @@ trait Stats extends Logging with Merger {
     logger.info(s"\n\n---  Combining RIRs data and checking for conflicts among RIRs ---\n\n")
 
     // Splitting iana into RIRs and non RIRs (IETF, IANA)
-    val isRirRecord: Record => Boolean = r => r.stat.status == ALLOCATED
+    val isRirRecord: Record => Boolean = r => RIRS.contains(r.stat.oid)
     val (ianaRirs, ianaNonRirs) = ianaRecord.partition(isRirRecord)
 
     val (combined, currentConflicts) = combineRecords(rirRecords ++ Iterable(ianaNonRirs), previousResult)
