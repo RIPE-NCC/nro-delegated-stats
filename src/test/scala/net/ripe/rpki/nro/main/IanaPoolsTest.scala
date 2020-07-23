@@ -48,7 +48,7 @@ class IanaPoolsTest extends FlatSpec {
   }
 
   "Filter non RIRs data from iana" should "give either ietf or iana status" in {
-    val isRirRecord: Record => Boolean = r => r.stat.status == ALLOCATED
+    val isRirRecord: Record => Boolean = r => RIRS.contains(r.stat.oid)
     val iana: Records = parseRecordFile(getClass.getResource("/data/iana").getFile)
     val (rirs, nonRirs) = iana.partition(isRirRecord)
 

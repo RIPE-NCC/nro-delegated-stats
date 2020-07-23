@@ -37,8 +37,8 @@ iana|ZZ|asn|1877|25|19920501|allocated|ripencc|iana
 iana|ZZ|asn|1902|141|19920601|allocated|lacnic|iana
 iana|ZZ|asn|2043|1|19921201|allocated|afrinic|iana
 iana|ZZ|asn|2044|3|19921201|allocated|apnic|iana
-iana|ZZ|asn|23456|1|20011001|reserved|ietf|iana
-iana|ZZ|asn|64496|16|20081203|reserved|ietf|iana
+iana|ZZ|asn|23456|1|20011001|allocated|ietf|iana
+iana|ZZ|asn|64496|16|20081203|allocated|ietf|iana
 iana|ZZ|ipv4|0.0.0.0|16777216|19830101|reserved|ietf|iana
 iana|ZZ|ipv4|1.0.0.0|16777216|20100119|allocated|apnic|iana
 iana|ZZ|ipv4|2.0.0.0|16777216|20090918|allocated|ripencc|iana
