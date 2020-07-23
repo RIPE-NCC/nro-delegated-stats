@@ -18,7 +18,7 @@ class PortsTest extends FlatSpec with TestUtil {
 
   it should "work for partial iana data" in {
     val iana = parseRecordFile(getResourceFile("/data/iana"))
-    assert(iana.asn.size == 6)
+    assert(iana.asn.size == 8)
     assert(iana.ipv4.size == 6)
     assert(iana.ipv6.size == 6)
   }

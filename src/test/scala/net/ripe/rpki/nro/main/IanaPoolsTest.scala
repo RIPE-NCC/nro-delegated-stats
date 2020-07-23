@@ -52,7 +52,7 @@ class IanaPoolsTest extends FlatSpec {
     val iana: Records = parseRecordFile(getClass.getResource("/data/iana").getFile)
     val (rirs, nonRirs) = iana.partition(isRirRecord)
 
-    assert(nonRirs.asn.size  == 1)
+    assert(nonRirs.asn.size  == 3)
     assert(nonRirs.ipv4.size == 1)
     assert(nonRirs.ipv6.size == 1)
 
