@@ -123,7 +123,10 @@ object Ports extends Logging {
 
   def fetchAndParse(ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records], List[Conflict], Records) = {
 
-    val whilteList = parseRecordSource("whitelist")
+    val whiteListRecords = whitelist match {
+      case Left(path) => parseRecordFile(path)
+      case Right(resource) => parseRecordSource(resource)
+    }
 
     val recordMaps: Map[String, Records] = sources.map {
       case (name:String, url:String) =>
@@ -143,7 +146,7 @@ object Ports extends Logging {
 
     val previousResult = Try(parseRecordFile(s"${config.previousResultFile}")).toOption
     val oldConflict = Try(readConflicts(s"${config.previousConflictFile}")).getOrElse(List())
-    (rirs, iana, previousResult, oldConflict, whilteList)
+    (rirs, iana, previousResult, oldConflict, whiteListRecords)
   }
 
   def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true): Unit = {
