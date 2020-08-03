@@ -1,6 +1,7 @@
 package net.ripe.rpki.nro.service
 
 import java.io.{File, PrintWriter}
+import scala.io.Source.fromResource
 
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Logging
@@ -42,6 +43,12 @@ object Ports extends Logging {
   def parseRecordFile(source: String): Records = {
     logger.info(s"Parsing local source $source")
     Using.resource(CSVReader.open(source))(reader => toRecords(reader.all()))
+  }
+
+  def parseRecordSource(source: String): Records = {
+    logger.info(s"Parsing local source $source")
+    val src = fromResource(source)
+    Using.resource(CSVReader.open(src))(reader => toRecords(reader.all()))
   }
 
   def toRecords(lines : List[List[String]]): Records = {
@@ -114,7 +121,10 @@ object Ports extends Logging {
     }
   }
 
-  def fetchAndParse(ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records], List[Conflict]) = {
+  def fetchAndParse(ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records], List[Conflict], Records) = {
+
+    val whilteList = parseRecordSource("whitelist")
+
     val recordMaps: Map[String, Records] = sources.map {
       case (name:String, url:String) =>
         fetchLocally(url, s"${config.currentDataDirectory}/$name")
@@ -133,7 +143,7 @@ object Ports extends Logging {
 
     val previousResult = Try(parseRecordFile(s"${config.previousResultFile}")).toOption
     val oldConflict = Try(readConflicts(s"${config.previousConflictFile}")).getOrElse(List())
-    (rirs, iana, previousResult, oldConflict)
+    (rirs, iana, previousResult, oldConflict, whilteList)
   }
 
   def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true): Unit = {

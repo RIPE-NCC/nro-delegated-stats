@@ -65,4 +65,6 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
   }
 
   def size: Int = asn.size + ipv4.size + ipv6.size
+
+  def all : List[Record] = asn ++ ipv4 ++ ipv6
 }
