@@ -11,14 +11,14 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import net.ripe.rpki.nro.model.Record
 
-class Notifier(mailer: Mailer, whiteList: List[Record]) extends Logging {
+class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
 
-  def whiteListed(c : Conflict) = {
-      val check = whiteList.contains(c.a) || whiteList.contains(c.b) 
+  def isAllowed(c : Conflict) = {
+      val check = allowedList.contains(c.a) || allowedList.contains(c.b) 
       if(check)
-        logger.info(s"$c is whitelisted")
+        logger.info(s"$c is allowed")
       else
-        logger.info(s"$c is not whitelisted")
+        logger.info(s"$c is not allowed")
       check
   }
 
@@ -32,7 +32,7 @@ class Notifier(mailer: Mailer, whiteList: List[Record]) extends Logging {
     val stickyConflicts = currentKeys
       .intersect(previousMap.keySet)
       .map(previousMap)
-      .filterNot(whiteListed)
+      .filterNot(isAllowed)
 
     if(stickyConflicts.nonEmpty) {
       logger.info("Found sticky conflicts from previous time")

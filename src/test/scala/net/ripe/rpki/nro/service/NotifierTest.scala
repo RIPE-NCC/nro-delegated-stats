@@ -12,8 +12,8 @@ class MockedSMTPProvider extends Provider(Provider.Type.TRANSPORT, "mocked", cla
 
 class NotifierTest extends FlatSpec with TestUtil {
 
-  val whiteList = Ports.parseRecordSource("whitelist").all
-  val subject = new Notifier(mockMailer, whiteList)
+  val allowedList = Ports.parseRecordSource("allowedlist").all
+  val subject = new Notifier(mockMailer, allowedList)
 
   "Notifier test " should " notify relevant RIR contacts and RSCG coordinator if there is conflict" in {
     val previousConflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))
@@ -28,8 +28,8 @@ class NotifierTest extends FlatSpec with TestUtil {
     assert(mimeMessage.getFrom.head.toString === sender)
     assert(mimeMessage.getSubject === s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
 
-    whiteList.foreach{whiteListed => 
-        assert(!mimeMessage.getContent().toString.contains(whiteListed))
+    allowedList.foreach{allowedListed => 
+        assert(!mimeMessage.getContent().toString.contains(allowedListed))
     }    
 
     val rscg = Mailbox.get(contacts(RSCG))
@@ -56,13 +56,13 @@ class NotifierTest extends FlatSpec with TestUtil {
     assert(alertSent == "No conflicts, no mail")
   }
 
-  it should " able to detect whitelisted conflict " in {
+  it should " able to detect allowedlisted conflict " in {
     val conflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))
 
-    val (whiteListed, notWhiteListed) = conflicts.partition(subject.whiteListed)
+    val (allowed, notAllowed) = conflicts.partition(subject.isAllowed)
   
-    whiteListed.foreach(c => assert(whiteList.contains(c.a) || whiteList.contains(c.b)))
-    notWhiteListed.foreach(c => assert(!whiteList.contains(c.a) && !whiteList.contains(c.b)))
+    allowed.foreach(c => assert(allowedList.contains(c.a) || allowedList.contains(c.b)))
+    notAllowed.foreach(c => assert(!allowedList.contains(c.a) && !allowedList.contains(c.b)))
   
   }
 

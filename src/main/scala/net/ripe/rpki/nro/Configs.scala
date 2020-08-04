@@ -52,7 +52,7 @@ object Configs {
   )
 
   // Left is a path to external file, right is a source from classpath resource will be treated differently
-  val whitelist : Either[String, String] = if(conf.hasPath("whitelist")) Left(conf.getString("whitelist")) else Right("whitelist") 
+  val allowedList: Either[String, String] = if(conf.hasPath("allowedlist")) Left(conf.getString("allowedlist")) else Right("allowedlist") 
   val gracePeriod: Int = conf.getInt("grace.period")
   val maxRetries: Int = conf.getInt("max.retries")
   val dataDirectory: String = conf.getString("data.directory")
