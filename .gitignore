@@ -8,3 +8,4 @@ compare/**
 .idea
 .DS_Store
 log
+project/metals.sbt

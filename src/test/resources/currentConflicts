@@ -1,6 +1,14 @@
+#AllowedList
 apnic|ZZ|ipv4|198.51.100.0|256|20190924|reserved||e-stats
-iana|ZZ|ipv4|198.51.100.0|256|20090714|ietf|ietf|iana
+iana|ZZ|ipv4|198.51.100.0|256|20090714|reserved|ietf|iana
 
 apnic|ZZ|ipv4|203.0.113.0|256|20190924|reserved||e-stats
-iana|ZZ|ipv4|203.0.113.0|256|20090714|ietf|ietf|iana
+iana|ZZ|ipv4|203.0.113.0|256|20090714|reserved|ietf|iana
+
+# normal conflicts 
+apnic|ZZ|ipv4|190.51.100.0|256|20190924|reserved||e-stats
+iana|ZZ|ipv4|190.51.100.0|256|20090714|reserved|ietf|iana
+
+apnic|ZZ|ipv4|200.0.113.0|256|20190924|reserved||e-stats
+iana|ZZ|ipv4|200.0.113.0|256|20090714|reserved|ietf|iana
 
