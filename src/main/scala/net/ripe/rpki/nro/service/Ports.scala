@@ -83,23 +83,23 @@ object Ports extends Logging {
     logger.info(s"---Fetching $source into $dest---")
 
     // No Md5 for iana, only fetch source
-    if(source.contains("iana")){
-          val ianaResponse : Future[Response] = fetchWithRetries(source)
-          Try(Await.result(ianaResponse, Duration.Inf)) match {
-             case Success(response) if response.statusCode == 200 =>
-              if(response.contents.length < 2000){
-                logger.error(s"Contents $source is too small, please investigate manually.")
-                System.exit(1)
-              }
-              val responseText = response.text()
-              Using.resource(new PrintWriter(new File(dest))) { writer =>
-                writer.write(responseText)
-                logger.info(s"---Done fetching $source into $dest---\n\n\n")
-              }
-            case _ =>
-              logger.error(s"Failed to fetch $source after $maxRetries retries")
-              System.exit(1)
+    if (source.contains("iana")) {
+      val ianaResponse: Future[Response] = fetchWithRetries(source)
+      Try(Await.result(ianaResponse, Duration.Inf)) match {
+        case Success(response) if response.statusCode == 200 =>
+          if (response.contents.length < 2000) {
+            logger.error(s"Contents $source is too small, please investigate manually.")
+            System.exit(1)
           }
+          val responseText = response.text()
+          Using.resource(new PrintWriter(new File(dest))) { writer =>
+            writer.write(responseText)
+            logger.info(s"---Done fetching $source into $dest---\n\n\n")
+          }
+        case _ =>
+          logger.error(s"Failed to fetch $source after $maxRetries retries")
+          System.exit(1)
+      }
     } else {
       val sourceAttempts = fetchWithRetries(source)
       val md5Attempts    = fetchWithRetries(s"${source}.md5")
@@ -116,17 +116,24 @@ object Ports extends Logging {
             System.exit(1)
           }
           val responseText = response.text()
+          // Example MD5, Arin has different formats, the rest of the MD5 looks like the first line.:
+          //   MD5 (delegated-apnic-extended-latest) = 83c9ed2721a049faf70bb88fd586347d
+          //   d9e9d22a6fc88d9455ccd198a061d1fc  delegated-arin-extended-20210502
+          // This explains the filter.
           val maybeMD5 = md5response.text().split(" ").filter(_.length == 32).headOption
 
           if(maybeMD5.isDefined){
             val computedMd5 = md5digest(responseText)
             val retrievedMd5 = maybeMD5.get
             if(computedMd5 != retrievedMd5){
-              logger.error(s"MD5 does not match!")
+              logger.error(s"MD5 does not match! for $source")
               logger.error(s"    Computed : $computedMd5")
               logger.error(s"    Retrieved: $retrievedMd5")
               System.exit(1)
             }
+          } else {
+              logger.error(s"Unrecognized MD5 format for: $source")
+              System.exit(1)
           }
           logger.info("MD5 Match for "+ source)
           Using.resource(new PrintWriter(new File(dest))) { writer =>
