@@ -120,7 +120,7 @@ object Ports extends Logging {
           //   MD5 (delegated-apnic-extended-latest) = 83c9ed2721a049faf70bb88fd586347d
           //   d9e9d22a6fc88d9455ccd198a061d1fc  delegated-arin-extended-20210502
           // This explains the filter.
-          val maybeMD5 = md5response.text().split(" ").filter(_.length == 32).headOption
+          val maybeMD5 = md5response.text().split("\\s+").filter(_.length == 32).headOption
 
           if(maybeMD5.isDefined){
             val computedMd5 = md5digest(responseText)
