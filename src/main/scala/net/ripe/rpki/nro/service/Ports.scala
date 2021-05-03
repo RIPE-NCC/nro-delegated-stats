@@ -132,7 +132,7 @@ object Ports extends Logging {
               System.exit(1)
             }
           } else {
-              logger.error(s"Unrecognized MD5 format for: $source")
+              logger.error(s"Unrecognized MD5 format for: $source : \n\t$md5response")
               System.exit(1)
           }
           logger.info("MD5 Match for "+ source)
