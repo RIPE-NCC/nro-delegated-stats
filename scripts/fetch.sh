@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 if [[ $# -lt 3 ]]; then 
     echo "Usage, fetch YYYY MM DD"
     exit 1

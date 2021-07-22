@@ -7,11 +7,9 @@ assembly:
   image: $CI_REGISTRY/swe/gitlab-ci/sbt:1.3-2.13-jdk-8
 
   before_script:
-    - if [ -z "${CI_RSYNC_PASSWORD}" ]; then echo "set CI_RSYNC_PASSWORD"; exit 2; fi;
     - if [ -z "${CI_BASE_DIR}" ]; then echo "set CI_BASE_DIR"; exit 2; fi;
     - if [ -z "${CI_AWS_PROFILE}" ]; then echo "set CI_AWS_PROFILE"; exit 2; fi;
     - if [ -z "${CI_AWS_TARGET}" ]; then echo "set CI_AWS_TARGET"; exit 2; fi;
-    - if [ -z "${CI_NRO_TARGET}" ]; then echo "set CI_NRO_TARGET"; exit 2; fi;
     - if [ -z "${CI_RESULT_FTP_PATH}" ]; then echo "set CI_RESULT_FTP_PATH";\
       exit 2; fi;
 
