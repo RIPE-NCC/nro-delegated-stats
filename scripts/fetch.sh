@@ -20,7 +20,7 @@ mkdir -p data/$THE_DAY
 
 cd data/$THE_DAY
 
-echo "Fetching http://ftp.apnic.net/stats/apnic/$YYYY/delegated-apnic-extended-$THE_DAY.gz"
+echo "Fetching https://ftp.apnic.net/stats/apnic/$YYYY/delegated-apnic-extended-$THE_DAY.gz"
 
 #Timeout 10 seconds
 CONNECT_TIMEOUT=10
@@ -29,14 +29,14 @@ RETRIES_COUNT=5
 # Exponential backoff
 RETRY_DELAY=0
 
-curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY http://ftp.apnic.net/stats/apnic/$YYYY/delegated-apnic-extended-$THE_DAY.gz --output apnic.gz
-curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY http://ftp.arin.net/pub/stats/arin/delegated-arin-extended-$DAY_BEFORE --output arin
-curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY http://ftp.afrinic.net/stats/afrinic/$YYYY/delegated-afrinic-extended-$THE_DAY --output afrinic
-curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY http://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-$DAY_BEFORE --output lacnic
+curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY https://ftp.apnic.net/stats/apnic/$YYYY/delegated-apnic-extended-$THE_DAY.gz --output apnic.gz
+curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY https://ftp.arin.net/pub/stats/arin/delegated-arin-extended-$DAY_BEFORE --output arin
+curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY https://ftp.afrinic.net/stats/afrinic/$YYYY/delegated-afrinic-extended-$THE_DAY --output afrinic
+curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY https://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-$DAY_BEFORE --output lacnic
 curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY https://ftp.ripe.net/pub/stats/ripencc/$YYYY/delegated-ripencc-extended-$DAY_BEFORE.bz2 --output ripencc.bz2
 
 # Special case for iana
-wget -4 ftp://ftp.apnic.net/pub/stats/iana/delegated-iana-latest -O iana
+curl --connect-timeout $CONNECT_TIMEOUT --retry $RETRIES_COUNT --retry-delay $RETRY_DELAY -4 https://ftp.apnic.net/stats/iana/delegated-iana-latest --output iana
 
 # Will override existing bz2
 bunzip2 -f ripencc.bz2
