@@ -8,12 +8,12 @@ Goal is to reproduce: https://www.nro.net/wp-content/uploads/apnic-uploads/deleg
 Input files are data from RIRs, and IANA files which is also from Jeff.
 
 ```
-    APNIC   -> "http://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
-    AFRINIC -> "http://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",
-    ARIN    -> "http://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest",
-    LACNIC  -> "http://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest",
+    APNIC   -> "https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
+    AFRINIC -> "https://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",
+    ARIN    -> "https://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest",
+    LACNIC  -> "https://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest",
     RIPENCC -> "https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest",
-    IANA    -> "http://ftp.apnic.net/pub/stats/iana/delegated-iana-latest",
+    IANA    -> "https://ftp.apnic.net/pub/stats/iana/delegated-iana-latest",
 ```
 
 ##
