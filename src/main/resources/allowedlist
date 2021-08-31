@@ -2,3 +2,4 @@ iana|ZZ|asn|112|1|20150501|reserved|ietf|iana
 iana|ZZ|ipv4|192.175.48.0|256|20150501|reserved|ietf|iana
 iana|ZZ|ipv4|198.51.100.0|256|20090714|reserved|ietf|iana
 iana|ZZ|ipv4|203.0.113.0|256|20090714|reserved|ietf|iana
+iana|ZZ|ipv6|2001:0db8::|32|20040701|reserved|ietf|iana
