@@ -28,4 +28,12 @@ java -Denvironment=production -Dconfig.file=./application.conf -jar nro-delegate
 rsync -rtv $BASE_DIR/result/ $RESULT_FTP_PATH 1>> log/nro-stats-$TODAY.log  2>> log/nro-stats.err
 
 /usr/local/bin/aws --profile $AWS_PROFILE s3 cp $NRO_SOURCE $AWS_TARGET   1>> log/nro-stats.log 2>> log/nro-stats.err
+
+cd $RESULT_FTP_PATH
+rm -f latest
+ln -s $TODAY_DIR latest
+
+cd $TODAY_DIR
+rm -f nro-delegated-stats
+ln -s combined-stat nro-delegated-stats
 EOF
