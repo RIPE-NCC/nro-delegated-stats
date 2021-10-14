@@ -17,9 +17,6 @@ jobs:
       - name: Compile
         run: sbt compile
 
-      - name: Test & package
-        run: sbt coverage test coverageReport
-
       - name: Package
         run: sbt assembly
 
