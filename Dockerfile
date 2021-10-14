@@ -1,2 +1,2 @@
 FROM mozilla/sbt
-COPY ./nro-delegated-stats .
+COPY ./nro-delegated-stats.jar .
