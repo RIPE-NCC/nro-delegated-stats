@@ -29,14 +29,6 @@ jobs:
           name: nro-delegated-stats-jar
           path: ./nro-delegated-stats.jar
 
-      - name: Upload reports
-        uses: actions/upload-artifact@v2
-        with:
-          name: reports
-          path: |
-            target/scoverage-report/**/*
-            target/test-reports/**/*
-
   docker:
     runs-on: ubuntu-latest
     needs: sbt-build-test
