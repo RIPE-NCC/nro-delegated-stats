@@ -1,6 +1,3 @@
-mv $(find target -name nro-delegated-stats.jar) .
-
-
 name: Scala build and test
 on: [push, pull_request]
 
