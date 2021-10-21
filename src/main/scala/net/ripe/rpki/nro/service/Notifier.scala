@@ -13,7 +13,7 @@ import net.ripe.rpki.nro.model.Record
 
 class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
 
-  def isAllowed(c : Conflict) = {
+  def isAllowed(c : Conflict): Boolean = {
       val check = allowedList.contains(c.a) || allowedList.contains(c.b) 
       if(check)
         logger.info(s"$c is allowed")
@@ -48,7 +48,7 @@ class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
   }
 
   def sendConflicts(conflicts: Set[Conflict]): Unit ={
-    var rsContacts: Array[String] = conflicts.flatMap(c => Set(c.a.registry, c.b.registry)).filter(_ != Const.IANA).map(contacts).toArray :+ contacts(RSCG)
+    val rsContacts: Array[String] = conflicts.flatMap(c => Set(c.a.registry, c.b.registry)).filter(_ != Const.IANA).map(contacts).toArray :+ contacts(RSCG)
     val envelope: Envelope = Envelope
       .from(sender.addr)
       .to(rsContacts.map(_.addr):_*)

@@ -7,14 +7,15 @@ object Dependencies {
   val requests = "com.lihaoyi" %% "requests" % "0.2.0"
 
   val csvReader = "com.github.tototoshi" %% "scala-csv" % "1.3.6"
-  val mailCourier = "com.github.daddykotex" %% "courier" % "2.0.0"
+  val mailCourier = "com.github.daddykotex" %% "courier" % "3.0.1"
   val retry = "com.softwaremill.retry" %% "retry" % "0.3.3"
 
   val typesafeConfig = "com.typesafe" % "config" % "1.3.4"
   val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.2.3"
 
   val scalatest = "org.scalatest" %% "scalatest" % "3.0.8" % Test
-  val mockMail = "org.jvnet.mock-javamail" % "mock-javamail" % "1.9" % Test
+  val mockMail = "com.icegreen" % "greenmail" % "1.6.5" % Test
+
 
   val mainDeps: Seq[ModuleID] = Seq(commonsIpMath, guava, requests, csvReader, mailCourier, retry)
   val logConfDeps: Seq[ModuleID] = Seq(typesafeConfig, logbackClassic)

@@ -3,40 +3,49 @@ package net.ripe.rpki.nro.service
 import javax.mail.Provider
 import javax.mail.internet.MimeMessage
 import net.ripe.rpki.nro.TestUtil
-import org.jvnet.mock_javamail._
 import org.scalatest.FlatSpec
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const.{APNIC, RSCG}
-
-class MockedSMTPProvider extends Provider(Provider.Type.TRANSPORT, "mocked", classOf[MockTransport].getName, "Mock", null)
+import com.icegreen.greenmail.junit.GreenMailRule
+import com.icegreen.greenmail.util.{GreenMail, ServerSetupTest}
+import courier.Mailer
 
 class NotifierTest extends FlatSpec with TestUtil {
 
+  val greenMail = new GreenMail(ServerSetupTest.ALL)
+
+  val mockedSession = greenMail.getSmtp().createSession()
+  val mockMailer = Mailer(mockedSession)
   val allowedList = Ports.parseRecordSource("allowedlist").all
   val subject = new Notifier(mockMailer, allowedList)
 
   "Notifier test " should " notify relevant RIR contacts and RSCG coordinator if there is conflict" in {
     val previousConflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))
     val currentConflicts = Ports.readConflicts(getResourceFile("/currentConflicts"))
-
+    greenMail.start()
     subject.notifyConflicts(currentConflicts, previousConflicts)
 
+    val messages = greenMail.getReceivedMessages.toList
 
-    val apnic = Mailbox.get(contacts(APNIC))
-    assert(apnic.size === 1)
-    val mimeMessage = apnic.get(0).asInstanceOf[MimeMessage]
-    assert(mimeMessage.getFrom.head.toString === sender)
-    assert(mimeMessage.getSubject === s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
+    // Sending to apnic and rscg
+    assert(messages.size == 2)
+    val recipients = messages.flatMap(_.getAllRecipients).map(_.toString).toSet
+    assert(recipients.contains(contacts(APNIC)))
+    assert(recipients.contains(contacts(RSCG)))
 
-    allowedList.foreach{allowedListed => 
+    // All from no-reply nro.net
+    assert(messages.flatMap(_.getFrom).map(_.toString).toSet == Set("no-reply@nro.net"))
+
+    // Same subjects
+    assert(messages.map(_.getSubject).toSet == Set(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}"))
+
+    allowedList.foreach{allowedListed =>
+      messages.foreach(mimeMessage ⇒
         assert(!mimeMessage.getContent().toString.contains(allowedListed))
-    }    
+      )
+    }
 
-    val rscg = Mailbox.get(contacts(RSCG))
-    assert(rscg.size === 1)
-    val mimeMessageRscg = rscg.get(0).asInstanceOf[MimeMessage]
-    assert(mimeMessageRscg.getFrom.head.toString === sender)
-    assert(mimeMessageRscg.getSubject === s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
+    greenMail.stop()
 
   }
 

@@ -6,5 +6,5 @@ name := "nro-delegated-stats"
 
 scalaVersion := "2.13.6"
 libraryDependencies ++= mainDeps ++ logConfDeps ++ testDeps
-mainClass in assembly := Some("net.ripe.rpki.nro.Main")
-assemblyJarName in assembly := "nro-delegated-stats.jar"
+assembly / mainClass := Some("net.ripe.rpki.nro.Main")
+assembly / assemblyJarName := "nro-delegated-stats.jar"
