@@ -58,18 +58,18 @@ object Main extends Stats with App {
         .text("Use own generated IANA file as input"),
       opt[Environments]("environment")
         .action((env, cli) ⇒ cli.copy(environment = env))
-        .text("Environment: local/production"),
+        .text("Optional environment where the script runs. \nAvailable option values: local | prepdev | production"),
      opt[Operations]("operation")
         .required()
         .action((operationArgs, cli) ⇒ cli.copy(operation = operationArgs))
-        .text("Operations to perform, generate or notify"),
+        .text("Operations to perform whether to generate the NRO Delegated Stats, or to perform notification/email. \nAvailable option values : generate | notify"),
     )
   }
 
   var CommandLineOptions(startDate, endDate, ownIana, environment, operation) =
     OParser.parse(argsParser, args, CommandLineOptions()) match {
       case Some(commandLineOptions) => commandLineOptions
-      case _ => System.exit(1)
+      case _ => System.exit(1) // some options parse error, usage message from scopt will be shown
     }
 
   configureLogging()
@@ -113,8 +113,17 @@ object Main extends Stats with App {
     Configs.config = new Configs(startDate)
 
     val (allowedList, previousConflicts, currentConflicts): (Records, List[Conflict], List[Conflict]) = Ports.getConflicts()
+    logger.info("Allowed list:")
+    allowedList.all.foreach(item ⇒ logger.info(item.toString))
+
+    logger.info("Current conflict:")
+    currentConflicts.foreach(item ⇒ logger.info(item.toString))
+
+    logger.info("Previous conflict:")
+    currentConflicts.foreach(item ⇒ logger.info(item.toString))
+
     val notifier = new Notifier(mailer, allowedList.all)
-    notifier.notifyConflicts(currentConflicts, previousConflicts)
+    logger.info(notifier.notifyConflicts(currentConflicts, previousConflicts))
   }
 
   def configureLogging(){
