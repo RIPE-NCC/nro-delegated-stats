@@ -33,8 +33,8 @@ case class CommandLineOptions(
 
 object CommandLineOptions {
   implicit val localDateRead: scopt.Read[LocalDate] = scopt.Read.reads(LocalDate.parse)
-  implicit val operationsReads: scopt.Read[Operations.Value] = scopt.Read.reads(Operations withName _)
-  implicit val environmentReads: scopt.Read[Environments.Value] = scopt.Read.reads(Environments withName _)
+  implicit val operationsReads: scopt.Read[Operations.Value] = scopt.Read.reads(Operations withName _.capitalize)
+  implicit val environmentReads: scopt.Read[Environments.Value] = scopt.Read.reads(Environments withName _.capitalize)
 }
 
 object Main extends Stats with App {
@@ -53,23 +53,24 @@ object Main extends Stats with App {
       opt[LocalDate]('e',"endDate")
         .action((endDateArgs, cli) => cli.copy(endDate=endDateArgs))
         .text("End date for processing nro delegated stat: YYYY-MM-DD"),
-      opt[Boolean]('i', "ownIana")
-        .action((ownIana, cli) ⇒ cli.copy(ownIana = ownIana))
+      opt[Unit]("ownIana")
+        .action((_, cli) ⇒ cli.copy(ownIana = true))
         .text("Use own generated IANA file as input"),
       opt[Environments]("environment")
         .action((env, cli) ⇒ cli.copy(environment = env))
         .text("Environment: local/production"),
      opt[Operations]("operation")
         .required()
-        .action((operation, cli) ⇒ cli.copy(operation = operation))
+        .action((operationArgs, cli) ⇒ cli.copy(operation = operationArgs))
         .text("Operations to perform, generate or notify"),
     )
   }
 
-  var CommandLineOptions(startDate, endDate, ownIana, environment, operation ) = OParser.parse(argsParser, args, CommandLineOptions()) match {
-    case Some(commandLineOptions) => commandLineOptions
-    case _ => System.exit(1)
-  }
+  var CommandLineOptions(startDate, endDate, ownIana, environment, operation) =
+    OParser.parse(argsParser, args, CommandLineOptions()) match {
+      case Some(commandLineOptions) => commandLineOptions
+      case _ => System.exit(1)
+    }
 
   configureLogging()
 
