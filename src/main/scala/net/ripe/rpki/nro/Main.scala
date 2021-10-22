@@ -1,33 +1,82 @@
 package net.ripe.rpki.nro
 
 import ch.qos.logback.classic.LoggerContext
-
-import java.time.LocalDate
-import net.ripe.rpki.nro.Configs._
-import net.ripe.rpki.nro.main.Stats
-import net.ripe.rpki.nro.service.{Notifier, Ports}
-
-import scala.util.{Properties, Try}
 import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.core.joran.spi.JoranException
+import net.ripe.rpki.nro.Configs._
+import net.ripe.rpki.nro.Environments.{Environments, Production}
+import net.ripe.rpki.nro.Operations.{Generate, Notify, Operations}
+import net.ripe.rpki.nro.main.Stats
 import net.ripe.rpki.nro.model.{Conflict, Records}
+import net.ripe.rpki.nro.service.{Notifier, Ports}
+import scopt.OParser
+
+import java.time.LocalDate
+
+object Operations extends Enumeration {
+  type Operations = Value
+  val Generate, Notify = Value
+}
+
+object Environments extends Enumeration {
+  type Environments = Value
+  val Production, Prepdev, Local = Value
+}
+
+case class CommandLineOptions(
+                               startDate: LocalDate = LocalDate.now(),
+                               endDate: LocalDate = LocalDate.now(),
+                               ownIana: Boolean = false,
+                               environment: Environments = Environments.Local,
+                               operation: Operations = Operations.Generate,
+                             )
+
+object CommandLineOptions {
+  implicit val localDateRead: scopt.Read[LocalDate] = scopt.Read.reads(LocalDate.parse)
+  implicit val operationsReads: scopt.Read[Operations.Value] = scopt.Read.reads(Operations withName _)
+  implicit val environmentReads: scopt.Read[Environments.Value] = scopt.Read.reads(Environments withName _)
+}
 
 object Main extends Stats with App {
 
-  var startDate   = Properties.propOrNone("startDate").map(LocalDate.parse).getOrElse(LocalDate.now)
-  val endDate     = Properties.propOrNone("endDate").map(LocalDate.parse).getOrElse(LocalDate.now)
 
-  val ownMagic    = Properties.propOrNone("ownMagic").isDefined
-  val environment = Properties.propOrElse("environment", "local")
-  val operation   = Properties.propOrElse("operation", "generate")
+  val builder = OParser.builder[CommandLineOptions]
+  val argsParser = {
+    import net.ripe.rpki.nro.Main.builder._
+    import CommandLineOptions._
+    OParser.sequence(
+      programName("NRO Delegated Stats"),
+      head("NRO Delegated Stats 0.1"),
+      opt[LocalDate]('s',"startDate")
+        .action((startDateArgs, cli) => cli.copy(startDate=startDateArgs))
+        .text("Start date for processing nro delegated stat: YYYY-MM-DD"),
+      opt[LocalDate]('e',"endDate")
+        .action((endDateArgs, cli) => cli.copy(endDate=endDateArgs))
+        .text("End date for processing nro delegated stat: YYYY-MM-DD"),
+      opt[Boolean]('i', "ownIana")
+        .action((ownIana, cli) ⇒ cli.copy(ownIana = ownIana))
+        .text("Use own generated IANA file as input"),
+      opt[Environments]("environment")
+        .action((env, cli) ⇒ cli.copy(environment = env))
+        .text("Environment: local/production"),
+     opt[Operations]("operation")
+        .required()
+        .action((operation, cli) ⇒ cli.copy(operation = operation))
+        .text("Operations to perform, generate or notify"),
+    )
+  }
+
+  var CommandLineOptions(startDate, endDate, ownIana, environment, operation ) = OParser.parse(argsParser, args, CommandLineOptions()) match {
+    case Some(commandLineOptions) => commandLineOptions
+    case _ => System.exit(1)
+  }
 
   configureLogging()
 
-  if("generate" == operation)
-    generateDelegatedStats()
-
-  if("notify" == operation)
-    checkConflictsAndNotify()
+  operation match {
+    case Generate ⇒ generateDelegatedStats()
+    case Notify ⇒ checkConflictsAndNotify()
+  }
 
   def generateDelegatedStats(): Unit = {
 
@@ -39,11 +88,11 @@ object Main extends Stats with App {
 
     while (startDate.compareTo(endDate) <= 0) {
 
-      Configs.config = new Configs(startDate)
+      Configs.configureFor(startDate)
       logger.info("Data dir: " + Configs.config.currentDataDirectory)
       logger.info("Result dir: " + Configs.config.currentResultDirectory)
 
-      val (rirRecords, ianaRecord, previousResult) = Ports.fetchAndParseInputs(ownMagic)
+      val (rirRecords, ianaRecord, previousResult) = Ports.fetchAndParseInputs(ownIana)
       val (results, mergedResults, currentConflicts, unclaimed, overclaimed) = process(rirRecords, ianaRecord, previousResult)
 
 
