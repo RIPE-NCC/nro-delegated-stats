@@ -82,7 +82,7 @@ object Main extends Stats with App {
   def generateDelegatedStats(): Unit = {
 
     if (startDate.equals(endDate)) {
-      logger.info("Generating stats for a single day ", startDate)
+      logger.info(s"Generating stats for a single day $startDate")
     } else {
       logger.info(s"Generating stats from $startDate to $endDate")
     }
