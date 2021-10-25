@@ -90,8 +90,8 @@ object Main extends Stats with App {
     while (startDate.compareTo(endDate) <= 0) {
 
       Configs.configureFor(startDate)
-      logger.info("Data dir: " + Configs.config.currentDataDirectory)
-      logger.info("Result dir: " + Configs.config.currentResultDirectory)
+      logger.info(s"Data dir: $Configs.config.currentDataDirectory")
+      logger.info(s"Result dir: $Configs.config.currentResultDirectory")
 
       val (rirRecords, ianaRecord, previousResult) = Ports.fetchAndParseInputs(ownIana)
       val (results, mergedResults, currentConflicts, unclaimed, overclaimed) = process(rirRecords, ianaRecord, previousResult)
