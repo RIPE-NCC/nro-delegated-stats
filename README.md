@@ -38,7 +38,7 @@ Command: generate [options]
 Generate NRO Delegated Extended Statistic, based on each RIRs delegated stats and IANA file
   -s, --startDate <value>  Start date for processing NRO delegated stat, default to today: YYYY-MM-DD
   -e, --endDate <value>    End date for processing NRO delegated stat, default to today: YYYY-MM-DD
-  --ownIana                Use own generated IANA file as input
+  --ownIana                Use own generated IANA file as input, defaults to using http://ftp.apnic.net/stats/iana/delegated-iana-latest
 Command: notify [options]
 Notify RS contacts if there are persistent conflicts over a grace period
   -b, --base-url <value>   Base url for retrieving conflicts, defaults to: https://ftp.ripe.net/pub/stats/ripencc/nro-stats/.

@@ -45,7 +45,7 @@ object Main extends Stats with App {
             .text("End date for processing NRO delegated stat, default to today: YYYY-MM-DD"),
           opt[Unit]("ownIana")
             .action((_, cli) => cli.copy(ownIana = true))
-            .text("Use own generated IANA file as input"),
+            .text("Use own generated IANA file as input, defaults to using http://ftp.apnic.net/stats/iana/delegated-iana-latest"),
         ),
       cmd("notify")
         .text("Notify RS contacts if there are persistent conflicts over a grace period")
