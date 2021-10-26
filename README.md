@@ -28,11 +28,11 @@ Building single jar assembly can be done with `sbt assembly` and look for `nro-d
 There are two main operations that can be performed. Generating the delegated extended stats, and notification/email
 to existing Registry contacts of RIRs in case of persisting conflicts.
 
-Here are the description of available command lines.
+Here are the description of available command lines options.
 
 ```
 NRO Extended Allocation and Assignments Statistics
-Usage: NRO Delegated Extended Statistics [generate|notify]
+Usage: java -jar nro-delegated-stats.jar [generate|notify]
 
 Command: generate [options]
 Generate NRO Delegated Extended Statistic, based on each RIRs delegated stats and IANA file
@@ -52,7 +52,7 @@ You can configure to run it for past days by setting appropriate start/end date 
 For `notify` operation you need to provide `base-url` to fetch previous conflicts, with defaults to ftp.ripe.net.
 
 Other application configuration that are not supplied via command line are provided in this [application.conf](https://github.com/RIPE-NCC/nro-delegated-stats/blob/main/src/main/resources/application.conf)
-which by default is bundled, but can be overriden.
+which by default is bundled, but can be overriden using `-Dconfig.file=<application.conf>`.
 
 ##
 

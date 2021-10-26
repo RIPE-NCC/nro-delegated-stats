@@ -31,8 +31,8 @@ object Main extends Stats with App {
     import net.ripe.rpki.nro.CommandLineOptions._
     import net.ripe.rpki.nro.Main.builder._
     OParser.sequence(
-      programName("NRO Delegated Extended Statistics"),
       head("NRO Extended Allocation and Assignments Statistics"),
+      programName("java -jar nro-delegated-stats.jar"),
       cmd("generate")
         .text("Generate NRO Delegated Extended Statistic, based on each RIRs delegated stats and IANA file")
         .action((_, cli) => cli.copy(operation = "generate"))
