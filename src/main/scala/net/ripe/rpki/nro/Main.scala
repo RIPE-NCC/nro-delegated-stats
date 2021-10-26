@@ -71,8 +71,6 @@ object Main extends Stats with App {
       case _ => System.exit(1) // some options parse error, usage message from scopt will be shown
     }
 
-  configureLogging()
-
   operation match {
     case "generate" ⇒ generateDelegatedStats()
     case "notify"   ⇒ checkConflictsAndNotify(baseConflictsURL)
@@ -121,20 +119,9 @@ object Main extends Stats with App {
     logger.info("Previous conflict:")
     currentConflicts.foreach(item ⇒ logger.info(item.toString))
 
-    logger.info(username + " "+password+ " " + host)
     val notifier = new Notifier(mailer, allowedList.all)
     val stickyConflicts = notifier.findStickyConflicts(currentConflicts, previousConflicts)
     notifier.notifyConflicts(stickyConflicts)
   }
 
-  def configureLogging(){
-    val configurator = new JoranConfigurator
-    val context = org.slf4j.LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
-    try{
-      configurator.setContext(context)
-      context.reset()
-    }catch {
-      case e: JoranException =>
-    }
-  }
 }
