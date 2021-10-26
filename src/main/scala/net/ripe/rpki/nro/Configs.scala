@@ -105,5 +105,5 @@ object Configs {
 }
 
 trait Logging {
-  val logger = LoggerFactory.getLogger(getClass.getName)
+  def logger = LoggerFactory.getLogger(getClass.getName)
 }

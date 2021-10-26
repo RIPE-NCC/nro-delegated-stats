@@ -13,17 +13,16 @@ import net.ripe.rpki.nro.model.Record
 
 class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
 
-  def isAllowed(c : Conflict): Boolean = {
-      val check = allowedList.contains(c.a) || allowedList.contains(c.b) 
-      if(check)
-        logger.info(s"$c is allowed")
-      else
-        logger.info(s"$c is not allowed")
-      check
+  def isAllowed(c: Conflict): Boolean = {
+    val check = allowedList.contains(c.a) || allowedList.contains(c.b)
+    if (check)
+      logger.info(s"$c is allowed")
+    else
+      logger.info(s"$c is not allowed")
+    check
   }
 
-  def notifyConflicts(current: List[Conflict], previous: List[Conflict]): String = {
-
+  def findStickyConflicts(current: List[Conflict], previous: List[Conflict]): Set[Conflict] = {
     // Conflict records contains date,  we need to convert to keys without dates
     // to find persisting conflicts i.e intersection of previous and current conflicts
     val currentKeys = current.map(_.key).toSet
@@ -33,30 +32,26 @@ class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
       .intersect(previousMap.keySet)
       .map(previousMap)
       .filterNot(isAllowed)
+    stickyConflicts
+  }
 
-    if(stickyConflicts.nonEmpty) {
-      logger.info("Found sticky conflicts from previous time")
-      stickyConflicts.foreach(c => logger.info(c.toString))
-      sendConflicts(conflicts = stickyConflicts)
-      "Sent some conflict"
-    } else{
-      logger.info("No conflicts, no mail")
-      "No conflicts, no mail"
+  def notifyConflicts(conflicts: Set[Conflict]): Boolean = {
+    if (conflicts.isEmpty) false
+    else {
+      val rsContactsFromConflicts: Array[String] = conflicts.flatMap(c => Set(c.a.registry, c.b.registry))
+        .filter(_ != Const.IANA)
+        .map(contacts).toArray :+ contacts(RSCG)
+      val envelope: Envelope = Envelope
+        .from(sender.addr)
+        .to(rsContactsFromConflicts.map(_.addr): _*)
+        .subject(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
+        .content(Text(s"Please verify the following conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"))
+
+      Await.result(mailer(envelope), Duration.Inf)
+      true
     }
 
-
   }
-
-  def sendConflicts(conflicts: Set[Conflict]): Unit ={
-    val rsContacts: Array[String] = conflicts.flatMap(c => Set(c.a.registry, c.b.registry)).filter(_ != Const.IANA).map(contacts).toArray :+ contacts(RSCG)
-    val envelope: Envelope = Envelope
-      .from(sender.addr)
-      .to(rsContacts.map(_.addr):_*)
-      .subject(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
-      .content(Text(s"Please verify the following conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"))
-    Await.result(mailer(envelope), Duration.Inf)
-  }
-
 }
 
 

@@ -23,7 +23,9 @@ class NotifierTest extends FlatSpec with TestUtil {
     val previousConflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))
     val currentConflicts = Ports.readConflicts(getResourceFile("/currentConflicts"))
     greenMail.start()
-    subject.notifyConflicts(currentConflicts, previousConflicts)
+
+    val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
+    val alertSent = subject.notifyConflicts(stickyConflicts)
 
     val messages = greenMail.getReceivedMessages.toList
 
@@ -44,25 +46,25 @@ class NotifierTest extends FlatSpec with TestUtil {
         assert(!mimeMessage.getContent().toString.contains(allowedListed))
       )
     }
-
     greenMail.stop()
-
   }
 
   it should " be quiet if conflict disappears" in {
     val previousConflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))
     val currentConflicts = List()
-    val alertSent = subject.notifyConflicts(currentConflicts, previousConflicts)
+    val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
+    val alertSent = subject.notifyConflicts(stickyConflicts)
 
-    assert(alertSent == "No conflicts, no mail")
+    assert(!alertSent)
   }
 
   it should " not alert if there are just new conflicts" in {
     val previousConflicts = List()
     val currentConflicts = Ports.readConflicts(getResourceFile("/currentConflicts"))
-    val alertSent = subject.notifyConflicts(currentConflicts, previousConflicts)
+    val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
+    val alertSent = subject.notifyConflicts(stickyConflicts)
 
-    assert(alertSent == "No conflicts, no mail")
+    assert(!alertSent)
   }
 
   it should " able to detect allowedlisted conflict " in {
@@ -72,7 +74,5 @@ class NotifierTest extends FlatSpec with TestUtil {
   
     allowed.foreach(c => assert(allowedList.contains(c.a) || allowedList.contains(c.b)))
     notAllowed.foreach(c => assert(!allowedList.contains(c.a) && !allowedList.contains(c.b)))
-  
   }
-
 }

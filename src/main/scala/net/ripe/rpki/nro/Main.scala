@@ -4,69 +4,68 @@ import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.core.joran.spi.JoranException
 import net.ripe.rpki.nro.Configs._
-import net.ripe.rpki.nro.Environments.{Environments, Production}
-import net.ripe.rpki.nro.Operations.{Generate, Notify, Operations}
 import net.ripe.rpki.nro.main.Stats
 import net.ripe.rpki.nro.model.{Conflict, Records}
 import net.ripe.rpki.nro.service.{Notifier, Ports}
+import org.slf4j.LoggerFactory
 import scopt.OParser
 
 import java.time.LocalDate
 
-object Operations extends Enumeration {
-  type Operations = Value
-  val Generate, Notify = Value
-}
-
-object Environments extends Enumeration {
-  type Environments = Value
-  val Production, Prepdev, Local = Value
-}
-
 case class CommandLineOptions(
+                               operation: String = "",
                                startDate: LocalDate = LocalDate.now(),
                                endDate: LocalDate = LocalDate.now(),
                                ownIana: Boolean = false,
-                               environment: Environments = Environments.Local,
-                               operation: Operations = Operations.Generate,
+                               base: String = "",
+                               conflictDate: LocalDate = LocalDate.now(),
                              )
 
 object CommandLineOptions {
   implicit val localDateRead: scopt.Read[LocalDate] = scopt.Read.reads(LocalDate.parse)
-  implicit val operationsReads: scopt.Read[Operations.Value] = scopt.Read.reads(Operations withName _.capitalize)
-  implicit val environmentReads: scopt.Read[Environments.Value] = scopt.Read.reads(Environments withName _.capitalize)
 }
 
 object Main extends Stats with App {
 
+  override val logger = LoggerFactory.getLogger(Main.getClass)
 
   val builder = OParser.builder[CommandLineOptions]
   val argsParser = {
+    import net.ripe.rpki.nro.CommandLineOptions._
     import net.ripe.rpki.nro.Main.builder._
-    import CommandLineOptions._
     OParser.sequence(
       programName("NRO Delegated Stats"),
       head("NRO Delegated Stats 0.1"),
-      opt[LocalDate]('s',"startDate")
-        .action((startDateArgs, cli) => cli.copy(startDate=startDateArgs))
-        .text("Start date for processing nro delegated stat: YYYY-MM-DD"),
-      opt[LocalDate]('e',"endDate")
-        .action((endDateArgs, cli) => cli.copy(endDate=endDateArgs))
-        .text("End date for processing nro delegated stat: YYYY-MM-DD"),
-      opt[Unit]("ownIana")
-        .action((_, cli) ⇒ cli.copy(ownIana = true))
-        .text("Use own generated IANA file as input"),
-      opt[Environments]("environment")
-        .action((env, cli) ⇒ cli.copy(environment = env))
-        .text("Optional environment where the script runs. \nAvailable option values: local | prepdev | production"),
-     opt[Operations]("operation")
-        .required()
-        .action((operationArgs, cli) ⇒ cli.copy(operation = operationArgs))
-        .text("Operations to perform whether to generate the NRO Delegated Stats, or to perform notification/email. \nAvailable option values : generate | notify"),
+      cmd("generate")
+        .text("Generate NRO Delegated stats file")
+        .action((_, cli) ⇒ cli.copy(operation = "generate"))
+        .children(
+          opt[LocalDate]('s', "startDate")
+            .action((startDateArgs, cli) => cli.copy(startDate = startDateArgs))
+            .text("Start date for processing nro delegated stat: YYYY-MM-DD"),
+          opt[LocalDate]('e', "endDate")
+            .action((endDateArgs, cli) => cli.copy(endDate = endDateArgs))
+            .text("End date for processing nro delegated stat: YYYY-MM-DD"),
+          opt[Unit]("ownIana")
+            .action((_, cli) ⇒ cli.copy(ownIana = true))
+            .text("Use own generated IANA file as input"),
+        ),
+      cmd("notify")
+        .text("Notify RS contacts if there are conflicts that persisted")
+        .action((_, cli) ⇒ cli.copy(operation = "notify"))
+        .children(
+          opt[String]('b', "base-url")
+            .text("Probably this should be the base directory, or ftp path.")
+            .action((baseArgs, cli) ⇒ cli.copy(base = baseArgs)),
+          opt[LocalDate]('d', "conflict-date")
+            .text("Current conflict date")
+            .action((conflictDateArgs, cli) ⇒ cli.copy(conflictDate = conflictDateArgs))
+        ),
+      checkConfig(cli ⇒ if (cli.operation.isEmpty) failure("You need to specify operations [generate | notify] ") else success)
     )
   }
 
-  var CommandLineOptions(startDate, endDate, ownIana, environment, operation) =
+  var CommandLineOptions(operation, startDate, endDate, ownIana, baseConflictsURL, conflictDate) =
     OParser.parse(argsParser, args, CommandLineOptions()) match {
       case Some(commandLineOptions) => commandLineOptions
       case _ => System.exit(1) // some options parse error, usage message from scopt will be shown
@@ -75,8 +74,8 @@ object Main extends Stats with App {
   configureLogging()
 
   operation match {
-    case Generate ⇒ generateDelegatedStats()
-    case Notify ⇒ checkConflictsAndNotify()
+    case "generate" ⇒ generateDelegatedStats()
+    case "notify"   ⇒ checkConflictsAndNotify(baseConflictsURL)
   }
 
   def generateDelegatedStats(): Unit = {
@@ -108,11 +107,11 @@ object Main extends Stats with App {
     }
   }
 
-  def checkConflictsAndNotify() : Unit = {
+  def checkConflictsAndNotify(baseConflictsURL: String) : Unit = {
 
-    Configs.config = new Configs(startDate)
-
-    val (allowedList, previousConflicts, currentConflicts): (Records, List[Conflict], List[Conflict]) = Ports.getConflicts()
+    Configs.configureFor(conflictDate)
+    // Here we already have to modify how we are retrieving conflicts.
+    val (allowedList, previousConflicts, currentConflicts): (Records, List[Conflict], List[Conflict]) = Ports.getConflicts(baseConflictsURL)
     logger.info("Allowed list:")
     allowedList.all.foreach(item ⇒ logger.info(item.toString))
 
@@ -122,8 +121,10 @@ object Main extends Stats with App {
     logger.info("Previous conflict:")
     currentConflicts.foreach(item ⇒ logger.info(item.toString))
 
+    logger.info(username + " "+password+ " " + host)
     val notifier = new Notifier(mailer, allowedList.all)
-    logger.info(notifier.notifyConflicts(currentConflicts, previousConflicts))
+    val stickyConflicts = notifier.findStickyConflicts(currentConflicts, previousConflicts)
+    notifier.notifyConflicts(stickyConflicts)
   }
 
   def configureLogging(){
@@ -132,7 +133,6 @@ object Main extends Stats with App {
     try{
       configurator.setContext(context)
       context.reset()
-      configurator.doConfigure(s"conf/logback-$environment.xml")
     }catch {
       case e: JoranException =>
     }

@@ -2,9 +2,8 @@ package net.ripe.rpki.nro.service
 
 import java.io.{File, PrintWriter}
 import scala.io.Source.fromResource
-
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
-import net.ripe.rpki.nro.Logging
+import net.ripe.rpki.nro.{Configs, Logging}
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.iana.IanaMagic
@@ -18,8 +17,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import java.security.MessageDigest
 import java.math.BigInteger
-
 import net.ripe.rpki.nro.service.Ports.md5digest
+
+import java.util.UUID
 /**
  * Importing data from remotes files and exporting to file.
  * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
@@ -170,18 +170,28 @@ object Ports extends Logging {
     (rirs, iana, previousResult)
   }
 
-  def getConflicts(): (Records,  List[Conflict], List[Conflict]) = {
-
+  private def getAllowedList: Records = {
     val allowedListRecords = allowedList match {
       case Left(path) => parseRecordFile(path)
       case Right(resource) => parseRecordSource(resource)
     }
+    allowedListRecords
+  }
 
-    val currentConflicts  = Try(readConflicts(s"${config.currentConflictFile}")).getOrElse(List())
-    val previousConflicts = Try(readConflicts(s"${config.previousConflictFile}")).getOrElse(List())
+  def getConflicts(baseConflictURL: String): (Records,  List[Conflict], List[Conflict]) = {
+
+    val allowedListRecords: Records = getAllowedList
+
+    val previousConflictPath = s"$baseConflictURL/${config.PREV_CONFLICT_DAY}/${Configs.conflictFileName}"
+    val currentConflictPath = s"$baseConflictURL/${config.CURRENT_DAY}/${Configs.conflictFileName}"
+
+    val currentConflicts  = Try(readConflicts(previousConflictPath)).getOrElse(List())
+    val previousConflicts = Try(readConflicts(currentConflictPath)).getOrElse(List())
 
     (allowedListRecords, previousConflicts, currentConflicts)
   }
+
+
 
   def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true): Unit = {
       writeResult(records.asn, records.ipv4, records.ipv6, outputFile, header)
@@ -220,9 +230,30 @@ object Ports extends Logging {
     }
   }
 
-  def readConflicts(conflictFile: String = s"${config.previousConflictFile}"): List[Conflict] = {
-    logger.debug(s"Reading conflicts from ${config.previousConflictFile}")
-    Using.resource(CSVReader.open(new File(conflictFile))){ reader =>
+  private def fetchAndWriteLocally(source: String, dest: String): Unit = {
+    val fetchResponse: Future[Response] = fetchWithRetries(source)
+    Try(Await.result(fetchResponse, Duration.Inf)) match {
+      case Success(response) if response.statusCode == 200 =>
+        val responseText = response.text()
+        Using.resource(new PrintWriter(new File(dest))) { writer =>
+          writer.write(responseText)
+          logger.info(s"---Done fetching $source into $dest---\n\n\n")
+        }
+      case _ =>
+        logger.error(s"Failed to fetch $source after $maxRetries retries")
+        System.exit(1)
+    }
+  }
+  def readConflicts(conflictURL: String ): List[Conflict] = {
+    logger.debug(s"Reading conflicts from $conflictURL" )
+
+    val localConflictCSV = if (conflictURL.startsWith("http")) {
+      val localConflict = conflictURL.replaceAll("\\W", "");
+      fetchAndWriteLocally(conflictURL, localConflict)
+      localConflict
+    } else conflictURL
+
+    Using.resource(CSVReader.open(new File(localConflictCSV))){ reader =>
       reader.all()
         .filter(_.size>1)
         .sliding(2,2).map {
