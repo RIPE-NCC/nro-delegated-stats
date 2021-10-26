@@ -25,14 +25,34 @@ We are not performing EU country code mapping that was done in the original NRO 
  
 Building single jar assembly can be done with `sbt assembly` and look for `nro-delegated-stats.jar` in target directory.
 
-Once the jar is build, there is optional JVM parameter that you can give, startDate and endDate e.g:
+There are two main operations that can be performed. Generating the delegated extended stats, and notification/email
+to existing Registry contacts of RIRs in case of persisting conflicts.
+
+Here are the description of available command lines.
 
 ```
-java -DstartDate=2019-11-01 -DendDate=2019-11-10 -jar nro-delegated-stats.jar
+NRO Extended Allocation and Assignments Statistics
+Usage: NRO Delegated Extended Statistics [generate|notify]
 
+Command: generate [options]
+Generate NRO Delegated Extended Statistic, based on each RIRs delegated stats and IANA file
+  -s, --startDate <value>  Start date for processing NRO delegated stat, default to today: YYYY-MM-DD
+  -e, --endDate <value>    End date for processing NRO delegated stat, default to today: YYYY-MM-DD
+  --ownIana                Use own generated IANA file as input
+Command: notify [options]
+Notify RS contacts if there are persistent conflicts over a grace period
+  -b, --base-url <value>   Base url for retrieving conflicts, defaults to: https://ftp.ripe.net/pub/stats/ripencc/nro-stats/.
+  -c, --conflict-date <value>
+                           Current conflict date, defaults to today: YYYY-MM-DD
 ```
 
-Not giving these parameters will run the program only for today. Giving only start day will run it up to today.
+For `generate` operation, by default the script will generate stats for today. 
+You can configure to run it for past days by setting appropriate start/end date parameters.
+
+For `notify` operation you need to provide `base-url` to fetch previous conflicts, with defaults to ftp.ripe.net.
+
+Other application configuration that are not supplied via command line are provided in this [application.conf](https://github.com/RIPE-NCC/nro-delegated-stats/blob/main/src/main/resources/application.conf)
+which by default is bundled, but can be overriden.
 
 ##
 
