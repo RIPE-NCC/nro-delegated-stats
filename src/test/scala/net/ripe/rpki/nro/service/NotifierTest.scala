@@ -42,7 +42,7 @@ class NotifierTest extends FlatSpec with TestUtil {
     assert(messages.map(_.getSubject).toSet == Set(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}"))
 
     allowedList.foreach{allowedListed =>
-      messages.foreach(mimeMessage ⇒
+      messages.foreach(mimeMessage =>
         assert(!mimeMessage.getContent().toString.contains(allowedListed))
       )
     }

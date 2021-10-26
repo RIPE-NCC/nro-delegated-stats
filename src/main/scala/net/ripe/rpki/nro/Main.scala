@@ -1,8 +1,5 @@
 package net.ripe.rpki.nro
 
-import ch.qos.logback.classic.LoggerContext
-import ch.qos.logback.classic.joran.JoranConfigurator
-import ch.qos.logback.core.joran.spi.JoranException
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.main.Stats
 import net.ripe.rpki.nro.model.{Conflict, Records}
@@ -17,7 +14,7 @@ case class CommandLineOptions(
                                startDate: LocalDate = LocalDate.now(),
                                endDate: LocalDate = LocalDate.now(),
                                ownIana: Boolean = false,
-                               base: String = "",
+                               base: String = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/",
                                conflictDate: LocalDate = LocalDate.now(),
                              )
 
@@ -34,34 +31,34 @@ object Main extends Stats with App {
     import net.ripe.rpki.nro.CommandLineOptions._
     import net.ripe.rpki.nro.Main.builder._
     OParser.sequence(
-      programName("NRO Delegated Stats"),
-      head("NRO Delegated Stats 0.1"),
+      programName("NRO Delegated Extended Statistics"),
+      head("NRO Extended Allocation and Assignments Statistics"),
       cmd("generate")
-        .text("Generate NRO Delegated stats file")
-        .action((_, cli) ⇒ cli.copy(operation = "generate"))
+        .text("Generate NRO Delegated Extended Statistic, based on each RIRs delegated stats and IANA file")
+        .action((_, cli) => cli.copy(operation = "generate"))
         .children(
           opt[LocalDate]('s', "startDate")
             .action((startDateArgs, cli) => cli.copy(startDate = startDateArgs))
-            .text("Start date for processing nro delegated stat: YYYY-MM-DD"),
+            .text("Start date for processing NRO delegated stat, default to today: YYYY-MM-DD"),
           opt[LocalDate]('e', "endDate")
             .action((endDateArgs, cli) => cli.copy(endDate = endDateArgs))
-            .text("End date for processing nro delegated stat: YYYY-MM-DD"),
+            .text("End date for processing NRO delegated stat, default to today: YYYY-MM-DD"),
           opt[Unit]("ownIana")
-            .action((_, cli) ⇒ cli.copy(ownIana = true))
+            .action((_, cli) => cli.copy(ownIana = true))
             .text("Use own generated IANA file as input"),
         ),
       cmd("notify")
-        .text("Notify RS contacts if there are conflicts that persisted")
-        .action((_, cli) ⇒ cli.copy(operation = "notify"))
+        .text("Notify RS contacts if there are persistent conflicts over a grace period")
+        .action((_, cli) => cli.copy(operation = "notify"))
         .children(
           opt[String]('b', "base-url")
-            .text("Probably this should be the base directory, or ftp path.")
-            .action((baseArgs, cli) ⇒ cli.copy(base = baseArgs)),
-          opt[LocalDate]('d', "conflict-date")
-            .text("Current conflict date")
-            .action((conflictDateArgs, cli) ⇒ cli.copy(conflictDate = conflictDateArgs))
+            .text("Base url for retrieving conflicts, defaults to: https://ftp.ripe.net/pub/stats/ripencc/nro-stats/.")
+            .action((baseArgs, cli) => cli.copy(base = baseArgs)),
+          opt[LocalDate]('c', "conflict-date")
+            .text("Current conflict date, defaults to today: YYYY-MM-DD")
+            .action((conflictDateArgs, cli) => cli.copy(conflictDate = conflictDateArgs))
         ),
-      checkConfig(cli ⇒ if (cli.operation.isEmpty) failure("You need to specify operations [generate | notify] ") else success)
+      checkConfig(cli => if (cli.operation.isEmpty) failure("You need to specify operations [generate | notify] ") else success)
     )
   }
 
@@ -72,8 +69,8 @@ object Main extends Stats with App {
     }
 
   operation match {
-    case "generate" ⇒ generateDelegatedStats()
-    case "notify"   ⇒ checkConflictsAndNotify(baseConflictsURL)
+    case "generate" => generateDelegatedStats()
+    case "notify"   => checkConflictsAndNotify(baseConflictsURL)
   }
 
   def generateDelegatedStats(): Unit = {
@@ -111,13 +108,13 @@ object Main extends Stats with App {
     // Here we already have to modify how we are retrieving conflicts.
     val (allowedList, previousConflicts, currentConflicts): (Records, List[Conflict], List[Conflict]) = Ports.getConflicts(baseConflictsURL)
     logger.info("Allowed list:")
-    allowedList.all.foreach(item ⇒ logger.info(item.toString))
+    allowedList.all.foreach(item => logger.info(item.toString))
 
     logger.info("Current conflict:")
-    currentConflicts.foreach(item ⇒ logger.info(item.toString))
+    currentConflicts.foreach(item => logger.info(item.toString))
 
     logger.info("Previous conflict:")
-    currentConflicts.foreach(item ⇒ logger.info(item.toString))
+    currentConflicts.foreach(item => logger.info(item.toString))
 
     val notifier = new Notifier(mailer, allowedList.all)
     val stickyConflicts = notifier.findStickyConflicts(currentConflicts, previousConflicts)
