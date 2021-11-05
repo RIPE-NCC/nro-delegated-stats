@@ -9,3 +9,4 @@ compare/**
 .DS_Store
 log
 project/metals.sbt
+.bsp

@@ -1,16 +1,17 @@
 package net.ripe.rpki.nro.service
 
-import javax.mail.Provider
-import javax.mail.internet.MimeMessage
-import net.ripe.rpki.nro.TestUtil
-import org.scalatest.FlatSpec
-import net.ripe.rpki.nro.Configs._
-import net.ripe.rpki.nro.Const.{APNIC, RSCG}
-import com.icegreen.greenmail.junit.GreenMailRule
 import com.icegreen.greenmail.util.{GreenMail, ServerSetupTest}
 import courier.Mailer
+import net.ripe.rpki.nro.Configs._
+import net.ripe.rpki.nro.Const.{APNIC, RSCG}
+import net.ripe.rpki.nro.TestUtil
+import org.junit.AfterClass
+import org.scalatest.{BeforeAndAfter, FlatSpec}
 
-class NotifierTest extends FlatSpec with TestUtil {
+import java.io.FileReader
+
+class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter{
+
 
   val greenMail = new GreenMail(ServerSetupTest.ALL)
 
@@ -19,10 +20,17 @@ class NotifierTest extends FlatSpec with TestUtil {
   val allowedList = Ports.parseRecordSource("allowedlist").all
   val subject = new Notifier(mockMailer, allowedList)
 
+  before {
+      greenMail.start()
+  }
+
+  after {
+    greenMail.stop()
+  }
+
   "Notifier test " should " notify relevant RIR contacts and RSCG coordinator if there is conflict" in {
-    val previousConflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))
-    val currentConflicts = Ports.readConflicts(getResourceFile("/currentConflicts"))
-    greenMail.start()
+    val previousConflicts = Ports.parseConflicts(getResourceReader("/previousConflicts"))
+    val currentConflicts = Ports.parseConflicts(getResourceReader("/currentConflicts"))
 
     val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
     val alertSent = subject.notifyConflicts(stickyConflicts)
@@ -46,11 +54,11 @@ class NotifierTest extends FlatSpec with TestUtil {
         assert(!mimeMessage.getContent().toString.contains(allowedListed))
       )
     }
-    greenMail.stop()
+    assert(alertSent)
   }
 
   it should " be quiet if conflict disappears" in {
-    val previousConflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))
+    val previousConflicts = Ports.parseConflicts(getResourceReader("/previousConflicts"))
     val currentConflicts = List()
     val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
     val alertSent = subject.notifyConflicts(stickyConflicts)
@@ -60,7 +68,7 @@ class NotifierTest extends FlatSpec with TestUtil {
 
   it should " not alert if there are just new conflicts" in {
     val previousConflicts = List()
-    val currentConflicts = Ports.readConflicts(getResourceFile("/currentConflicts"))
+    val currentConflicts = Ports.parseConflicts(getResourceReader("/currentConflicts"))
     val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
     val alertSent = subject.notifyConflicts(stickyConflicts)
 
@@ -68,7 +76,7 @@ class NotifierTest extends FlatSpec with TestUtil {
   }
 
   it should " able to detect allowedlisted conflict " in {
-    val conflicts = Ports.readConflicts(getResourceFile("/previousConflicts"))
+    val conflicts = Ports.parseConflicts(getResourceReader("/previousConflicts"))
 
     val (allowed, notAllowed) = conflicts.partition(subject.isAllowed)
   

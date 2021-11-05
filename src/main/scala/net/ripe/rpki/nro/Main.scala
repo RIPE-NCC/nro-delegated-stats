@@ -7,7 +7,9 @@ import net.ripe.rpki.nro.service.{Notifier, Ports}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
+import java.net.URL
 import java.time.LocalDate
+import scala.util.{Failure, Success, Try}
 
 case class CommandLineOptions(
                                operation: String = "",
@@ -58,7 +60,11 @@ object Main extends Stats with App {
             .text("Current conflict date, defaults to today: YYYY-MM-DD")
             .action((conflictDateArgs, cli) => cli.copy(conflictDate = conflictDateArgs))
         ),
-      checkConfig(cli => if (cli.operation.isEmpty) failure("You need to specify operations [generate | notify] ") else success)
+      checkConfig(cli => if (cli.operation.isEmpty) failure("You need to specify operations [generate | notify] ") else success),
+      checkConfig(cli => Try(new URL(cli.base).getHost) match {
+        case Success(_)  => success
+        case Failure(e) => failure(s"Base URL can't be parsed ${e.getMessage}")
+      })
     )
   }
 

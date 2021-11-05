@@ -1,6 +1,6 @@
 package net.ripe.rpki.nro.service
 
-import java.io.{File, PrintWriter}
+import java.io.{File, PrintWriter, Reader, StringReader}
 import scala.io.Source.fromResource
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.{Configs, Logging}
@@ -233,34 +233,24 @@ object Ports extends Logging {
     }
   }
 
-  private def fetchAndWriteLocally(source: String, dest: String): Unit = {
-    val fetchResponse: Future[Response] = fetchWithRetries(source)
-    Try(Await.result(fetchResponse, MAX_WAIT)) match {
-      case Success(response) if response.statusCode == 200 =>
-        val responseText = response.text()
-        Using.resource(new PrintWriter(new File(dest))) { writer =>
-          writer.write(responseText)
-          logger.info(s"---Done fetching $source into $dest---\n\n\n")
-        }
-      case _ =>
-        logger.error(s"Failed to fetch $source after $maxRetries retries")
-        System.exit(1)
-    }
-  }
   def readConflicts(conflictURL: String ): List[Conflict] = {
     logger.debug(s"Reading conflicts from $conflictURL" )
 
-    val localConflictCSV = if (conflictURL.startsWith("http")) {
-      val localConflict = conflictURL.replaceAll("\\W", "");
-      fetchAndWriteLocally(conflictURL, localConflict)
-      localConflict
-    } else conflictURL
+    val fetchResponse: Future[Response] = fetchWithRetries(conflictURL)
+    Try(Await.result(fetchResponse, MAX_WAIT)) match {
+      case Success(response) if response.statusCode == 200 =>
+        parseConflicts(new StringReader(response.text()))
+      case _ => throw new RuntimeException("Failed to fetch conflict files")
+    }
 
-    Using.resource(CSVReader.open(new File(localConflictCSV))){ reader =>
+  }
+
+  def parseConflicts(csvReader: Reader): List[Conflict] = {
+    Using.resource(CSVReader.open(csvReader)) { reader =>
       reader.all()
-        .filter(_.size>1)
-        .sliding(2,2).map {
-        case List(a,b) => Conflict(Record(a),Record(b))
+        .filter(_.size > 1)
+        .sliding(2, 2).map {
+        case List(a, b) => Conflict(Record(a), Record(b))
       }.toList
     }
   }
