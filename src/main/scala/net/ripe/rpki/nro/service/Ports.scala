@@ -14,7 +14,7 @@ import requests.Response
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, DurationInt}
 import java.security.MessageDigest
 import java.math.BigInteger
 import net.ripe.rpki.nro.service.Ports.md5digest
@@ -73,6 +73,9 @@ object Ports extends Logging {
       requests.get(target)
     })
   }
+
+  private val MAX_WAIT: Duration = 2.minutes
+
   // Fetch only if data file is not yet downloaded.
   def fetchLocally(source: String, dest: String) {
 
@@ -85,7 +88,7 @@ object Ports extends Logging {
     // No Md5 for iana, only fetch source
     if (source.contains("iana")) {
       val ianaResponse: Future[Response] = fetchWithRetries(source)
-      Try(Await.result(ianaResponse, Duration.Inf)) match {
+      Try(Await.result(ianaResponse, MAX_WAIT)) match {
         case Success(response) if response.statusCode == 200 =>
           if (response.contents.length < 2000) {
             logger.error(s"Contents $source is too small, please investigate manually.")
@@ -109,7 +112,7 @@ object Ports extends Logging {
         md5Response    ← md5Attempts
       } yield (sourceResponse, md5Response)
 
-      Try(Await.result(sourceMd5, Duration.Inf)) match {
+      Try(Await.result(sourceMd5, MAX_WAIT)) match {
         case Success((response, md5response)) if response.statusCode == 200 =>
           if(response.contents.length < 2000){
             logger.error(s"Contents $source is too small, please investigate manually.")
@@ -232,7 +235,7 @@ object Ports extends Logging {
 
   private def fetchAndWriteLocally(source: String, dest: String): Unit = {
     val fetchResponse: Future[Response] = fetchWithRetries(source)
-    Try(Await.result(fetchResponse, Duration.Inf)) match {
+    Try(Await.result(fetchResponse, MAX_WAIT)) match {
       case Success(response) if response.statusCode == 200 =>
         val responseText = response.text()
         Using.resource(new PrintWriter(new File(dest))) { writer =>
