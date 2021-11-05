@@ -1,10 +1,9 @@
 package net.ripe.rpki.nro.service
 
-import java.io.{File, PrintWriter}
+import java.io.{File, PrintWriter, Reader, StringReader}
 import scala.io.Source.fromResource
-
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
-import net.ripe.rpki.nro.Logging
+import net.ripe.rpki.nro.{Configs, Logging}
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.iana.IanaMagic
@@ -15,11 +14,12 @@ import requests.Response
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, DurationInt}
 import java.security.MessageDigest
 import java.math.BigInteger
-
 import net.ripe.rpki.nro.service.Ports.md5digest
+
+import java.util.UUID
 /**
  * Importing data from remotes files and exporting to file.
  * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
@@ -73,6 +73,9 @@ object Ports extends Logging {
       requests.get(target)
     })
   }
+
+  private val MAX_WAIT: Duration = 2.minutes
+
   // Fetch only if data file is not yet downloaded.
   def fetchLocally(source: String, dest: String) {
 
@@ -85,7 +88,7 @@ object Ports extends Logging {
     // No Md5 for iana, only fetch source
     if (source.contains("iana")) {
       val ianaResponse: Future[Response] = fetchWithRetries(source)
-      Try(Await.result(ianaResponse, Duration.Inf)) match {
+      Try(Await.result(ianaResponse, MAX_WAIT)) match {
         case Success(response) if response.statusCode == 200 =>
           if (response.contents.length < 2000) {
             logger.error(s"Contents $source is too small, please investigate manually.")
@@ -109,7 +112,7 @@ object Ports extends Logging {
         md5Response    ← md5Attempts
       } yield (sourceResponse, md5Response)
 
-      Try(Await.result(sourceMd5, Duration.Inf)) match {
+      Try(Await.result(sourceMd5, MAX_WAIT)) match {
         case Success((response, md5response)) if response.statusCode == 200 =>
           if(response.contents.length < 2000){
             logger.error(s"Contents $source is too small, please investigate manually.")
@@ -147,12 +150,7 @@ object Ports extends Logging {
     }
   }
 
-  def fetchAndParse(ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records], List[Conflict], Records) = {
-
-    val allowedListRecords = allowedList match {
-      case Left(path) => parseRecordFile(path)
-      case Right(resource) => parseRecordSource(resource)
-    }
+  def fetchAndParseInputs(ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records]) = {
 
     val recordMaps: Map[String, Records] = sources.map {
       case (name:String, url:String) =>
@@ -171,9 +169,32 @@ object Ports extends Logging {
     }
 
     val previousResult = Try(parseRecordFile(s"${config.previousResultFile}")).toOption
-    val oldConflict = Try(readConflicts(s"${config.previousConflictFile}")).getOrElse(List())
-    (rirs, iana, previousResult, oldConflict, allowedListRecords)
+
+    (rirs, iana, previousResult)
   }
+
+  private def getAllowedList: Records = {
+    val allowedListRecords = allowedList match {
+      case Left(path) => parseRecordFile(path)
+      case Right(resource) => parseRecordSource(resource)
+    }
+    allowedListRecords
+  }
+
+  def getConflicts(baseConflictURL: String): (Records,  List[Conflict], List[Conflict]) = {
+
+    val allowedListRecords: Records = getAllowedList
+
+    val previousConflictPath = s"$baseConflictURL/${config.PREV_CONFLICT_DAY}/${Configs.conflictFileName}"
+    val currentConflictPath = s"$baseConflictURL/${config.CURRENT_DAY}/${Configs.conflictFileName}"
+
+    val currentConflicts  = Try(readConflicts(previousConflictPath)).getOrElse(List())
+    val previousConflicts = Try(readConflicts(currentConflictPath)).getOrElse(List())
+
+    (allowedListRecords, previousConflicts, currentConflicts)
+  }
+
+
 
   def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true): Unit = {
       writeResult(records.asn, records.ipv4, records.ipv6, outputFile, header)
@@ -212,13 +233,24 @@ object Ports extends Logging {
     }
   }
 
-  def readConflicts(conflictFile: String = s"${config.previousConflictFile}"): List[Conflict] = {
-    logger.debug(s"Reading conflicts from ${config.previousConflictFile}")
-    Using.resource(CSVReader.open(new File(conflictFile))){ reader =>
+  def readConflicts(conflictURL: String ): List[Conflict] = {
+    logger.debug(s"Reading conflicts from $conflictURL" )
+
+    val fetchResponse: Future[Response] = fetchWithRetries(conflictURL)
+    Try(Await.result(fetchResponse, MAX_WAIT)) match {
+      case Success(response) if response.statusCode == 200 =>
+        parseConflicts(new StringReader(response.text()))
+      case _ => throw new RuntimeException("Failed to fetch conflict files")
+    }
+
+  }
+
+  def parseConflicts(csvReader: Reader): List[Conflict] = {
+    Using.resource(CSVReader.open(csvReader)) { reader =>
       reader.all()
-        .filter(_.size>1)
-        .sliding(2,2).map {
-        case List(a,b) => Conflict(Record(a),Record(b))
+        .filter(_.size > 1)
+        .sliding(2, 2).map {
+        case List(a, b) => Conflict(Record(a), Record(b))
       }.toList
     }
   }

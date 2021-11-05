@@ -23,37 +23,15 @@ class PortsTest extends FlatSpec with TestUtil {
     assert(iana.ipv6.size == 6)
   }
 
-  it should "deserialize conflict in proper location " in {
-
-    val ripe =
-      """|ripencc|AU|ipv4|1.10.10.0|256|20110811|assigned|A9173591
-         |ripencc|CN|ipv4|1.10.16.0|4096|20110412|allocated|A92319D5""".stripMargin
-
-    val apnic =
-      """|apnic|AU|ipv4|1.10.10.0|256|20110811|assigned|A9173591
-         |apnic|CN|ipv4|1.10.11.0|256|20110414|allocated|A92E1062""".stripMargin
-
-    val ripeRecs = toRecords(ripe)
-    val apnicRecs = toRecords(apnic)
-
-    val original = ripeRecs.zip(apnicRecs).map { case (a, b) => Conflict(a, b) }
-    val tempOutput = File.createTempFile("conflict","txt")
-
-    writeConflicts(original, tempOutput.toString)
-    val readBack = readConflicts(tempOutput.toString)
-
-    assert(readBack == original)
-
+  it should "deserialize conflict " in {
+    val fetchConflicts = readConflicts("https://ftp.ripe.net/pub/stats/ripencc/nro-stats/20210810/conflicts")
+    assert(fetchConflicts.size == 7)
   }
 
   it should "deserialize empty conflicts" in {
     val noConflict = List[Conflict]()
-    val tempOutput = File.createTempFile("conflict","txt")
-    writeConflicts(noConflict, tempOutput.toString)
-    val readBack = readConflicts(tempOutput.toString)
-    assert(readBack == noConflict)
-
+    val fetched = readConflicts("https://ftp.ripe.net/pub/stats/ripencc/nro-stats/20210810/unclaimed")
+    assert(fetched == noConflict)
   }
-
 
 }

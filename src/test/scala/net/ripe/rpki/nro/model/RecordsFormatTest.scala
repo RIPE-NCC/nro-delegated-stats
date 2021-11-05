@@ -12,7 +12,7 @@ class RecordsFormatTest extends FlatSpec with TestUtil {
     val iana  = parseRecordFile(getResourceFile("/data/iana"))
     val stats = iana.asn.map(_.stat) ++ iana.ipv4.map(_.stat) ++ iana.ipv6.map(_.stat)
 
-    stats.foreach( stat ⇒
+    stats.foreach( stat =>
         assert(
           (stat.status == RESERVED && stat.oid == IETF) ||
           (stat.status == ASSIGNED && stat.oid == IANA) ||
@@ -23,7 +23,7 @@ class RecordsFormatTest extends FlatSpec with TestUtil {
     val unclaimed = parseRecordFile(getResourceFile("/data/iana")).formatUnclaimed
     val stats = unclaimed.asn.map(_.stat) ++ unclaimed.ipv4.map(_.stat) ++ unclaimed.ipv6.map( _.stat)
 
-    stats.foreach( stat ⇒
+    stats.foreach( stat =>
         assert(
           stat.date == config.CURRENT_DAY &&
           stat.status == AVAILABLE
@@ -34,7 +34,7 @@ class RecordsFormatTest extends FlatSpec with TestUtil {
     val ripe  = parseRecordFile(getResourceFile("/data/arin")).formatRIRs
     val stats = ripe.asn.map(_.stat) ++ ripe.ipv4.map(_.stat) ++ ripe.ipv6.map( _.stat)
 
-    stats.foreach { stat ⇒
+    stats.foreach { stat =>
       if (stat.status == RESERVED || stat.status == AVAILABLE) {
         assert(stat.date == config.CURRENT_DAY && stat.cc == DEFAULT_CC && stat.oid == stat.registry)
       }

@@ -161,7 +161,7 @@ trait Merger extends Logging with Ranges {
       val previousMap: RangeMap[BigInteger, Record] = asRangeMap(prevRecords)
       val currentMap = TreeRangeMap.create[BigInteger, Record]()
 
-      currRecords.map { record ⇒
+      currRecords.map { record =>
         val range: Range[BigInteger] = record.range.key
         val previousOverlaps = previousMap.subRangeMap(range)
 
