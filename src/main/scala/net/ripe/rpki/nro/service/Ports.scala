@@ -1,6 +1,6 @@
 package net.ripe.rpki.nro.service
 
-import java.io.{File, PrintWriter, Reader, StringReader}
+import java.io.{File, PrintWriter, Reader, StringReader, FileOutputStream}
 import scala.io.Source.{fromFile, fromBytes, fromResource}
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.{Configs, Logging}
@@ -92,9 +92,8 @@ object Ports extends Logging {
             logger.error(s"Contents $source is too small, please investigate manually.")
             System.exit(1)
           }
-          val responseText = response.text()
-          Using.resource(new PrintWriter(new File(dest))) { writer =>
-            writer.write(responseText)
+          Using.resource(new FileOutputStream(dest)) { out =>
+            response.writeBytesTo(out)
             logger.info(s"---Done fetching $source into $dest---\n\n\n")
           }
         case _ =>
@@ -124,7 +123,7 @@ object Ports extends Logging {
           val maybeMD5 = md5response.text().split("\\s+").filter(_.length == 32).headOption
 
           if(maybeMD5.isDefined){
-            val computedMd5 = md5digest(responseText)
+            val computedMd5 = md5digest(response.bytes)
             val retrievedMd5 = maybeMD5.get
             if(computedMd5 != retrievedMd5){
               logger.error(s"MD5 does not match! for $source")
@@ -137,8 +136,8 @@ object Ports extends Logging {
               System.exit(1)
           }
           logger.info("MD5 Match for "+ source)
-          Using.resource(new PrintWriter(new File(dest))) { writer =>
-            writer.write(responseText)
+          Using.resource(new FileOutputStream(dest)) { out =>
+            response.writeBytesTo(out)
             logger.info(s"---Done fetching $source into $dest---\n\n\n")
           }
         case _ =>
@@ -258,8 +257,8 @@ object Ports extends Logging {
     }
   }
 
-  def md5digest(text:String): String = {
-    val digest: Array[Byte] = MessageDigest.getInstance("MD5").digest(text.getBytes)
+  def md5digest(data: Array[Byte]): String = {
+    val digest = MessageDigest.getInstance("MD5").digest(data)
     val md5 = new BigInteger(1, digest).toString(16)
     // pad with leading zero
     md5.reverse.padTo(32, '0').reverse
