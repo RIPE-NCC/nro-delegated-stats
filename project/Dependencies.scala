@@ -4,7 +4,7 @@ object Dependencies {
 
   val commonsIpMath = "net.ripe.commons" % "commons-ip-math" % "1.23"
   val guava = "com.google.guava" % "guava" % "28.1-jre"
-  val requests = "com.lihaoyi" %% "requests" % "0.2.0"
+  val requests = "com.lihaoyi" %% "requests" % "0.6.5"
 
   val scopt = "com.github.scopt" %% "scopt" % "4.0.1"
   val csvReader = "com.github.tototoshi" %% "scala-csv" % "1.3.6"
