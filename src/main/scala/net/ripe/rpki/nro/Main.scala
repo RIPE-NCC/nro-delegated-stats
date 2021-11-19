@@ -16,7 +16,7 @@ case class CommandLineOptions(
                                startDate: LocalDate = LocalDate.now(),
                                endDate: LocalDate = LocalDate.now(),
                                ownIana: Boolean = false,
-                               base: String = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/",
+                               base: String = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats",
                                conflictDate: LocalDate = LocalDate.now(),
                              )
 
@@ -35,6 +35,10 @@ object Main extends Stats with App {
     OParser.sequence(
       head("NRO Extended Allocation and Assignments Statistics"),
       programName("java -jar nro-delegated-stats.jar"),
+      opt[String]('b', "base-url")
+        .text("Base URL for retrieving previously generated files. Defaults to https://ftp.ripe.net/pub/stats/ripencc/nro-stats.")
+        .action((url, cli) => cli.copy(base = if (url.last == '/') url.dropRight(1) else url)),
+      help('h', "help").text("print this message"),
       cmd("generate")
         .text("Generate NRO Delegated Extended Statistic, based on each RIRs delegated stats and IANA file")
         .action((_, cli) => cli.copy(operation = "generate"))
@@ -53,9 +57,6 @@ object Main extends Stats with App {
         .text("Notify RS contacts if there are persistent conflicts over a grace period")
         .action((_, cli) => cli.copy(operation = "notify"))
         .children(
-          opt[String]('b', "base-url")
-            .text("Base url for retrieving conflicts, defaults to: https://ftp.ripe.net/pub/stats/ripencc/nro-stats/.")
-            .action((baseArgs, cli) => cli.copy(base = baseArgs)),
           opt[LocalDate]('c', "conflict-date")
             .text("Current conflict date, defaults to today: YYYY-MM-DD")
             .action((conflictDateArgs, cli) => cli.copy(conflictDate = conflictDateArgs))
@@ -68,18 +69,18 @@ object Main extends Stats with App {
     )
   }
 
-  var CommandLineOptions(operation, startDate, endDate, ownIana, baseConflictsURL, conflictDate) =
+  var CommandLineOptions(operation, startDate, endDate, ownIana, baseURL, conflictDate) =
     OParser.parse(argsParser, args, CommandLineOptions()) match {
       case Some(commandLineOptions) => commandLineOptions
       case _ => System.exit(1) // some options parse error, usage message from scopt will be shown
     }
 
   operation match {
-    case "generate" => generateDelegatedStats()
-    case "notify"   => checkConflictsAndNotify(baseConflictsURL)
+    case "generate" => generateDelegatedStats(baseURL)
+    case "notify"   => checkConflictsAndNotify(baseURL)
   }
 
-  def generateDelegatedStats(): Unit = {
+  def generateDelegatedStats(baseURL: String): Unit = {
 
     if (startDate.equals(endDate)) {
       logger.info(s"Generating stats for a single day $startDate")
@@ -90,10 +91,10 @@ object Main extends Stats with App {
     while (startDate.compareTo(endDate) <= 0) {
 
       Configs.configureFor(startDate)
-      logger.info(s"Data dir: $Configs.config.currentDataDirectory")
-      logger.info(s"Result dir: $Configs.config.currentResultDirectory")
+      logger.info(s"Data dir: ${Configs.config.currentDataDirectory}")
+      logger.info(s"Result dir: ${Configs.config.currentResultDirectory}")
 
-      val (rirRecords, ianaRecord, previousResult) = Ports.fetchAndParseInputs(ownIana)
+      val (rirRecords, ianaRecord, previousResult) = Ports.fetchAndParseInputs(baseURL, ownIana)
       val (results, mergedResults, currentConflicts, unclaimed, overclaimed) = process(rirRecords, ianaRecord, previousResult)
 
 

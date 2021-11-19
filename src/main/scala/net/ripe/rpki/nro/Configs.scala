@@ -16,21 +16,23 @@ class Configs(private val todayDate: LocalDate) {
   def PREV_RESULT_DAY: String = formatDate(todayDate.minusDays(1))
   def PREV_CONFLICT_DAY: String = formatDate(todayDate.minusDays(gracePeriod))
 
-  def currentResultFile: String = s"$resultDirectory/$CURRENT_DAY/$resultFileName"
-  def currentUnclaimedFile: String = s"$resultDirectory/$CURRENT_DAY/$unclaimedFileName"
-  def currentOverclaimedFile: String = s"$resultDirectory/$CURRENT_DAY/$overclaimedFileName"
-  def currentMergedFile: String = s"$resultDirectory/$CURRENT_DAY/$mergedFileName"
-  def previousResultFile: String = s"$resultDirectory/$PREV_RESULT_DAY/$resultFileName"
-  def currentConflictFile: String = s"$resultDirectory/$CURRENT_DAY/$conflictFileName"
-  def previousConflictFile: String = s"$resultDirectory/$PREV_CONFLICT_DAY/$conflictFileName"
+  def currentResultFile: String = s"$currentResultDirectory/$resultFileName"
+  def currentUnclaimedFile: String = s"$currentResultDirectory/$unclaimedFileName"
+  def currentOverclaimedFile: String = s"$currentResultDirectory/$overclaimedFileName"
+  def currentMergedFile: String = s"$currentResultDirectory/$mergedFileName"
+  def previousResultFile: String = s"$previousResultDirectory/$resultFileName"
+  def currentConflictFile: String = s"$currentResultDirectory/$conflictFileName"
+  def previousConflictFile: String = s"$previousResultDirectory/$conflictFileName"
 
   def currentDataDirectory: File = createIfNeeded(s"$dataDirectory/$CURRENT_DAY")
   def currentResultDirectory: File = createIfNeeded(s"$resultDirectory/$CURRENT_DAY")
+  def previousResultDirectory: File = createIfNeeded(s"$resultDirectory/$PREV_RESULT_DAY")
+  def previousConflictDirectory: File = createIfNeeded(s"$resultDirectory/$PREV_CONFLICT_DAY")
 
   def formatDate(date: LocalDate): String = date.toString.replaceAll("-", "")
 
   def createIfNeeded(path: String) = {
-    val resultFile = new File(s"$path")
+    val resultFile = new File(path)
     if(!resultFile.exists()){
       resultFile.mkdir()
     }

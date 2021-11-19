@@ -156,7 +156,7 @@ trait Merger extends Logging with Ranges {
    * @param previous
    * @return
    */
-  def resolveUnclaimed(unclaimed:Records, previous: Option[Records]) = {
+  def resolveUnclaimed(unclaimed:Records, previous: Records) = {
     def resolveUnclaimedResource(prevRecords: List[Record], currRecords: List[Record]) = {
       val previousMap: RangeMap[BigInteger, Record] = asRangeMap(prevRecords)
       val currentMap = TreeRangeMap.create[BigInteger, Record]()
@@ -175,17 +175,10 @@ trait Merger extends Logging with Ranges {
       alignRecordWithMapRangeKeys(currentMap)
     }
 
-    if(previous.isEmpty) unclaimed
-      else {
-        val prevRecords = previous.get
-        val currRecords = unclaimed
-
-        Records(
-          resolveUnclaimedResource(prevRecords.asn, currRecords.asn),
-          resolveUnclaimedResource(prevRecords.ipv4, currRecords.ipv4),
-          resolveUnclaimedResource(prevRecords.ipv6, currRecords.ipv6))
-
-    }
+    Records(
+      resolveUnclaimedResource(previous.asn, unclaimed.asn),
+      resolveUnclaimedResource(previous.ipv4, unclaimed.ipv4),
+      resolveUnclaimedResource(previous.ipv6, unclaimed.ipv6))
   }
-    
+
 }

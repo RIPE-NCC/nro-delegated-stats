@@ -17,7 +17,7 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter{
 
   val mockedSession = greenMail.getSmtp().createSession()
   val mockMailer = Mailer(mockedSession)
-  val allowedList = Ports.parseRecordSource("allowedlist").all
+  val allowedList = Ports.parseRecordSource(scala.io.Source.fromResource("allowedlist")).all
   val subject = new Notifier(mockMailer, allowedList)
 
   before {
