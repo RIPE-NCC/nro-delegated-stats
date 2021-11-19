@@ -1,7 +1,7 @@
 package net.ripe.rpki.nro.service
 
 import java.io.{File, PrintWriter, Reader, StringReader}
-import scala.io.Source.fromResource
+import scala.io.Source.{fromFile, fromBytes, fromResource}
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.{Configs, Logging}
 import net.ripe.rpki.nro.Configs._
@@ -40,15 +40,13 @@ object Ports extends Logging {
 
   val isRecord: List[String] => Boolean = line => !(comments(line) || header(line) || summary(line))
 
-  def parseRecordFile(source: String): Records = {
-    logger.info(s"Parsing local source $source")
+  def parseRecordSource(source: scala.io.Source): Records = {
     Using.resource(CSVReader.open(source))(reader => toRecords(reader.all()))
   }
 
-  def parseRecordSource(source: String): Records = {
-    logger.info(s"Parsing local source $source")
-    val src = fromResource(source)
-    Using.resource(CSVReader.open(src))(reader => toRecords(reader.all()))
+  def parseRecordFile(source: String): Records = {
+    logger.info(s"Parsing local file $source")
+    parseRecordSource(fromFile(source))
   }
 
   def toRecords(lines : List[List[String]]): Records = {
@@ -150,7 +148,7 @@ object Ports extends Logging {
     }
   }
 
-  def fetchAndParseInputs(ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records]) = {
+  def fetchAndParseInputs(baseURL: String, ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records]) = {
 
     val recordMaps: Map[String, Records] = sources.map {
       case (name:String, url:String) =>
@@ -168,17 +166,22 @@ object Ports extends Logging {
       System.exit(1)
     }
 
-    val previousResult = Try(parseRecordFile(s"${config.previousResultFile}")).toOption
+    val previousResult = Try {
+      Await.result(
+        fetchWithRetries(s"$baseURL/${config.PREV_RESULT_DAY}/$resultFileName")
+          .map { response => parseRecordSource(fromBytes(response.contents, "UTF-8")) },
+        MAX_WAIT
+      )
+    }
+    if (previousResult.isFailure) {
+      logger.warn(s"Could not fetch previous results. This may impact unclaimed results.")
+    }
 
-    (rirs, iana, previousResult)
+    (rirs, iana, previousResult.toOption)
   }
 
   private def getAllowedList: Records = {
-    val allowedListRecords = allowedList match {
-      case Left(path) => parseRecordFile(path)
-      case Right(resource) => parseRecordSource(resource)
-    }
-    allowedListRecords
+    parseRecordSource(allowedList.fold(fromFile(_), fromResource(_)))
   }
 
   def getConflicts(baseConflictURL: String): (Records,  List[Conflict], List[Conflict]) = {
