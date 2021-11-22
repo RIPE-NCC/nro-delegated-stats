@@ -74,6 +74,8 @@ object Record {
       case "ipv4" => Ipv4Record(Stat(registry, cc, "ipv4", start, length, date, status))
       case "ipv6" => Ipv6Record(Stat(registry, cc, "ipv6", start, length, date, status))
     }
+
+    case _ => throw new IllegalArgumentException(s"Cannot parse record from line: $line")
   }
 }
 

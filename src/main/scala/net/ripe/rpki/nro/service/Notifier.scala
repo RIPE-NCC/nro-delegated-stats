@@ -11,6 +11,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import net.ripe.rpki.nro.model.Record
 
+import scala.collection.immutable.ArraySeq
+
 class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
 
   def isAllowed(c: Conflict): Boolean = {
@@ -43,7 +45,7 @@ class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
         .map(contacts).toArray :+ contacts(RSCG)
       val envelope: Envelope = Envelope
         .from(sender.addr)
-        .to(rsContactsFromConflicts.map(_.addr): _*)
+        .to(ArraySeq.unsafeWrapArray(rsContactsFromConflicts.map(_.addr)): _*)
         .subject(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
         .content(Text(s"Please verify the following conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"))
 

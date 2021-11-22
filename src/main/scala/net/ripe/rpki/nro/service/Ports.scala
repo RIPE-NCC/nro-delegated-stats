@@ -1,7 +1,7 @@
 package net.ripe.rpki.nro.service
 
-import java.io.{File, PrintWriter, Reader, StringReader, FileOutputStream}
-import scala.io.Source.{fromFile, fromBytes, fromResource}
+import java.io.{File, FileOutputStream, PrintWriter, Reader, StringReader}
+import scala.io.Source.{fromBytes, fromFile, fromResource}
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.{Configs, Logging}
 import net.ripe.rpki.nro.Configs._
@@ -20,6 +20,7 @@ import java.math.BigInteger
 import net.ripe.rpki.nro.service.Ports.md5digest
 
 import java.util.UUID
+import scala.math.Numeric.Implicits.infixNumericOps
 /**
  * Importing data from remotes files and exporting to file.
  * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
@@ -75,7 +76,7 @@ object Ports extends Logging {
   private val MAX_WAIT: Duration = 2.minutes
 
   // Fetch only if data file is not yet downloaded.
-  def fetchLocally(source: String, dest: String) {
+  def fetchLocally(source: String, dest: String): Unit = {
 
     if (new File(dest).isFile) {
       logger.info(s"     File $dest exist, not fetching")
@@ -88,7 +89,7 @@ object Ports extends Logging {
       val ianaResponse: Future[Response] = fetchWithRetries(source)
       Try(Await.result(ianaResponse, MAX_WAIT)) match {
         case Success(response) if response.statusCode == 200 =>
-          if (response.contents.length < 2000) {
+          if (response.bytes.length < 2000) {
             logger.error(s"Contents $source is too small, please investigate manually.")
             System.exit(1)
           }
@@ -105,13 +106,13 @@ object Ports extends Logging {
       val md5Attempts    = fetchWithRetries(s"${source}.md5")
 
       val sourceMd5 : Future[(Response, Response)]   = for {
-        sourceResponse ← sourceAttempts
-        md5Response    ← md5Attempts
+        sourceResponse <- sourceAttempts
+        md5Response <- md5Attempts
       } yield (sourceResponse, md5Response)
 
       Try(Await.result(sourceMd5, MAX_WAIT)) match {
         case Success((response, md5response)) if response.statusCode == 200 =>
-          if(response.contents.length < 2000){
+          if(response.bytes.length < 2000){
             logger.error(s"Contents $source is too small, please investigate manually.")
             System.exit(1)
           }
@@ -168,7 +169,7 @@ object Ports extends Logging {
     val previousResult = Try {
       Await.result(
         fetchWithRetries(s"$baseURL/${config.PREV_RESULT_DAY}/$resultFileName")
-          .map { response => parseRecordSource(fromBytes(response.contents, "UTF-8")) },
+          .map { response => parseRecordSource(fromBytes(response.bytes, "UTF-8")) },
         MAX_WAIT
       )
     }
@@ -202,8 +203,7 @@ object Ports extends Logging {
       writeResult(records.asn, records.ipv4, records.ipv6, outputFile, header)
   }
 
-  def writeResult(asn: List[Record], ipv4: List[Record], ipv6: List[Record], outputFile: String = s"$resultFileName",
-                  header:Boolean = true              ) {
+  def writeResult(asn: List[Record], ipv4: List[Record], ipv6: List[Record], outputFile: String = s"$resultFileName", header:Boolean = true): Unit = {
     Using.resource(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
@@ -251,9 +251,11 @@ object Ports extends Logging {
     Using.resource(CSVReader.open(csvReader)) { reader =>
       reader.all()
         .filter(_.size > 1)
-        .sliding(2, 2).map {
-        case List(a, b) => Conflict(Record(a), Record(b))
-      }.toList
+        .sliding(2, 2)
+        .map {
+          case List(a, b) => Conflict(Record(a), Record(b))
+          case x => throw new IllegalArgumentException("Cannot parse incomplete conflicts file. Remainder: $x")
+        }.toList
     }
   }
 
