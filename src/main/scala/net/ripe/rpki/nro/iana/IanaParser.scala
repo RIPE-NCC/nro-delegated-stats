@@ -18,13 +18,13 @@ trait IanaParser {
     readCSV(skipHeader).map(parser).filter(_.nonEmpty)
   }
 
-  def fetchAsn(asnSource: String): List[List[String]]    = fetchAndParse(asnSource, parseAsnLine, headerSkip = 2)
-  def fetchIpv4(ipv4Source: String): List[List[String]]  = fetchAndParse(ipv4Source, parseIpv4Line)
-  def fetchIpv6(ipv6Source: String): List[List[String]]  = fetchAndParse(ipv6Source, parseIpv6Line)
+  def fetchAsn(asnSource: String): Seq[List[String]]    = fetchAndParse(asnSource, parseAsnLine, headerSkip = 2)
+  def fetchIpv4(ipv4Source: String): Seq[List[String]]  = fetchAndParse(ipv4Source, parseIpv4Line)
+  def fetchIpv6(ipv6Source: String): Seq[List[String]]  = fetchAndParse(ipv6Source, parseIpv6Line)
 
-  def fetchIpv4Recovered(ipv4Source: String): List[List[String]]    = fetchAndParse(ipv4Source, parseIpv4RecoveredLine)
-  def fetchIpv4Reallocated(ipv4Source: String): List[List[String]]  = fetchAndParse(ipv4Source, parseIpv4ReallocatedLine)
-  def fetchIpv4SpecialRegs(ipv4Source: String): List[List[String]]  = fetchAndParse(ipv4Source, parseIpv4SpecialLine)
+  def fetchIpv4Recovered(ipv4Source: String): Seq[List[String]]    = fetchAndParse(ipv4Source, parseIpv4RecoveredLine)
+  def fetchIpv4Reallocated(ipv4Source: String): Seq[List[String]]  = fetchAndParse(ipv4Source, parseIpv4ReallocatedLine)
+  def fetchIpv4SpecialRegs(ipv4Source: String): Seq[List[String]]  = fetchAndParse(ipv4Source, parseIpv4SpecialLine)
 
   def parseAsnLine(asnRecord: List[String]): List[String] = asnRecord match {
     case _ :: "Unallocated" :: _ => List()
@@ -142,6 +142,6 @@ trait IanaParser {
     case _ => "ietf"
   }
 
-  private def readCSV(str: String): List[List[String]] =
-    Using.resource(CSVReader.open(new StringReader(str)))(_.toStream.filter(_.nonEmpty).toList)
+  private def readCSV(str: String): Seq[List[String]] =
+    Using.resource(CSVReader.open(new StringReader(str)))(_.toStream.filter(_.nonEmpty).toSeq)
 }

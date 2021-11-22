@@ -10,8 +10,8 @@ import net.ripe.rpki.nro.service.Ports.PipeFormat
 trait TestUtil {
 
 
-  def toRecords(testInputs: String): List[Record] =
-    CSVReader.open(new StringReader(testInputs)).toStream.map(Record.apply).toList
+  def toRecords(testInputs: String): Seq[Record] =
+    CSVReader.open(new StringReader(testInputs)).toStream.map(Record.apply).toSeq
 
   def getResourceFile(fileName: String): String = getClass.getResource(fileName).getFile
 

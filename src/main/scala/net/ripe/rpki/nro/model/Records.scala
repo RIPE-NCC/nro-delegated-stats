@@ -4,7 +4,7 @@ import net.ripe.rpki.nro.Configs.config
 import net.ripe.rpki.nro.Const.{ALLOCATED, ASSIGNED, AVAILABLE, DEFAULT_CC, IANA, IETF, RESERVED}
 import net.ripe.rpki.nro.main.Ranges
 
-case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) extends Ranges {
+case class Records(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record]) extends Ranges {
 
   def formatUnclaimed: Records = {
     def format[R]: Record => Record = (rec: Record) => {
@@ -66,5 +66,5 @@ case class Records(asn: List[Record], ipv4: List[Record], ipv6: List[Record]) ex
 
   def size: Int = asn.size + ipv4.size + ipv6.size
 
-  def all : List[Record] = asn ++ ipv4 ++ ipv6
+  def all : Seq[Record] = asn ++ ipv4 ++ ipv6
 }

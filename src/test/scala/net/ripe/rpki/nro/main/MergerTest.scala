@@ -304,14 +304,14 @@ class MergerTest extends FlatSpec with TestUtil with Merger {
 
   def combineTest(olderLines: String,
                   newerLines: String,
-                  previousLines: String = ""): (List[Record], List[Conflict]) = {
+                  previousLines: String = ""): (Seq[Record], Seq[Conflict]) = {
 
     val olderRecords = toRecords(olderLines)
     val newerRecords = toRecords(newerLines)
     val previousRecords = if (previousLines.nonEmpty) {
       toRecords(previousLines)
     } else {
-      List()
+      Seq()
     }
     val records = Iterable(olderRecords, newerRecords)
     combineResources(records, previousRecords)

@@ -10,7 +10,7 @@ import scala.jdk.CollectionConverters._
  */
 trait Ranges {
 
-  def asRangeMap(recs: List[Record]): RangeMap[BigInteger, Record] = {
+  def asRangeMap(recs: Seq[Record]): RangeMap[BigInteger, Record] = {
     val result: RangeMap[BigInteger, Record] = TreeRangeMap.create[BigInteger, Record]()
     recs.foreach(rec => result.put(rec.range.key, rec))
     result

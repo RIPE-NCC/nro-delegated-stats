@@ -34,12 +34,12 @@ object Ports extends Logging {
     override val delimiter = '|'
   }
 
-  val comments: List[String] => Boolean = _.head.startsWith("#")
-  val summary : List[String] => Boolean = _.last == "summary"
+  val comments: Seq[String] => Boolean = _.head.startsWith("#")
+  val summary : Seq[String] => Boolean = _.last == "summary"
   val version: String => Boolean = s => s.forall(c => c.isDigit || c == '.')
-  val header: List[String] => Boolean = line => version(line.head)
+  val header: Seq[String] => Boolean = line => version(line.head)
 
-  val isRecord: List[String] => Boolean = line => !(comments(line) || header(line) || summary(line))
+  val isRecord: Seq[String] => Boolean = line => !(comments(line) || header(line) || summary(line))
 
   def parseRecordSource(source: scala.io.Source): Records = {
     Using.resource(CSVReader.open(source))(reader => toRecords(reader.all()))
@@ -50,7 +50,7 @@ object Ports extends Logging {
     parseRecordSource(fromFile(source))
   }
 
-  def toRecords(lines : List[List[String]]): Records = {
+  def toRecords(lines : Seq[List[String]]): Records = {
     var asn  : Vector[AsnRecord]  = Vector[AsnRecord]  ()
     var ipv4 : Vector[Ipv4Record] = Vector[Ipv4Record] ()
     var ipv6 : Vector[Ipv6Record] = Vector[Ipv6Record] ()
@@ -184,15 +184,15 @@ object Ports extends Logging {
     parseRecordSource(allowedList.fold(fromFile(_), fromResource(_)))
   }
 
-  def getConflicts(baseConflictURL: String): (Records,  List[Conflict], List[Conflict]) = {
+  def getConflicts(baseConflictURL: String): (Records,  Seq[Conflict], Seq[Conflict]) = {
 
     val allowedListRecords: Records = getAllowedList
 
     val previousConflictPath = s"$baseConflictURL/${config.PREV_CONFLICT_DAY}/${Configs.conflictFileName}"
     val currentConflictPath = s"$baseConflictURL/${config.CURRENT_DAY}/${Configs.conflictFileName}"
 
-    val currentConflicts  = Try(readConflicts(previousConflictPath)).getOrElse(List())
-    val previousConflicts = Try(readConflicts(currentConflictPath)).getOrElse(List())
+    val currentConflicts  = Try(readConflicts(previousConflictPath)).getOrElse(Seq())
+    val previousConflicts = Try(readConflicts(currentConflictPath)).getOrElse(Seq())
 
     (allowedListRecords, previousConflicts, currentConflicts)
   }
@@ -203,7 +203,7 @@ object Ports extends Logging {
       writeResult(records.asn, records.ipv4, records.ipv6, outputFile, header)
   }
 
-  def writeResult(asn: List[Record], ipv4: List[Record], ipv6: List[Record], outputFile: String = s"$resultFileName", header:Boolean = true): Unit = {
+  def writeResult(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record], outputFile: String = s"$resultFileName", header:Boolean = true): Unit = {
     Using.resource(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
@@ -225,17 +225,17 @@ object Ports extends Logging {
 
   def writeClaims(recs : Records, fileName: String): Unit = writeResult(recs.asn, recs.ipv4, recs.ipv6, fileName, header = false)
 
-  def writeConflicts(conflicts: List[Conflict], outputFile: String = s"${config.currentConflictFile}"): Unit = {
+  def writeConflicts(conflicts: Seq[Conflict], outputFile: String = s"${config.currentConflictFile}"): Unit = {
     Using.resource( CSVWriter.open(new File(outputFile))) { writer =>
       conflicts.foreach(c => {
         writer.writeRow(c.a.asList)
         writer.writeRow(c.b.asList)
-        writer.writeRow(List())
+        writer.writeRow(Nil)
       })
     }
   }
 
-  def readConflicts(conflictURL: String ): List[Conflict] = {
+  def readConflicts(conflictURL: String ): Seq[Conflict] = {
     logger.debug(s"Reading conflicts from $conflictURL" )
 
     val fetchResponse: Future[Response] = fetchWithRetries(conflictURL)
@@ -247,15 +247,15 @@ object Ports extends Logging {
 
   }
 
-  def parseConflicts(csvReader: Reader): List[Conflict] = {
+  def parseConflicts(csvReader: Reader): Seq[Conflict] = {
     Using.resource(CSVReader.open(csvReader)) { reader =>
       reader.all()
         .filter(_.size > 1)
         .sliding(2, 2)
         .map {
-          case List(a, b) => Conflict(Record(a), Record(b))
+          case Seq(a, b) => Conflict(Record(a), Record(b))
           case x => throw new IllegalArgumentException("Cannot parse incomplete conflicts file. Remainder: $x")
-        }.toList
+        }.toSeq
     }
   }
 

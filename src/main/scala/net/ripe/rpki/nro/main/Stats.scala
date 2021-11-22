@@ -9,7 +9,7 @@ trait Stats extends Logging with Merger {
   // Main steps of stats merging and conflict detections.
   def process(rirRecords: Iterable[Records],
               ianaRecord: Records,
-              previousResult: Option[Records]): (Records, Records, List[Conflict], Records, Records) = {
+              previousResult: Option[Records]): (Records, Records, Seq[Conflict], Records, Records) = {
 
     logger.info(s"\n\n---  Combining RIRs data and checking for conflicts among RIRs ---\n\n")
 

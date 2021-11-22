@@ -13,7 +13,7 @@ import net.ripe.rpki.nro.model.Record
 
 import scala.collection.immutable.ArraySeq
 
-class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
+class Notifier(mailer: Mailer, allowedList : Seq[Record]) extends Logging {
 
   def isAllowed(c: Conflict): Boolean = {
     val check = allowedList.contains(c.a) || allowedList.contains(c.b)
@@ -24,7 +24,7 @@ class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
     check
   }
 
-  def findStickyConflicts(current: List[Conflict], previous: List[Conflict]): Set[Conflict] = {
+  def findStickyConflicts(current: Seq[Conflict], previous: Seq[Conflict]): Set[Conflict] = {
     // Conflict records contains date,  we need to convert to keys without dates
     // to find persisting conflicts i.e intersection of previous and current conflicts
     val currentKeys = current.map(_.key).toSet
@@ -55,5 +55,3 @@ class Notifier(mailer: Mailer, allowedList : List[Record]) extends Logging {
 
   }
 }
-
-

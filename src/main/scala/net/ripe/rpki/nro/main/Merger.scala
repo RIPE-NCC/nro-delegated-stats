@@ -13,18 +13,18 @@ trait Merger extends Logging with Ranges {
   def resolveConflict(newRange: Range[BigInteger], newRecord: Record,
                       currentMap: RangeMap[BigInteger, Record],
                       previousMap: RangeMap[BigInteger, Record]
-                     ): List[Conflict] = {
+                     ): Seq[Conflict] = {
 
     val currentOverlaps = currentMap.subRangeMap(newRange).asMapOfRanges().asScala
 
     // No overlaps between currentMap and newRange
     if (currentOverlaps.isEmpty) {
       currentMap.put(newRange, newRecord)
-      List[Conflict]()
+      Seq[Conflict]()
     } else {
 
       // Recording new conflicts.
-      val newConflicts = currentOverlaps.values.map(Conflict(_, newRecord)).toList
+      val newConflicts = currentOverlaps.values.map(Conflict(_, newRecord)).toSeq
 
       // Iana always wins
       if(newRecord.stat.registry == IANA){
@@ -55,19 +55,19 @@ trait Merger extends Logging with Ranges {
    *                          combinedResources will be non overlapping resources from all the RIRs
    *                          conflicts: pairs of record that are conflicting.
    */
-  def combineResources(rirRecords: Iterable[List[Record]],
-                       previousRecords: List[Record] = List()
-                      ): (List[Record], List[Conflict]) = {
+  def combineResources(rirRecords: Iterable[Seq[Record]],
+                       previousRecords: Seq[Record] = Seq()
+                      ): (Seq[Record], Seq[Conflict]) = {
 
     val previousMap: RangeMap[BigInteger, Record] = asRangeMap(previousRecords)
     val currentMap = TreeRangeMap.create[BigInteger, Record]()
 
     // Detecting conflicts while adding new records. Latest one added prevails.
-    val conflicts = rirRecords.flatten.toList.flatMap { newRecord =>
+    val conflicts = rirRecords.flatten.flatMap { newRecord =>
       resolveConflict(newRecord.range.key, newRecord, currentMap, previousMap)
     }
 
-    (alignRecordWithMapRangeKeys(currentMap), conflicts)
+    (alignRecordWithMapRangeKeys(currentMap), conflicts.toSeq)
   }
 
   /**
@@ -87,11 +87,11 @@ trait Merger extends Logging with Ranges {
    * @return
    */
 
-  def mergeSiblings(records: List[Record]): List[Record] = {
+  def mergeSiblings(records: Seq[Record]): Seq[Record] = {
 
     val sortedRecords = records.sorted
 
-    var result: List[Record] = Nil
+    var result: Seq[Record] = Nil
     var lastRecord = sortedRecords.head
 
     sortedRecords.tail foreach { nextRecord =>
@@ -105,12 +105,12 @@ trait Merger extends Logging with Ranges {
       }
       else {
         // keep non mergeable next records
-        result = lastRecord :: result
+        result = lastRecord +: result
         lastRecord = nextRecord
       }
     }
     // list append head operations, need to be reversed
-    (lastRecord :: result).reverse
+    (lastRecord +: result).reverse
   }
 
   /**
@@ -119,16 +119,16 @@ trait Merger extends Logging with Ranges {
    * @param previous
    * @return
    */
-  def combineRecords(currentRecords: Iterable[Records], previous: Option[Records] = None): (Records, List[Conflict]) = {
+  def combineRecords(currentRecords: Iterable[Records], previous: Option[Records] = None): (Records, Seq[Conflict]) = {
 
     logger.info("Combine and detect conflict Asn")
-    val (asns, asnConflicts)   = combineResources(currentRecords.map(_.asn), previous.map(_.asn).getOrElse(List()))
+    val (asns, asnConflicts)   = combineResources(currentRecords.map(_.asn), previous.map(_.asn).getOrElse(Seq()))
 
     logger.info("Combine and detect conflict IPv4")
-    val (ipv4s, ipv4Conflicts) = combineResources(currentRecords.map(_.ipv4), previous.map(_.ipv4).getOrElse(List()))
+    val (ipv4s, ipv4Conflicts) = combineResources(currentRecords.map(_.ipv4), previous.map(_.ipv4).getOrElse(Seq()))
 
     logger.info("Combine and detect conflict IPv6")
-    val (ipv6s, ipv6Conflicts) = combineResources(currentRecords.map(_.ipv6), previous.map(_.ipv6).getOrElse(List()))
+    val (ipv6s, ipv6Conflicts) = combineResources(currentRecords.map(_.ipv6), previous.map(_.ipv6).getOrElse(Seq()))
 
     (Records(asns, ipv4s, ipv6s), asnConflicts ++ ipv4Conflicts ++ ipv6Conflicts)
   }
@@ -157,7 +157,7 @@ trait Merger extends Logging with Ranges {
    * @return
    */
   def resolveUnclaimed(unclaimed:Records, previous: Records) = {
-    def resolveUnclaimedResource(prevRecords: List[Record], currRecords: List[Record]) = {
+    def resolveUnclaimedResource(prevRecords: Seq[Record], currRecords: Seq[Record]) = {
       val previousMap: RangeMap[BigInteger, Record] = asRangeMap(prevRecords)
       val currentMap = TreeRangeMap.create[BigInteger, Record]()
 
