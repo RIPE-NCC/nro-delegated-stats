@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
 
   val commonsIpMath = "net.ripe.commons" % "commons-ip-math" % "1.23"
-  val guava = "com.google.guava" % "guava" % "28.1-jre"
+  val guava = "com.google.guava" % "guava" % "31.0.1-jre"
   val requests = "com.lihaoyi" %% "requests" % "0.6.5"
 
   val scopt = "com.github.scopt" %% "scopt" % "4.0.1"
