@@ -142,6 +142,6 @@ trait IanaParser {
     case _ => "ietf"
   }
 
-  private def readCSV(str: String): List[List[String]] = Using.resource(CSVReader.open(new StringReader(str)))(_.all())
-    .filter(_.nonEmpty)
+  private def readCSV(str: String): List[List[String]] =
+    Using.resource(CSVReader.open(new StringReader(str)))(_.toStream.filter(_.nonEmpty).toList)
 }

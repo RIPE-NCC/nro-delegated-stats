@@ -11,7 +11,7 @@ trait TestUtil {
 
 
   def toRecords(testInputs: String): List[Record] =
-    CSVReader.open(new StringReader(testInputs)).all().map(Record.apply)
+    CSVReader.open(new StringReader(testInputs)).toStream.map(Record.apply).toList
 
   def getResourceFile(fileName: String): String = getClass.getResource(fileName).getFile
 
