@@ -30,19 +30,19 @@ class Notifier(mailer: Mailer, allowedList : Seq[Record]) extends Logging {
     val currentKeys = current.map(_.key).toSet
     val previousMap = previous.map(c => c.key -> c).toMap
 
-    val stickyConflicts = currentKeys
+    currentKeys
       .intersect(previousMap.keySet)
       .map(previousMap)
       .filterNot(isAllowed)
-    stickyConflicts
   }
 
-  def notifyConflicts(conflicts: Set[Conflict]): Boolean = {
-    if (conflicts.isEmpty) false
+  def notifyConflicts(conflicts: Set[Conflict]): Unit = {
+    if (conflicts.isEmpty) ()
     else {
       val rsContactsFromConflicts: Array[String] = conflicts.flatMap(c => Set(c.a.registry, c.b.registry))
         .filter(_ != Const.IANA)
-        .map(contacts).toArray :+ contacts(RSCG)
+        .map(contacts)
+        .toArray :+ contacts(RSCG)
       val envelope: Envelope = Envelope
         .from(sender.addr)
         .to(ArraySeq.unsafeWrapArray(rsContactsFromConflicts.map(_.addr)): _*)
@@ -50,8 +50,6 @@ class Notifier(mailer: Mailer, allowedList : Seq[Record]) extends Logging {
         .content(Text(s"Please verify the following conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"))
 
       Await.result(mailer(envelope), Duration.Inf)
-      true
     }
-
   }
 }
