@@ -78,4 +78,4 @@ jobs:
           labels: "org.label-schema.vcs-ref=${{ github.sha }}"
 
       - name: Image digest
-        run: echo ${{ steps.docker_build_publication_server.outputs.digest }}
+        run: echo ${{ steps.docker_build_nro_delegated_stats.outputs.digest }}
