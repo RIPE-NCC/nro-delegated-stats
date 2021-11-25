@@ -9,7 +9,7 @@ import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.iana.IanaMagic
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
-import scala.util.{Success, Try, Using}
+import scala.util.{Success, Failure, Try, Using}
 import requests.Response
 
 import scala.concurrent.{Await, Future}
@@ -27,9 +27,6 @@ import scala.math.Numeric.Implicits.infixNumericOps
  */
 object Ports extends Logging {
 
-  // Success definition for retrying requests
-  implicit val okResponse: retry.Success[Response] = retry.Success[Response](_.statusCode ==  200)
-
   implicit object PipeFormat extends DefaultCSVFormat {
     override val delimiter = '|'
   }
@@ -46,7 +43,7 @@ object Ports extends Logging {
   }
 
   def parseRecordFile(source: String): Records = {
-    logger.info(s"Parsing local file $source")
+    logger.info(s"Parsing local file $source\n")
     parseRecordSource(fromFile(source))
   }
 
@@ -66,10 +63,15 @@ object Ports extends Logging {
     Records(asn.toList, ipv4.toList, ipv6.toList)
   }
 
-  def fetchWithRetries(target: String) = {
+  def fetchWithRetries(target: String): Future[Response] = {
+    implicit val success: retry.Success[Response] = retry.Success[Response](_.statusCode ==  200)
+
     retry.JitterBackoff(max = maxRetries).apply(() => Future {
-      logger.info(s"--Fetch with retry $target --")
-      requests.get(target)
+      logger.info(s"-> trying $target")
+      requests.get(
+        url = target,
+        headers = Iterable("user-agent" -> "nro-delegated-stats")
+      )
     })
   }
 
@@ -82,7 +84,7 @@ object Ports extends Logging {
       logger.info(s"     File $dest exist, not fetching")
       return
     }
-    logger.info(s"---Fetching $source into $dest---")
+    logger.info(s"Fetching $source into $dest")
 
     // No Md5 for iana, only fetch source
     if (source.contains("iana")) {
@@ -95,10 +97,10 @@ object Ports extends Logging {
           }
           Using.resource(new FileOutputStream(dest)) { out =>
             response.writeBytesTo(out)
-            logger.info(s"---Done fetching $source into $dest---\n\n\n")
+            logger.info("Ok")
           }
-        case _ =>
-          logger.error(s"Failed to fetch $source after $maxRetries retries")
+        case Failure(err) =>
+          logger.error(s"Failed to fetch $source after $maxRetries retries:\n$err\n")
           System.exit(1)
       }
     } else {
@@ -132,17 +134,17 @@ object Ports extends Logging {
               logger.error(s"    Retrieved: $retrievedMd5")
               System.exit(1)
             }
+            logger.info(s"-> MD5 sum for $source: $computedMd5")
           } else {
               logger.error(s"Unrecognized MD5 format for: $source : \n\t$md5response")
               System.exit(1)
           }
-          logger.info("MD5 Match for "+ source)
           Using.resource(new FileOutputStream(dest)) { out =>
             response.writeBytesTo(out)
-            logger.info(s"---Done fetching $source into $dest---\n\n\n")
+            logger.info(s"Ok.")
           }
-        case _ =>
-          logger.error(s"Failed to fetch $source after $maxRetries retries")
+        case Failure(err) =>
+          logger.error(s"Failed to fetch $source after $maxRetries retries:\n$err\n")
           System.exit(1)
       }
     }
