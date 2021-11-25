@@ -69,7 +69,8 @@ object Ports extends Logging {
       logger.info(s"-> trying $target")
       requests.get(
         url = target,
-        headers = Iterable("user-agent" -> "nro-delegated-stats")
+        headers = Iterable("user-agent" -> "nro-delegated-stats"),
+        compress = requests.Compress.Gzip,
       )
     })
   }
