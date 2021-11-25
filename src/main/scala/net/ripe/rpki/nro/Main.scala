@@ -114,18 +114,16 @@ object Main extends Stats with App {
     Configs.configureFor(conflictDate)
     // Here we already have to modify how we are retrieving conflicts.
     val (allowedList, previousConflicts, currentConflicts): (Records, Seq[Conflict], Seq[Conflict]) = Ports.getConflicts(baseConflictsURL)
-    logger.info("Allowed list:")
-    allowedList.all.foreach(item => logger.info(item.toString))
-
-    logger.info("Current conflict:")
-    currentConflicts.foreach(item => logger.info(item.toString))
-
-    logger.info("Previous conflict:")
-    currentConflicts.foreach(item => logger.info(item.toString))
 
     val notifier = new Notifier(mailer, allowedList.all)
     val stickyConflicts = notifier.findStickyConflicts(currentConflicts, previousConflicts)
-    notifier.notifyConflicts(stickyConflicts)
+    if (stickyConflicts.isEmpty) {
+      logger.info("No emails sent.")
+    } else {
+      logger.info("Found persistent conflicts:")
+      stickyConflicts.foreach(c => logger.info(c.toString))
+      notifier.notifyConflicts(stickyConflicts)
+    }
   }
 
 }
