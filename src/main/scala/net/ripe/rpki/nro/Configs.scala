@@ -2,6 +2,7 @@ package net.ripe.rpki.nro
 
 import java.io.File
 import java.time.LocalDate
+import scala.concurrent.duration.Duration
 
 import com.typesafe.config.{Config, ConfigFactory}
 import courier.Mailer
@@ -41,6 +42,9 @@ class Configs(private val todayDate: LocalDate) {
 }
 
 object Configs {
+  private implicit def asDuration(d: java.time.Duration): Duration =
+    Duration.fromNanos(d.toNanos)
+
   def configureFor(todayDate: LocalDate) = {
     config = new Configs(todayDate)
   }
@@ -59,7 +63,8 @@ object Configs {
   // Left is a path to external file, right is a source from classpath resource will be treated differently
   val allowedList: Either[String, String] = if(conf.hasPath("allowedlist")) Left(conf.getString("allowedlist")) else Right("allowedlist")
   val gracePeriod: Int = conf.getInt("grace.period")
-  val maxRetries: Int = conf.getInt("max.retries")
+  val maxRetries: Int = conf.getInt("http.max-retries")
+  val httpTimeout: Duration = conf.getDuration("http.timeout")
   val dataDirectory: String = conf.getString("data.directory")
   val resultDirectory: String = conf.getString("result.directory")
   val resultFileName: String = conf.getString("result.fileName")
