@@ -54,6 +54,10 @@ For `notify` operation you need to provide `base-url` to fetch previous conflict
 Other application configuration that are not supplied via command line are provided in this [application.conf](https://github.com/RIPE-NCC/nro-delegated-stats/blob/main/src/main/resources/application.conf)
 which by default is bundled, but can be overriden using `-Dconfig.file=<application.conf>`.
 
-##
+## License
 
+Copyright (c) 2019-2021 RIPE NCC All rights reserved.
 
+This software and all its separate source code is licensed under the terms of
+the BSD 3-Clause License. If a copy of the license was not distributed to you,
+you can obtain one at https://github.com/RIPE-NCC/nro-delegated-stats/blob/main/LICENSE.txt.
