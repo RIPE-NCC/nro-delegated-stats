@@ -63,7 +63,7 @@ trait Merger extends Logging with Ranges {
     val currentMap = TreeRangeMap.create[BigInteger, Record]()
 
     // Detecting conflicts while adding new records. Latest one added prevails.
-    val conflicts = rirRecords.flatten.flatMap { newRecord =>
+    val conflicts = rirRecords.flatten.toSeq.flatMap { newRecord =>
       resolveConflict(newRecord.range.key, newRecord, currentMap, previousMap)
     }
 
