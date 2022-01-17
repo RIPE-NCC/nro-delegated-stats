@@ -56,7 +56,7 @@ which by default is bundled, but can be overriden using `-Dconfig.file=<applicat
 
 ## License
 
-Copyright (c) 2019-2021 RIPE NCC All rights reserved.
+Copyright (c) 2019-2022 RIPE NCC All rights reserved.
 
 This software and all its separate source code is licensed under the terms of
 the BSD 3-Clause License. If a copy of the license was not distributed to you,
