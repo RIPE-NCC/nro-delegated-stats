@@ -199,15 +199,20 @@ object Ports extends Logging {
 
 
 
-  def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true): Unit = {
-      writeResult(records.asn, records.ipv4, records.ipv6, outputFile, header)
+  def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true, disclaimer: Boolean = false): Unit = {
+      writeResult(records.asn, records.ipv4, records.ipv6, outputFile, header, disclaimer)
   }
 
-  def writeResult(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record], outputFile: String = s"$resultFileName", header:Boolean = true): Unit = {
+  def writeResult(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record], outputFile: String = s"$resultFileName", header:Boolean = true, disclaimer:Boolean = false): Unit = {
     Using.resource(new PrintWriter(new File(outputFile))) { writer =>
 
       val totalSize = asn.size + ipv4.size + ipv6.size
       if(totalSize == 0) return
+      if(disclaimer) {
+        val disclaimer = scala.io.Source.fromResource("disclaimer.txt").getLines().mkString("\n")
+        writer.write(disclaimer)
+        writer.write("\n")
+      }
       if(header){
         writer.write(s"2|nro|${config.CURRENT_DAY}|$totalSize|$MAGIC_SERIAL_NUMBER|${config.CURRENT_DAY}|+0000\n")
         writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
