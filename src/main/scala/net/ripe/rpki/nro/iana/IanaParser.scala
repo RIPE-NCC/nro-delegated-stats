@@ -27,7 +27,7 @@ trait IanaParser {
   def fetchIpv4SpecialRegs(ipv4Source: String): Seq[List[String]]  = fetchAndParse(ipv4Source, parseIpv4SpecialLine)
 
   def parseAsnLine(asnRecord: List[String]): List[String] = asnRecord match {
-    case _ :: "Unallocated" :: _ => List()
+    case asNum :: "Unallocated" :: _ => asnRange(asNum) :+ "20061129" :+ "iana"
     case asNum :: _ :: whois :: _ :: _ :: date :: _ => asnRange(asNum) :+ resolveDate(date) :+ whoisRIR(whois)
     case _ => throw new Exception(s"Can't parse this line: $asnRecord")
   }
