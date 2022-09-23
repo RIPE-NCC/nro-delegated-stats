@@ -3,7 +3,7 @@ import java.io.StringReader
 
 import com.github.tototoshi.csv.CSVReader
 import net.ripe.commons.ip.{Ipv4, Ipv4Range, Ipv6Range, PrefixUtils}
-import net.ripe.rpki.nro.iana.IanaMagic.logger
+import net.ripe.rpki.nro.iana.IanaGenerator.logger
 
 import scala.util.matching.Regex
 import scala.util.{Try, Using}
@@ -142,6 +142,6 @@ trait IanaParser {
     case _ => "ietf"
   }
 
-  private def readCSV(str: String): Seq[List[String]] =
-    Using.resource(CSVReader.open(new StringReader(str)))(_.toStream.filter(_.nonEmpty).toSeq)
+  private def readCSV(str: String): List[List[String]] =
+    Using.resource(CSVReader.open(new StringReader(str)))(_.all().filter(_.nonEmpty))
 }

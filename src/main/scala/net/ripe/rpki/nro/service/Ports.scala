@@ -6,7 +6,7 @@ import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.{Configs, Logging}
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
-import net.ripe.rpki.nro.iana.IanaMagic
+import net.ripe.rpki.nro.iana.IanaGenerator
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
 
 import scala.util.{Success, Failure, Try, Using}
@@ -157,7 +157,7 @@ object Ports extends Logging {
     }
 
     val rirs = (recordMaps - "iana").view.mapValues(_.formatRIRs).values
-    val iana = if(ownmagic)  IanaMagic.processIanaRecords else recordMaps("iana")
+    val iana = if(ownmagic)  IanaGenerator.processIanaRecords else recordMaps("iana")
     logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
 
     val allSourceFileContainSomething = iana.size > 0 && rirs.forall(_.size > 0)

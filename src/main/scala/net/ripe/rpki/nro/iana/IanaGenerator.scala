@@ -8,7 +8,7 @@ import net.ripe.rpki.nro.model.Records
 import net.ripe.rpki.nro.service.Ports.toRecords
 import net.ripe.rpki.nro.service.Ports.writeRecords
 
-object IanaMagic extends Merger with Logging with IanaParser {
+object IanaGenerator extends Merger with Logging with IanaParser {
 
   def processIanaRecords: Records = {
 
@@ -18,12 +18,12 @@ object IanaMagic extends Merger with Logging with IanaParser {
 
     val reallocatedAssigned: Records = fetchUnicastAssignmentV6ReallocatedSpecialV4()
 
-    val (ianaMagic, _) = combineRecords(Seq(ianaSpaceWithoutGlobalUnicastAndRecovered, reallocatedAssigned), Some(reallocatedAssigned))
+    val (aggregatedIanaResources, _) = combineRecords(Seq(ianaSpaceWithoutGlobalUnicastAndRecovered, reallocatedAssigned), Some(reallocatedAssigned))
 
     // For comparison purpose
-    writeRecords(ianaMagic, "iana-magic")
+    writeRecords(aggregatedIanaResources, "iana-own-generated")
 
-    ianaMagic
+    aggregatedIanaResources
   }
 
   def fetchAllIanaSpace(): Records = {

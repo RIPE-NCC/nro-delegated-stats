@@ -1,0 +1,29 @@
+######################################################################
+#
+#       CONDITIONS OF USE
+# __________________________________________________________________
+#
+#
+# These files are freely available for download and use on the condition
+# that RIPENCC will not be held responsible for any loss or damage
+# arising from the use of the information contained in these reports.
+#
+# This report is not an authoritative report, as it includes a
+# re-formatting of data contained in the IANA-administered number resource
+# registries. The IANA registries remain the authoritative source of
+# resource allocations made by the IANA.
+#
+# In particular, it should be noted that these reports seek to
+# indicate where resources were first allocated or assigned. It is not
+# intended that these reports be considered as an authoritative
+# statement of the location in which any specific resource may
+# currently be in use.
+#
+# For more information see:
+#
+#       http://www.apnic.net/db/rir-stats-format.html
+# or
+#       ftp://ftp.apnic.net/pub/apnic/stats/apnic/README.TXT
+#
+######################################################################
+#
