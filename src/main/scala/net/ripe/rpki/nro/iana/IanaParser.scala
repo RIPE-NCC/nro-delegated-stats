@@ -67,9 +67,10 @@ trait IanaParser {
     case "192.175.48.0/24" :: _ => List()
 
     // Can't parse this [reference], so special treatment.
-    case "192.0.0.0/24 [2]" :: _ :: _ :: date :: _ => List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.0/24") :+ resolveDate(date) :+ "ietf"
+    case "192.0.0.0/24 [2]" :: _ :: _ :: date :: _ => List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.0/24") :+ resolveDate(date) :+ "reserved" :+ "ietf"
 
     // Self conflicting small ranges are skipped, they are subset of others.
+    // TODO: double check this, maybe I need to break the big range.
     case range :: _ if range.endsWith("/32") || range.endsWith("/29") => List()
 
     case range :: _ :: _ :: date :: _ =>
@@ -78,7 +79,7 @@ trait IanaParser {
       } else {
         "ietf"
       }
-      List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) ++ List(resolveDate(date), ianaIetf)
+      List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) ++ List(resolveDate(date), "reserved", ianaIetf)
 
     case _ => logger.error(s"Can't parse this line: $ipv4SpecialRegistries"); List()
   }
