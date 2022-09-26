@@ -56,7 +56,7 @@ object IanaGenerator extends Merger with Logging with IanaParser {
 
   private def includeFirst16OfGlobalUnicast(): Records = {
     // But include the first /16, don't really have explanation why.
-    toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List("19960801", "ietf")))
+    toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List("19960801", "reserved", "ietf", "iana")))
   }
 
   def fetchUnicastAssignmentV6ReallocatedSpecialV4(): Records = {
@@ -68,7 +68,7 @@ object IanaGenerator extends Merger with Logging with IanaParser {
     val ipv4SpecialRegistry = fetchIpv4SpecialRegs(ianaOrgFileURL(IPV4_SPECIAL_REGISTRY))
 
     // RFC2928, without this it will be marked as IETF while geoff marked as IANA assignment, maybe I don' t need to do this.
-    val ianaSlash23 = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2001::/23") ++ List("19960801", "iana")))
+    val ianaSlash23 = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2001::/23") ++ List("19960801", "reserved", "ietf", "iana")))
 
     logger.info("Fetch ipv6 unicast space, returning only those for RIRs")
     val unicastAssignmentV6 = toRecords(fetchIpv6(ianaOrgFileURL(IPV6_UNICAST_ASSIGNMENT)))
