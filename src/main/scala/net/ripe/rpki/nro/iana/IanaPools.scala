@@ -8,20 +8,20 @@ import net.ripe.rpki.nro.model.{AsnRecord, Ipv4Record, Ipv6Record, RecordRange, 
 
 object IanaPools {
 
-  def apply(records: Records): Records = {
+  def apply(records: Records, status: String = IANAPOOL): Records = {
     Records(
-      List(asnPool(RecordRange.from(ALL_ASNS))),
-      List(ipv4Pool(RecordRange.from(ALL_IPV4))),
-      List(ipv6Pool(RecordRange.from(ALL_IPV6))),
+      List(asnPool(RecordRange.from(ALL_ASNS), status)),
+      List(ipv4Pool(RecordRange.from(ALL_IPV4), status)),
+      List(ipv6Pool(RecordRange.from(ALL_IPV6), status)),
     ).substract(records)
   }
 
-  def ipv4Pool(ipv4: RecordRange): Ipv4Record = Ipv4Record(Stat(IANA, DEFAULT_CC, IPV4, s"${Ipv4.of(ipv4.rStart)}", s"${ipv4.length}", IPV4_IANA_POOL_DATE, IANAPOOL, IANA, IANA))
+  def ipv4Pool(ipv4: RecordRange, status: String = IANAPOOL): Ipv4Record = Ipv4Record(Stat(IANA, DEFAULT_CC, IPV4, s"${Ipv4.of(ipv4.rStart)}", s"${ipv4.length}", IPV4_IANA_POOL_DATE, status, IANA, IANA))
 
-  def asnPool(asn: RecordRange): AsnRecord = AsnRecord(Stat(IANA, DEFAULT_CC, ASN, s"${asn.rStart}", s"${asn .length}", config.CURRENT_DAY, IANAPOOL, IANA, IANA))
+  def asnPool(asn: RecordRange, status: String = IANAPOOL): AsnRecord = AsnRecord(Stat(IANA, DEFAULT_CC, ASN, s"${asn.rStart}", s"${asn.length}", config.CURRENT_DAY, status, IANA, IANA))
 
-  def ipv6Pool(ipv6: RecordRange): Ipv6Record = {
+  def ipv6Pool(ipv6: RecordRange, status: String = IANAPOOL): Ipv6Record = {
     val Array(start, prefix) = Ipv6Range.from(ipv6.rStart).to(ipv6.rEnd).toStringInCidrNotation.split("/")
-    Ipv6Record(model.Stat(IANA, DEFAULT_CC, IPV6, start, prefix, config.CURRENT_DAY, IANAPOOL, IANA, IANA))
+    Ipv6Record(model.Stat(IANA, DEFAULT_CC, IPV6, start, prefix, config.CURRENT_DAY, status, IANA, IANA))
   }
 }
