@@ -17,7 +17,7 @@ trait IanaParser {
     readCSV(skipHeader).map(parser).filter(_.nonEmpty)
   }
 
-  def fetchAsn(asnSource: String): Seq[List[String]]    = fetchAndParse(asnSource, parseAsnLine, headerSkip = 2)
+  def fetchAsn(asnSource: String): Seq[List[String]]    = fetchAndParse(asnSource, parseAsnLine)
   def fetchIpv4(ipv4Source: String): Seq[List[String]]  = fetchAndParse(ipv4Source, parseIpv4Line)
   def fetchIpv6(ipv6Source: String): Seq[List[String]]  = fetchAndParse(ipv6Source, parseIpv6Line)
 
