@@ -1,9 +1,9 @@
 package net.ripe.rpki.nro.main
 
 import java.math.BigInteger
-
 import com.google.common.collect.{BoundType, DiscreteDomain, Range, RangeMap, TreeRangeMap}
-import net.ripe.rpki.nro.model.{Ipv6Record, Record, RecordRange}
+import net.ripe.rpki.nro.model.{Ipv4Record, Ipv6Record, Record, RecordRange}
+
 import scala.jdk.CollectionConverters._
 /**
  * Range and RangeMap related utilities
@@ -32,9 +32,13 @@ trait Ranges {
    * @return List[Record] where the ranges in these records are already aligned with the keys on the original map to
    *         Align
    */
-  def alignRecordWithMapRangeKeys(mapToAlign: RangeMap[BigInteger, Record]): List[Record] = mapToAlign.asMapOfRanges().asScala.toList
+  def alignRecordWithMapRangeKeys(mapToAlign: RangeMap[BigInteger, Record], alignIpv4: Boolean = false): List[Record] = mapToAlign.asMapOfRanges().asScala.toList
     .flatMap {
       case (key, _) if empty(key) => List()
+      case (range, record: Ipv4Record) if alignIpv4 =>
+        record.splitPrefixes(range).map { ipv6 =>
+          record.updateRange(RecordRange.from(ipv6).key)
+        }
       case (range, record: Ipv6Record) =>
         record.splitPrefixes(range).map { ipv6 =>
           record.updateRange(RecordRange.from(ipv6).key)

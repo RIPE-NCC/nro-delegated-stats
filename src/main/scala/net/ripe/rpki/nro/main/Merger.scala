@@ -56,7 +56,8 @@ trait Merger extends Logging with Ranges {
    *                          conflicts: pairs of record that are conflicting.
    */
   def combineResources(rirRecords: Iterable[Seq[Record]],
-                       previousRecords: Seq[Record] = Seq()
+                       previousRecords: Seq[Record] = Seq(),
+                       alignIpv4: Boolean = false
                       ): (Seq[Record], Seq[Conflict]) = {
 
     val previousMap: RangeMap[BigInteger, Record] = asRangeMap(previousRecords)
@@ -67,7 +68,7 @@ trait Merger extends Logging with Ranges {
       resolveConflict(newRecord.range.key, newRecord, currentMap, previousMap)
     }
 
-    (alignRecordWithMapRangeKeys(currentMap), conflicts.toSeq)
+    (alignRecordWithMapRangeKeys(currentMap, alignIpv4), conflicts.toSeq)
   }
 
   /**
@@ -119,13 +120,13 @@ trait Merger extends Logging with Ranges {
    * @param previous
    * @return
    */
-  def combineRecords(currentRecords: Iterable[Records], previous: Option[Records] = None): (Records, Seq[Conflict]) = {
+  def combineRecords(currentRecords: Iterable[Records], previous: Option[Records] = None, alignIpv4:Boolean = false): (Records, Seq[Conflict]) = {
 
     logger.info("Combine and detect conflict Asn")
     val (asns, asnConflicts)   = combineResources(currentRecords.map(_.asn), previous.map(_.asn).getOrElse(Seq()))
 
     logger.info("Combine and detect conflict IPv4")
-    val (ipv4s, ipv4Conflicts) = combineResources(currentRecords.map(_.ipv4), previous.map(_.ipv4).getOrElse(Seq()))
+    val (ipv4s, ipv4Conflicts) = combineResources(currentRecords.map(_.ipv4), previous.map(_.ipv4).getOrElse(Seq()), alignIpv4)
 
     logger.info("Combine and detect conflict IPv6")
     val (ipv6s, ipv6Conflicts) = combineResources(currentRecords.map(_.ipv6), previous.map(_.ipv6).getOrElse(Seq()))

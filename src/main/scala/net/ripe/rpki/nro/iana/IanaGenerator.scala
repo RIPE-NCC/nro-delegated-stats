@@ -18,11 +18,11 @@ object IanaGenerator extends Merger with Logging with IanaParser {
 
     val reallocatedAssigned: Records = fetchUnicastAssignmentV6ReallocatedSpecialV4()
 
-    val (aggregatedIanaResources, _) = combineRecords(Seq(ianaSpaceWithoutGlobalUnicastAndRecovered, reallocatedAssigned), Some(reallocatedAssigned))
+    val (aggregatedIanaResources, _) = combineRecords(Seq(ianaSpaceWithoutGlobalUnicastAndRecovered, reallocatedAssigned), Some(reallocatedAssigned), alignIpv4 = true)
 
     val available = IanaPools(aggregatedIanaResources,"available")
 
-    val (combinedWithAvailableSpaces, _) = combineRecords(Seq(aggregatedIanaResources, available))
+    val (combinedWithAvailableSpaces, _) = combineRecords(Seq(aggregatedIanaResources, available), alignIpv4=true)
     // For comparison purpose
     writeRecords(aggregatedIanaResources, "iana-own-generated", disclaimer=true)
     writeRecords(combinedWithAvailableSpaces, "iana-with-available", disclaimer=true)
