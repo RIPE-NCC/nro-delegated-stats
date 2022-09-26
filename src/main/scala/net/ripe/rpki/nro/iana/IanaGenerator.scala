@@ -80,6 +80,7 @@ object IanaGenerator extends Merger with Logging with IanaParser {
     val unicastAssignmentV6 = toRecords(fetchIpv6(ianaOrgFileURL(IPV6_UNICAST_ASSIGNMENT)))
       .substract(ianaSlash23)
       .append(ianaSlash23)
+      .append(toRecords(ipv6SpecialRegistry))
       .sorted()
 
     val reallocatedSpecial = toRecords(ipv4Reallocated ++ ipv4SpecialRegistry)

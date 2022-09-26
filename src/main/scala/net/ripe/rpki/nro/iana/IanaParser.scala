@@ -57,8 +57,6 @@ trait IanaParser {
     case _ => throw new Exception(s"Can't parse this line: $ipv4Record")
   }
 
-  val specialIana = Set("192.31.196.0/24", "192.52.193.0/24")
-
   def parseIpv4SpecialLine(ipv4SpecialRegistries: List[String]): List[String] = ipv4SpecialRegistries match {
 
     // Self conflicting and already marked as future use in ipv4-address-space, so skip.
@@ -83,11 +81,8 @@ trait IanaParser {
 
   def parseIpv6SpecialLine(ipv6SpecialRegistries: List[String]): List[String] = ipv6SpecialRegistries match {
 
-    case "2002::/16 [3]" :: _ :: _ :: date :: _ => List()
-
-    case range :: _ if range.endsWith("/128") || range.endsWith("/48") => List()
-
-    case range :: _ :: _ :: date :: _ =>
+   // Only parse special range for documentation, the rest is not included in original IANA
+   case range :: "Documentation" :: _ :: date :: _   =>
       List("iana", "ZZ", "ipv6") ++ toPrefixLength(range) ++ List(resolveDate(date), "reserved", "ietf")
 
     case _ => logger.error(s"Can't parse this line: $ipv6SpecialRegistries"); List()
