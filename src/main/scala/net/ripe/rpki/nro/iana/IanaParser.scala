@@ -25,6 +25,8 @@ trait IanaParser {
   def fetchIpv4Reallocated(ipv4Source: String): Seq[List[String]]  = fetchAndParse(ipv4Source, parseIpv4ReallocatedLine)
   def fetchIpv4SpecialRegs(ipv4Source: String): Seq[List[String]]  = fetchAndParse(ipv4Source, parseIpv4SpecialLine)
 
+  def fetchIpv6SpecialRegs(ipv6Source: String): Seq[List[String]]  = fetchAndParse(ipv6Source, parseIpv6SpecialLine)
+
   def parseAsnLine(asnRecord: List[String]): List[String] = asnRecord match {
     case asNum :: "Unallocated" :: _ => asnRange(asNum) :+ "20061129" :+ "available" :+ "iana" :+ "iana"
     case asNum :: _ :: whois :: _ :: _ :: date :: _ => asnRange(asNum) :+ resolveDate(date) :++ statusAndRIRBasedOnWhois(whois)
@@ -62,26 +64,33 @@ trait IanaParser {
     // Self conflicting and already marked as future use in ipv4-address-space, so skip.
     case "240.0.0.0/4" :: _ => List()
     case "255.255.255.255/32" :: _ => List()
-
-    // Special registry which is claimed by ARIN and not included in current IANA.
-    case "192.175.48.0/24" :: _ => List()
-
     // Can't parse this [reference], so special treatment.
-    case "192.0.0.0/24 [2]" :: _ :: _ :: date :: _ => List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.0/24") :+ resolveDate(date) :+ "reserved" :+ "ietf"
+    case "192.0.0.0/24 [2]" :: _ :: _ :: date :: _ =>
+      List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.0/24") :+ resolveDate(date) :+ "reserved" :+ "ietf"
 
     // Self conflicting small ranges are skipped, they are subset of others.
-    // TODO: double check this, maybe I need to break the big range.
     case range :: _ if range.endsWith("/32") || range.endsWith("/29") => List()
 
+    // Weird format two single IP in one line
+    case "192.0.0.170/32, 192.0.0.171/32" :: _ :: _ :: date :: _ =>
+      List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.170/31") :+ resolveDate(date) :+ "reserved" :+ "ietf"
+
     case range :: _ :: _ :: date :: _ =>
-      val ianaIetf = if (specialIana.contains(range)) {
-        "iana"
-      } else {
-        "ietf"
-      }
-      List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) ++ List(resolveDate(date), "reserved", ianaIetf)
+      List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) ++ List(resolveDate(date), "reserved", "ietf")
 
     case _ => logger.error(s"Can't parse this line: $ipv4SpecialRegistries"); List()
+  }
+
+  def parseIpv6SpecialLine(ipv6SpecialRegistries: List[String]): List[String] = ipv6SpecialRegistries match {
+
+    case "2002::/16 [3]" :: _ :: _ :: date :: _ => List()
+
+    case range :: _ if range.endsWith("/128") || range.endsWith("/48") => List()
+
+    case range :: _ :: _ :: date :: _ =>
+      List("iana", "ZZ", "ipv6") ++ toPrefixLength(range) ++ List(resolveDate(date), "reserved", "ietf")
+
+    case _ => logger.error(s"Can't parse this line: $ipv6SpecialRegistries"); List()
   }
 
   private def resolveDate(date: String) = {

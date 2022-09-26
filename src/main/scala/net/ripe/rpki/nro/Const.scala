@@ -30,7 +30,9 @@ object Const {
 
   val IPV4_RECOVERED_SPACE   = "ipv4-recovered-space"
   val IPV4_REALLOCATED_SPACE = "ipv4-reallocated-space"
+
   val IPV4_SPECIAL_REGISTRY  = "ipv4-special-registry"
+  val IPV6_SPECIAL_REGISTRY  = "ipv6-special-registry"
 
   val IPV6_UNICAST_ASSIGNMENT  = "ipv6-unicast-assignment"
 

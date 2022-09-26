@@ -1,7 +1,7 @@
 package net.ripe.rpki.nro.iana
 
 import net.ripe.rpki.nro.Configs.ianaOrgFileURL
-import net.ripe.rpki.nro.Const.{ASN16, ASN32, IPV4_ADDRESS_SPACE, IPV4_REALLOCATED_SPACE, IPV4_RECOVERED_SPACE, IPV4_SPECIAL_REGISTRY, IPV6_ADDRESS_SPACE, IPV6_UNICAST_ASSIGNMENT}
+import net.ripe.rpki.nro.Const.{ASN16, ASN32, IPV4_ADDRESS_SPACE, IPV4_REALLOCATED_SPACE, IPV4_RECOVERED_SPACE, IPV4_SPECIAL_REGISTRY, IPV6_ADDRESS_SPACE, IPV6_SPECIAL_REGISTRY, IPV6_UNICAST_ASSIGNMENT}
 import net.ripe.rpki.nro.Logging
 import net.ripe.rpki.nro.main.Merger
 import net.ripe.rpki.nro.model.Records
@@ -70,6 +70,8 @@ object IanaGenerator extends Merger with Logging with IanaParser {
 
     // Special registry with special treatments inside.
     val ipv4SpecialRegistry = fetchIpv4SpecialRegs(ianaOrgFileURL(IPV4_SPECIAL_REGISTRY))
+
+    val ipv6SpecialRegistry = fetchIpv6SpecialRegs(ianaOrgFileURL(IPV6_SPECIAL_REGISTRY))
 
     // RFC2928, without this it will be marked as IETF while geoff marked as IANA assignment, maybe I don' t need to do this.
     val ianaSlash23 = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2001::/23") ++ List("19960801", "reserved", "ietf", "iana")))
