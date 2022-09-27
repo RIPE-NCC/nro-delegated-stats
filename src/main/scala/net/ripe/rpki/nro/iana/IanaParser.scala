@@ -26,6 +26,7 @@ trait IanaParser {
   def fetchIpv4SpecialRegs(ipv4Source: String): Seq[List[String]]  = fetchAndParse(ipv4Source, parseIpv4SpecialLine)
 
   def fetchIpv6SpecialRegs(ipv6Source: String): Seq[List[String]]  = fetchAndParse(ipv6Source, parseIpv6SpecialLine)
+  def fetchAsnSpecialRegs(asnSource: String): Seq[List[String]]  = fetchAndParse(asnSource, parseAsnSpecialLine)
 
   def parseAsnLine(asnRecord: List[String]): List[String] = asnRecord match {
     case asNum :: "Unallocated" :: _ => asnRange(asNum) :+ "20061129" :+ "available" :+ "iana" :+ "iana"
@@ -88,6 +89,10 @@ trait IanaParser {
     case _ => logger.error(s"Can't parse this line: $ipv6SpecialRegistries"); List()
   }
 
+  def parseAsnSpecialLine(asnSpecialRegistries: List[String]): List[String] = asnSpecialRegistries match {
+    case asNum :: _  => asnRange(asNum) ++ List("20140311", "reserved", "ietf", "iana")
+    case _ => logger.error(s"Can't parse this line: $asnSpecialRegistries"); List()
+  }
   private def resolveDate(date: String) = {
     val unformatted =
       if (date.contains("RFC")) {

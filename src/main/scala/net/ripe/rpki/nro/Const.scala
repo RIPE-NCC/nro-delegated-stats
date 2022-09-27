@@ -33,6 +33,7 @@ object Const {
 
   val IPV4_SPECIAL_REGISTRY  = "ipv4-special-registry"
   val IPV6_SPECIAL_REGISTRY  = "ipv6-special-registry"
+  val ASN_SPECIAL_REGISTRY   = "asn-special-registry"
 
   val IPV6_UNICAST_ASSIGNMENT  = "ipv6-unicast-assignment"
 

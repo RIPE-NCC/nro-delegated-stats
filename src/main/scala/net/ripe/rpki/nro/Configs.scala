@@ -84,6 +84,7 @@ object Configs {
   val ianaOrgFileURL: Map[String, String] = Map[String, String](
     ASN16      -> urls.getString(ASN16),
     ASN32      -> urls.getString(ASN32),
+    ASN_SPECIAL_REGISTRY   -> urls.getString(ASN_SPECIAL_REGISTRY),
     IPV4_ADDRESS_SPACE      -> urls.getString(IPV4_ADDRESS_SPACE),
     IPV6_ADDRESS_SPACE      -> urls.getString(IPV6_ADDRESS_SPACE),
     IPV4_RECOVERED_SPACE    -> urls.getString(IPV4_RECOVERED_SPACE),
