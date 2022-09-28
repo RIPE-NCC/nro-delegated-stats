@@ -11,6 +11,12 @@ trait IanaParser {
 
   val RIRs = List("arin", "ripe", "apnic", "lacnic", "afrinic")
 
+  val ASN_UNALLOCATED_DATE = "20061129"
+  val ASN_EMPTY_DATE = "19921201"
+  val ASN_SPECIAL_DATE = "20140311"
+  val IPV6_RFC_DATE = "19960801"
+
+
   private def fetchAndParse(source: String, parser: List[String] => List[String], headerSkip: Int = 1) = {
     val text = requests.get(source).text()
     val skipHeader = text.split("\n").toList.drop(headerSkip).mkString("\n")
@@ -29,32 +35,32 @@ trait IanaParser {
   def fetchAsnSpecialRegs(asnSource: String): Seq[List[String]]  = fetchAndParse(asnSource, parseAsnSpecialLine)
 
   def parseAsnLine(asnRecord: List[String]): List[String] = asnRecord match {
-    case asNum :: "Unallocated" :: _ => asnRange(asNum) :+ "20061129" :+ "available" :+ "iana" :+ "iana"
-    case asNum :: _ :: whois :: _ :: _ :: date :: _ => asnRange(asNum) :+ resolveDate(date) :++ statusAndRIRBasedOnWhois(whois)
+    case asNum :: "Unallocated" :: _ => asnRange(asNum) :+ ASN_UNALLOCATED_DATE :+ "available" :+ "iana" :+ "iana"
+    case asNum :: _ :: whois :: _ :: _ :: date :: _ => asnRange(asNum) :+ formatASNDate(date) :++ statusAndRIRBasedOnWhois(whois)
     case _ => throw new Exception(s"Can't parse this line: $asnRecord")
   }
 
   def parseIpv4Line(ipv4Record: List[String]): List[String] = ipv4Record match {
-    case range :: _ :: date :: whois :: _ => List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) :+ resolveDate(date) :++ statusAndRIRBasedOnWhois(whois)
+    case range :: _ :: date :: whois :: _ => List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) :+ formatDate(date) :++ statusAndRIRBasedOnWhois(whois)
     case _ => throw new Exception(s"Can't parse this line: $ipv4Record")
   }
 
   def parseIpv6Line(ipv6Record: List[String]): List[String] = ipv6Record match {
     // Skip reserved
     case _ :: _ :: _ :: _ :: _ :: "RESERVED" :: _ => List()
-    case range :: _ :: date :: whois :: _ => List("iana", "ZZ", "ipv6") ++ toPrefixLength(range) :+ resolveDate(date) :++ statusAndRIRBasedOnWhois(whois)
+    case range :: _ :: date :: whois :: _ => List("iana", "ZZ", "ipv6") ++ toPrefixLength(range) :+  formatIPv6Date(date) :++ statusAndRIRBasedOnWhois(whois)
     case _ => logger.error(s"Can't parse this line: $ipv6Record"); List()
   }
 
   def parseIpv4RecoveredLine(ipv4Record: List[String]): List[String] = ipv4Record match {
     case prefixStart :: prefixEnd :: _ :: date :: _ =>
-      List("iana", "ZZ", "ipv4") ++ toPrefixLength(prefixStart, prefixEnd) :+ resolveDate(date) :+ "allocated" :+ "iana" :+ "iana"
+      List("iana", "ZZ", "ipv4") ++ toPrefixLength(prefixStart, prefixEnd) :+ formatDate(date) :+ "allocated" :+ "iana" :+ "iana"
     case _ => throw new Exception(s"Can't parse this line: $ipv4Record")
   }
 
   def parseIpv4ReallocatedLine(ipv4Record: List[String]): List[String] = ipv4Record match {
     case prefixStart :: prefixEnd :: rir :: date :: _ =>
-      List("iana", "ZZ", "ipv4") ++ toPrefixLength(prefixStart, prefixEnd) :+ resolveDate(date) :+ "allocated" :+ s"${rir.toLowerCase.replaceAll(" ", "")}" :+ "iana"
+      List("iana", "ZZ", "ipv4") ++ toPrefixLength(prefixStart, prefixEnd) :+ formatDate(date) :+ "allocated" :+ s"${rir.toLowerCase.replaceAll(" ", "")}" :+ "iana"
     case _ => throw new Exception(s"Can't parse this line: $ipv4Record")
   }
 
@@ -65,18 +71,17 @@ trait IanaParser {
     case "255.255.255.255/32" :: _ => List()
     // Can't parse this [reference], so special treatment.
     case "192.0.0.0/24 [2]" :: _ :: _ :: date :: _ =>
-      List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.0/24") :+ resolveDate(date) :+ "reserved" :+ "ietf" :+ "iana"
+      List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.0/24") :+ formatDate(date) :+ "reserved" :+ "ietf" :+ "iana"
 
     // Self conflicting small ranges are skipped, they are subset of others.
     case range :: _ if range.endsWith("/32") || range.endsWith("/29") => List()
 
     // Weird format two single IP in one line
     case "192.0.0.170/32, 192.0.0.171/32" :: _ :: _ :: date :: _ =>
-      List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.170/31") :+ resolveDate(date) :+ "reserved" :+ "ietf" :+ "iana"
+      List("iana", "ZZ", "ipv4") ++ toPrefixLength("192.0.0.170/31") :+ formatDate(date) :+ "reserved" :+ "ietf" :+ "iana"
 
     case range :: _ :: _ :: date :: _ =>
-      List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) ++ List(resolveDate(date), "reserved", "ietf", "iana")
-
+      List("iana", "ZZ", "ipv4") ++ toPrefixLength(range) ++ List(formatDate(date), "reserved", "ietf", "iana")
     case _ => logger.error(s"Can't parse this line: $ipv4SpecialRegistries"); List()
   }
 
@@ -84,29 +89,29 @@ trait IanaParser {
 
    // Only parse special range for documentation, the rest is not included in original IANA
    case range :: "Documentation" :: _ :: date :: _   =>
-      List("iana", "ZZ", "ipv6") ++ toPrefixLength(range) ++ List(resolveDate(date), "reserved", "ietf", "iana")
+      List("iana", "ZZ", "ipv6") ++ toPrefixLength(range) ++ List(formatIPv6Date(date), "reserved", "ietf", "iana")
 
     case _ => logger.error(s"Can't parse this line: $ipv6SpecialRegistries"); List()
   }
 
   def parseAsnSpecialLine(asnSpecialRegistries: List[String]): List[String] = asnSpecialRegistries match {
-    case asNum :: _  => asnRange(asNum) ++ List("20140311", "reserved", "ietf", "iana")
+    case asNum :: _  => asnRange(asNum) ++ List(ASN_SPECIAL_DATE, "reserved", "ietf", "iana")
     case _ => logger.error(s"Can't parse this line: $asnSpecialRegistries"); List()
   }
-  private def resolveDate(date: String) = {
-    val unformatted =
-      if (date.contains("RFC")) {
-        "19960801"
-      } else if (date.isEmpty) {
-        "19920101"
-      } else {
-        date
-      }
-    unformatted match {
-      case YYYYMMRegex(year, month) => s"$year${month}01"
-      case _ => unformatted.replaceAll("-", "")
-    }
 
+  private def formatASNDate(date: String) = {
+    val unformatted = if (date.isEmpty)  ASN_EMPTY_DATE  else  date
+    formatDate(unformatted)
+  }
+  private def formatIPv6Date(date: String) = {
+    val unformatted = if (date.contains("RFC"))  IPV6_RFC_DATE  else date
+    formatDate(unformatted)
+  }
+  private def  formatDate(unformattedDate: String): String = {
+    unformattedDate match {
+      case YYYYMMRegex(year, month) => s"$year${month}01"
+      case _ => unformattedDate.replaceAll("-", "")
+    }
   }
 
   def toPrefixLength(range: String): List[String] = range match {
