@@ -11,22 +11,30 @@ object IanaGenerator extends Merger with Logging with IanaParser {
 
   def processIanaRecords: Records = {
 
-    val ianaSpaceWithoutGlobalUnicastAndRecovered: Records = fetchAllIanaSpace()
-      .substract(excludeGlobalUnicastAndRecovered())
-      .append(includeFirst16OfGlobalUnicast())
+    // Fetch ASN, IPv4 and IPv6 address space
+    val allIanaAddressSpace = fetchAllIanaAddressSpace()
 
-    val reallocatedAssigned: Records = fetchUnicastAssignmentV6ReallocatedSpecialV4()
+    // Whole global unicast 2000::/3, to be excluded
+    val globalUnicastV6 = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf")))
+    // Fist /16 of global unicast, to be included
+    val first16Unicast = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List(IPV6_IANA_POOL_DATE, "reserved", "ietf", "iana")))
 
-    val (aggregatedIanaResources, _) = combineRecords(Seq(ianaSpaceWithoutGlobalUnicastAndRecovered, reallocatedAssigned), Some(reallocatedAssigned), alignIpv4 = true)
+    // Recovered but not reallocated, to be excluded.
+    val recoveredButNotReallocated = toRecords(fetchIpv4Reallocated(ianaOrgFileURL(IPV4_RECOVERED_SPACE)))
+    // Reallocated assigned to be included
+    val reallocatedAssigned: Records = reallocatedAndSpecialRegistries()
 
-    val available = IanaPools(aggregatedIanaResources,"available")
+    val aggregatedIanaSpaces = allIanaAddressSpace
+      .substract(globalUnicastV6).append(first16Unicast)
+      .substract(recoveredButNotReallocated).append(reallocatedAssigned)
 
-    val (combinedWithAvailableSpaces, _) = combineRecords(Seq(aggregatedIanaResources, available), alignIpv4=true)
+    val available = IanaPools(aggregatedIanaSpaces,"available")
+    val (combinedWithAvailableSpaces, _) = combineRecords(Seq(aggregatedIanaSpaces, available), alignIpv4 = true)
 
     combinedWithAvailableSpaces
   }
 
-  def fetchAllIanaSpace(): Records = {
+  def fetchAllIanaAddressSpace(): Records = {
     logger.info("Fetch ASN16")
     val asn16 = fetchAsn(ianaOrgFileURL(ASN16))
 
@@ -43,24 +51,7 @@ object IanaGenerator extends Merger with Logging with IanaParser {
     toRecords(asn16 ++ asn32 ++ ipv4 ++ ipv6)
   }
 
-  private def excludeGlobalUnicastAndRecovered(): Records = {
-
-    // Whole global unicast 2000::/33 minus 2000::/16 since we want to include the latter.
-    val globalUnicastV6 = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf")))
-
-    // Recovered but not allocated
-    val ipv4Recovered = toRecords(fetchIpv4Reallocated(ianaOrgFileURL(IPV4_RECOVERED_SPACE)))
-
-    globalUnicastV6.append(ipv4Recovered)
-  }
-
-  private def includeFirst16OfGlobalUnicast(): Records = {
-    // But include the first /16, don't really have explanation why.
-    toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List(IPV6_IANA_POOL_DATE, "reserved", "ietf", "iana")))
-  }
-
-
-  def fetchUnicastAssignmentV6ReallocatedSpecialV4(): Records = {
+  def reallocatedAndSpecialRegistries(): Records = {
 
     // Recovered and reallocated, we need this.
     val ipv4Reallocated = fetchIpv4Reallocated(ianaOrgFileURL(IPV4_REALLOCATED_SPACE))
@@ -72,13 +63,9 @@ object IanaGenerator extends Merger with Logging with IanaParser {
 
     val asnSpecialRegistry = fetchAsnSpecialRegs(ianaOrgFileURL(ASN_SPECIAL_REGISTRY))
 
-    // RFC2928, without this it will be marked as IETF while geoff marked as IANA assignment, maybe I don' t need to do this.
-    val ianaSlash23 = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2001::/23") ++ List(IPV6_IANA_POOL_DATE, "reserved", "ietf", "iana")))
-
     logger.info("Fetch ipv6 unicast space, returning only those for RIRs")
+
     val unicastAssignmentV6 = toRecords(fetchIpv6(ianaOrgFileURL(IPV6_UNICAST_ASSIGNMENT)))
-      .substract(ianaSlash23)
-      .append(ianaSlash23)
       .append(toRecords(ipv6SpecialRegistry))
       .append(toRecords(asnSpecialRegistry))
       .sorted()
