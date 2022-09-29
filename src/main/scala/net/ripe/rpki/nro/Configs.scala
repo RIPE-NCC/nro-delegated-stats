@@ -24,6 +24,7 @@ class Configs(private val todayDate: LocalDate) {
   def previousResultFile: String = s"$previousResultDirectory/$resultFileName"
   def currentConflictFile: String = s"$currentResultDirectory/$conflictFileName"
   def previousConflictFile: String = s"$previousResultDirectory/$conflictFileName"
+  def currentIanaFile: String = s"$currentResultDirectory/$ianaFileName"
 
   def currentDataDirectory: File = createIfNeeded(s"$dataDirectory/$CURRENT_DAY")
   def currentResultDirectory: File = createIfNeeded(s"$resultDirectory/$CURRENT_DAY")
@@ -68,6 +69,7 @@ object Configs {
   val dataDirectory: String = conf.getString("data.directory")
   val resultDirectory: String = conf.getString("result.directory")
   val resultFileName: String = conf.getString("result.fileName")
+  val ianaFileName: String = conf.getString("iana.fileName")
   val mergedFileName: String = conf.getString("merged.fileName")
   val conflictFileName: String = conf.getString("conflict.fileName")
   val unclaimedFileName: String = conf.getString("unclaimed.fileName")

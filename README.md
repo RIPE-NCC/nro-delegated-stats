@@ -32,8 +32,10 @@ Here are the description of available command lines options.
 
 ```
 NRO Extended Allocation and Assignments Statistics
-Usage: java -jar nro-delegated-stats.jar [generate|notify]
+Usage: java -jar nro-delegated-stats.jar [generate|notify|iana-file] [options]
 
+  -b, --base-url <value>   Base URL for retrieving previously generated files. Defaults to https://ftp.ripe.net/pub/stats/ripencc/nro-stats.
+  -h, --help               print this message
 Command: generate [options]
 Generate NRO Delegated Extended Statistic, based on each RIRs delegated stats and IANA file
   -s, --startDate <value>  Start date for processing NRO delegated stat, default to today: YYYY-MM-DD
@@ -41,9 +43,10 @@ Generate NRO Delegated Extended Statistic, based on each RIRs delegated stats an
   --ownIana                Use own generated IANA file as input, defaults to using http://ftp.apnic.net/stats/iana/delegated-iana-latest
 Command: notify [options]
 Notify RS contacts if there are persistent conflicts over a grace period
-  -b, --base-url <value>   Base url for retrieving conflicts, defaults to: https://ftp.ripe.net/pub/stats/ripencc/nro-stats/.
   -c, --conflict-date <value>
                            Current conflict date, defaults to today: YYYY-MM-DD
+Command: iana-file
+Generate IANA file based on  numbers and resources from iana.org
 ```
 
 For `generate` operation, by default the script will generate stats for today. 

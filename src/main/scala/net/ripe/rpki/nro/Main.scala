@@ -63,9 +63,9 @@ object Main extends Stats with App {
             .text("Current conflict date, defaults to today: YYYY-MM-DD")
             .action((conflictDateArgs, cli) => cli.copy(conflictDate = conflictDateArgs))
         ),
-      cmd("iana")
+      cmd("iana-file")
         .text("Generate IANA file based on  numbers and resources from iana.org ")
-        .action((_, cli) => cli.copy(operation = "iana")
+        .action((_, cli) => cli.copy(operation = "iana-file")
         ),
       checkConfig(cli => if (cli.operation.isEmpty) failure("You need to specify operations [generate | notify] ") else success),
       checkConfig(cli => Try(new URL(cli.base).getHost) match {
@@ -85,7 +85,7 @@ object Main extends Stats with App {
   operation match {
     case "generate" => generateDelegatedStats(baseURL)
     case "notify"   => checkConflictsAndNotify(baseURL)
-    case "iana" => generateIanaFile(baseURL)
+    case "iana-file" => generateIanaFile()
   }
 
   def generateDelegatedStats(baseURL: String): Unit = {
@@ -117,11 +117,9 @@ object Main extends Stats with App {
     }
   }
 
-  def generateIanaFile(baseURL: String) = {
-
+  def generateIanaFile() = {
     val ianaRecords = IanaGenerator.processIanaRecords
-    writeRecords(ianaRecords, "iana-with-available", disclaimer=true)
-
+    Ports.writeRecords(ianaRecords, config.currentIanaFile, disclaimer=true)
   }
   def checkConflictsAndNotify(baseConflictsURL: String) : Unit = {
 
