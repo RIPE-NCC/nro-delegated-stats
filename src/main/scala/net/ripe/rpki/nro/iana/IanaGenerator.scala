@@ -23,11 +23,8 @@ object IanaGenerator extends Merger with Logging with IanaParser {
     val available = IanaPools(aggregatedIanaResources,"available")
 
     val (combinedWithAvailableSpaces, _) = combineRecords(Seq(aggregatedIanaResources, available), alignIpv4=true)
-    // For comparison purpose
-    writeRecords(aggregatedIanaResources, "iana-own-generated", disclaimer=true)
-    writeRecords(combinedWithAvailableSpaces, "iana-with-available", disclaimer=true)
 
-    aggregatedIanaResources
+    combinedWithAvailableSpaces
   }
 
   def fetchAllIanaSpace(): Records = {

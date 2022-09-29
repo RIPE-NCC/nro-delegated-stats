@@ -37,9 +37,10 @@ object Const {
 
   val IPV6_UNICAST_ASSIGNMENT  = "ipv6-unicast-assignment"
 
-
-  // Ipv4 ianapool on Geoff's combined results always dated 20120801, Magic date, where is it from?
+// Available ranges that is not listed on IANA files are dated with these fillers.
   val IPV4_IANA_POOL_DATE = "20120801"
+  val IPV6_IANA_POOL_DATE = "19960801"
+  val ASN_IANA_POOL_DATE = "20061129"
 
   val IPV4 = "ipv4"
   val IPV6 = "ipv6"

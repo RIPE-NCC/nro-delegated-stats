@@ -63,7 +63,7 @@ class IanaPoolsTest extends FlatSpec {
 
   "Iana pool calculation" should "work for Asn" in {
     assert(IanaPools.asnPool(RecordRange.from(AsnRange.parse("AS1000-AS2000"))) ==
-      AsnRecord( Stat(IANA, DEFAULT_CC, ASN, "1000", "1001" + "", Configs.config.CURRENT_DAY, IANAPOOL, IANA , IANA)))
+      AsnRecord( Stat(IANA, DEFAULT_CC, ASN, "1000", "1001" + "", ASN_IANA_POOL_DATE, IANAPOOL, IANA , IANA)))
   }
 
   it should "work for Ipv4" in {
@@ -73,7 +73,7 @@ class IanaPoolsTest extends FlatSpec {
 
   it should "work for Ipv6" in {
     assert(IanaPools.ipv6Pool(RecordRange.from(Ipv6Range.parse("::/24"))) ==
-    Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, "::", "24", Configs.config.CURRENT_DAY, IANAPOOL, IANA, IANA)))
+    Ipv6Record(Stat(IANA, DEFAULT_CC, IPV6, "::", "24", IPV6_IANA_POOL_DATE, IANAPOOL, IANA, IANA)))
   }
 
   "Claims verification " should  "be empty in case of proper combination" in {

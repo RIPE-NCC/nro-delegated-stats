@@ -1,8 +1,10 @@
 package net.ripe.rpki.nro
 
 import net.ripe.rpki.nro.Configs._
+import net.ripe.rpki.nro.iana.IanaGenerator
 import net.ripe.rpki.nro.main.Stats
 import net.ripe.rpki.nro.model.{Conflict, Records}
+import net.ripe.rpki.nro.service.Ports.writeRecords
 import net.ripe.rpki.nro.service.{Notifier, Ports}
 import org.slf4j.LoggerFactory
 import scopt.OParser
@@ -61,6 +63,10 @@ object Main extends Stats with App {
             .text("Current conflict date, defaults to today: YYYY-MM-DD")
             .action((conflictDateArgs, cli) => cli.copy(conflictDate = conflictDateArgs))
         ),
+      cmd("iana")
+        .text("Generate IANA file based on  numbers and resources from iana.org ")
+        .action((_, cli) => cli.copy(operation = "iana")
+        ),
       checkConfig(cli => if (cli.operation.isEmpty) failure("You need to specify operations [generate | notify] ") else success),
       checkConfig(cli => Try(new URL(cli.base).getHost) match {
         case Success(_)  => success
@@ -75,9 +81,11 @@ object Main extends Stats with App {
       case _ => System.exit(1) // some options parse error, usage message from scopt will be shown
     }
 
+
   operation match {
     case "generate" => generateDelegatedStats(baseURL)
     case "notify"   => checkConflictsAndNotify(baseURL)
+    case "iana" => generateIanaFile(baseURL)
   }
 
   def generateDelegatedStats(baseURL: String): Unit = {
@@ -109,6 +117,12 @@ object Main extends Stats with App {
     }
   }
 
+  def generateIanaFile(baseURL: String) = {
+
+    val ianaRecords = IanaGenerator.processIanaRecords
+    writeRecords(ianaRecords, "iana-with-available", disclaimer=true)
+
+  }
   def checkConflictsAndNotify(baseConflictsURL: String) : Unit = {
 
     Configs.configureFor(conflictDate)
