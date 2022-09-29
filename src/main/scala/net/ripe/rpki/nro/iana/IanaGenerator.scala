@@ -6,7 +6,6 @@ import net.ripe.rpki.nro.Logging
 import net.ripe.rpki.nro.main.Merger
 import net.ripe.rpki.nro.model.Records
 import net.ripe.rpki.nro.service.Ports.toRecords
-import net.ripe.rpki.nro.service.Ports.writeRecords
 
 object IanaGenerator extends Merger with Logging with IanaParser {
 

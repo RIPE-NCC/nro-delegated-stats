@@ -4,7 +4,6 @@ import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.iana.IanaGenerator
 import net.ripe.rpki.nro.main.Stats
 import net.ripe.rpki.nro.model.{Conflict, Records}
-import net.ripe.rpki.nro.service.Ports.writeRecords
 import net.ripe.rpki.nro.service.{Notifier, Ports}
 import org.slf4j.LoggerFactory
 import scopt.OParser
@@ -53,7 +52,7 @@ object Main extends Stats with App {
             .text("End date for processing NRO delegated stat, default to today: YYYY-MM-DD"),
           opt[Unit]("ownIana")
             .action((_, cli) => cli.copy(ownIana = true))
-            .text("Use own generated IANA file as input, defaults to using http://ftp.apnic.net/stats/iana/delegated-iana-latest"),
+            .text("Use own generated IANA file as input, defaults to using https://ftp.apnic.net/stats/iana/delegated-iana-latest"),
         ),
       cmd("notify")
         .text("Notify RS contacts if there are persistent conflicts over a grace period")
@@ -117,10 +116,11 @@ object Main extends Stats with App {
     }
   }
 
-  def generateIanaFile() = {
+  def generateIanaFile(): Unit = {
     val ianaRecords = IanaGenerator.processIanaRecords
     Ports.writeRecords(ianaRecords, config.currentIanaFile, disclaimer=true)
   }
+
   def checkConflictsAndNotify(baseConflictsURL: String) : Unit = {
 
     Configs.configureFor(conflictDate)

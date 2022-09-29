@@ -1,7 +1,7 @@
 package net.ripe.rpki.nro.model
 
 import net.ripe.rpki.nro.Configs.config
-import net.ripe.rpki.nro.Const.{ALLOCATED, ASSIGNED, AVAILABLE, DEFAULT_CC, IANA, IETF, RESERVED}
+import net.ripe.rpki.nro.Const.{ALLOCATED, ASSIGNED, AVAILABLE, DEFAULT_CC, RESERVED}
 import net.ripe.rpki.nro.main.Ranges
 
 case class Records(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record]) extends Ranges {

@@ -9,15 +9,13 @@ import scala.util.{Try, Using}
 
 trait IanaParser {
 
-  val RIRs = List("arin", "ripe", "apnic", "lacnic", "afrinic")
-
   val ASN_UNALLOCATED_DATE = "20061129"
   val ASN_EMPTY_DATE = "19921201"
   val ASN_SPECIAL_DATE = "20140311"
   val IPV6_RFC_DATE = "19960801"
 
 
-  private def fetchAndParse(source: String, parser: List[String] => List[String], headerSkip: Int = 1) = {
+  private def fetchAndParse(source: String, parser: List[String] => List[String], headerSkip: Int = 1): Seq[List[String]] = {
     val text = requests.get(source).text()
     val skipHeader = text.split("\n").toList.drop(headerSkip).mkString("\n")
     readCSV(skipHeader).map(parser).filter(_.nonEmpty)
@@ -99,11 +97,11 @@ trait IanaParser {
     case _ => logger.error(s"Can't parse this line: $asnSpecialRegistries"); List()
   }
 
-  private def formatASNDate(date: String) = {
+  private def formatASNDate(date: String): String = {
     val unformatted = if (date.isEmpty)  ASN_EMPTY_DATE  else  date
     formatDate(unformatted)
   }
-  private def formatIPv6Date(date: String) = {
+  private def formatIPv6Date(date: String): String = {
     val unformatted = if (date.contains("RFC"))  IPV6_RFC_DATE  else date
     formatDate(unformatted)
   }
@@ -152,7 +150,7 @@ trait IanaParser {
   }
 
   private def statusAndRIRBasedOnWhois(whois: String) : List[String] = whois match {
-    case whoisRegex(rir) => List("allocated",(if (rir == "ripe") "ripencc" else rir),"iana")
+    case whoisRegex(rir) => List("allocated", if (rir == "ripe") "ripencc" else rir,"iana")
     case _ => List("reserved", "ietf", "iana")
   }
 

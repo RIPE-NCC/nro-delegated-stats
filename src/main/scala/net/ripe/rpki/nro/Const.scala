@@ -61,7 +61,7 @@ object Const {
   // Magic serial number, all previous delegated-extended-stat are using this serial number
   val MAGIC_SERIAL_NUMBER = 19821213
 
-  val RIRS = List(APNIC, AFRINIC, ARIN, LACNIC, RIPENCC)
+  val RIRs: List[String] = List(APNIC, AFRINIC, ARIN, LACNIC, RIPENCC)
 }
 
 
