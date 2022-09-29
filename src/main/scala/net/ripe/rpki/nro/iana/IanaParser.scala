@@ -1,6 +1,7 @@
 package net.ripe.rpki.nro.iana
 import com.github.tototoshi.csv.CSVReader
 import net.ripe.commons.ip.{Ipv4, Ipv4Range, Ipv6Range, PrefixUtils}
+import net.ripe.rpki.nro.Const.{ASN_EMPTY_DATE, ASN_SPECIAL_DATE, ASN_UNALLOCATED_DATE, IPV6_RFC_DATE}
 import net.ripe.rpki.nro.iana.IanaGenerator.logger
 
 import java.io.StringReader
@@ -8,12 +9,6 @@ import scala.util.matching.Regex
 import scala.util.{Try, Using}
 
 trait IanaParser {
-
-  val ASN_UNALLOCATED_DATE = "20061129"
-  val ASN_EMPTY_DATE = "19921201"
-  val ASN_SPECIAL_DATE = "20140311"
-  val IPV6_RFC_DATE = "19960801"
-
 
   private def fetchAndParse(source: String, parser: List[String] => List[String], headerSkip: Int = 1): Seq[List[String]] = {
     val text = requests.get(source).text()

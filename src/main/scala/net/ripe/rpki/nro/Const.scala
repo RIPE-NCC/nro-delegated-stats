@@ -42,6 +42,12 @@ object Const {
   val IPV6_IANA_POOL_DATE = "19960801"
   val ASN_IANA_POOL_DATE = "20061129"
 
+  val ASN_UNALLOCATED_DATE = "20061129"
+  val ASN_EMPTY_DATE = "19921201"
+  val ASN_SPECIAL_DATE = "20140311"
+
+  val IPV6_RFC_DATE = "19960801"
+
   val IPV4 = "ipv4"
   val IPV6 = "ipv6"
   val ASN = "asn"
