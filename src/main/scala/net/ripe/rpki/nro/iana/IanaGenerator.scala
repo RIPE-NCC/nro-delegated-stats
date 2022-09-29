@@ -20,13 +20,21 @@ object IanaGenerator extends Merger with Logging with IanaParser {
     val first16Unicast = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List(IPV6_IANA_POOL_DATE, "reserved", "ietf", "iana")))
 
     // Recovered but not reallocated, to be excluded.
-    val recoveredButNotReallocated = toRecords(fetchIpv4Reallocated(ianaOrgFileURL(IPV4_RECOVERED_SPACE)))
-    // Reallocated assigned to be included
-    val reallocatedAssigned: Records = reallocatedAndSpecialRegistries()
+    val recoveredV4 = toRecords(fetchIpv4Reallocated(ianaOrgFileURL(IPV4_RECOVERED_SPACE)))
+    // Reallocated IPv4
+    val reallocatedV4 = toRecords(fetchIpv4Reallocated(ianaOrgFileURL(IPV4_REALLOCATED_SPACE)))
+
+    // Special registries
+    val specialRegistries = fetchSpecialRegistries()
+
+    logger.info("Fetch ipv6 unicast space, returning only those for RIRs")
+    val unicastV6 = toRecords(fetchIpv6(ianaOrgFileURL(IPV6_UNICAST_ASSIGNMENT)))
 
     val aggregatedIanaSpaces = allIanaAddressSpace
       .substract(globalUnicastV6).append(first16Unicast)
-      .substract(recoveredButNotReallocated).append(reallocatedAssigned)
+      .substract(recoveredV4).append(reallocatedV4)
+      .append(unicastV6)
+      .append(specialRegistries)
 
     val available = IanaPools(aggregatedIanaSpaces,"available")
     val (combinedWithAvailableSpaces, _) = combineRecords(Seq(aggregatedIanaSpaces, available), alignIpv4 = true)
@@ -51,27 +59,17 @@ object IanaGenerator extends Merger with Logging with IanaParser {
     toRecords(asn16 ++ asn32 ++ ipv4 ++ ipv6)
   }
 
-  def reallocatedAndSpecialRegistries(): Records = {
+  def fetchSpecialRegistries(): Records = {
 
-    // Recovered and reallocated, we need this.
-    val ipv4Reallocated = fetchIpv4Reallocated(ianaOrgFileURL(IPV4_REALLOCATED_SPACE))
-
-    // Special registry with special treatments inside.
+    logger.info("Fetch ipv4 special registries")
     val ipv4SpecialRegistry = fetchIpv4SpecialRegs(ianaOrgFileURL(IPV4_SPECIAL_REGISTRY))
 
+    logger.info("Fetch ipv6 special registries")
     val ipv6SpecialRegistry = fetchIpv6SpecialRegs(ianaOrgFileURL(IPV6_SPECIAL_REGISTRY))
 
+    logger.info("Fetch asn special registries")
     val asnSpecialRegistry = fetchAsnSpecialRegs(ianaOrgFileURL(ASN_SPECIAL_REGISTRY))
 
-    logger.info("Fetch ipv6 unicast space, returning only those for RIRs")
-
-    val unicastAssignmentV6 = toRecords(fetchIpv6(ianaOrgFileURL(IPV6_UNICAST_ASSIGNMENT)))
-      .append(toRecords(ipv6SpecialRegistry))
-      .append(toRecords(asnSpecialRegistry))
-      .sorted()
-
-    val reallocatedSpecial = toRecords(ipv4Reallocated ++ ipv4SpecialRegistry)
-    reallocatedSpecial.append(unicastAssignmentV6)
+    toRecords(ipv4SpecialRegistry ++ipv6SpecialRegistry++asnSpecialRegistry)
   }
-
 }

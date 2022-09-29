@@ -43,6 +43,7 @@ case class Records(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record]) exten
     Records(alignRecordWithMapRangeKeys(thisAsn), alignRecordWithMapRangeKeys(thisIpv4), alignRecordWithMapRangeKeys(thisIpv6))
   }
 
+  // If resources overlaps, the last one appended wins.
   def append(that: Records): Records =
     Records(this.asn ++ that.asn, this.ipv4 ++ that.ipv4, this.ipv6 ++ that.ipv6)
 
