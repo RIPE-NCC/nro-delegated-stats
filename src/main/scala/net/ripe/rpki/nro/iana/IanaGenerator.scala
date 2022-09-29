@@ -14,9 +14,9 @@ object IanaGenerator extends Merger with Logging with IanaParser {
     // Fetch ASN, IPv4 and IPv6 address space
     val allIanaAddressSpace = fetchAllIanaAddressSpace()
 
-    // Whole global unicast 2000::/3, to be excluded
-    val globalUnicastV6 = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List("1990", "ietf")))
-    // Fist /16 of global unicast, to be included
+    // Whole global unicast 2000::/3, to be excluded, so that it will be marked as available in the end (not reserved ietf) when no other iana files allocate the space.
+    val globalUnicastV6 = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/3") ++ List(IPV6_IANA_POOL_DATE, "available", "iana", "iana")))
+    // Except for the first /16 of global unicast, to be included as reserved for IETF
     val first16Unicast = toRecords(List(List("iana", "ZZ", "ipv6") ++ toPrefixLength("2000::/16") ++ List(IPV6_IANA_POOL_DATE, "reserved", "ietf", "iana")))
 
     // Recovered but not reallocated, to be excluded.
