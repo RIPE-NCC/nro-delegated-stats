@@ -13,28 +13,28 @@ trait Stats extends Logging with Merger {
 
     logger.info(s"\n\n---  Combining RIRs data and checking for conflicts among RIRs ---\n\n")
 
-    // Splitting iana into RIRs and non RIRs (IETF, IANA)
+    // Splitting iana into RIRs and those reserved for IETF or allocated to IANA
     val isRirRecord: Record => Boolean = r => RIRs.contains(r.stat.oid)
-    val (ianaRirs, ianaNonRirs) = ianaRecord.partition(isRirRecord)
+    val (ianaAllocatedRIRs, ianaReserved) = ianaRecord.partition(isRirRecord)
 
-    val (combined, currentConflicts) = combineRecords(rirRecords ++ Iterable(ianaNonRirs), previousResult)
+    val (combinedRIRsUsage, currentConflicts) = combineRecords(rirRecords ++ Iterable(ianaReserved), previousResult)
 
-    logger.info("Calculate unclaimed")
-    val unclaimed: Records = ianaRirs.substract(combined).formatUnclaimed
+    logger.info("Calculate records unclaimed by RIRs while it is actually allocated by IANA")
+    val ianaAllocatedUnclaimed: Records = ianaAllocatedRIRs.substract(combinedRIRsUsage).formatUnclaimed
 
-    logger.info("Fixing unclaimed with previous, non ianapool data")
+    logger.info("Unclaimed ranges is resolved using data from previous delegated stats")
     val unclaimedResolved = previousResult
       .map { _.filter(_.status != "ianapool") }
-      .map { resolveUnclaimed(unclaimed, _) }
-      .getOrElse(unclaimed)
+      .map { resolveUnclaimed(ianaAllocatedUnclaimed, _) }
+      .getOrElse(ianaAllocatedUnclaimed)
 
-    logger.info("Calculate overclaimed")
-    val overclaimed: Records = combined.substract(ianaRecord)
+    logger.info("Calculate overclaimed, where RIRs are using more than what is allocated initially by Iana")
+    val overclaimed: Records = combinedRIRsUsage.substract(ianaRecord)
 
     logger.info("Calculating IANA pool")
-    val ianaPools: Records = IanaPools(combined.append(unclaimedResolved))
+    val ianaPools: Records = IanaPools(combinedRIRsUsage.append(unclaimedResolved))
 
-    val results: Records = combined.append(ianaPools).append(unclaimedResolved).sorted()
+    val results: Records = combinedRIRsUsage.append(ianaPools).append(unclaimedResolved).sorted()
 
     logger.info("Merging ASNs siblings ")
     val mergedResults: Records = mergeRecords(results)
