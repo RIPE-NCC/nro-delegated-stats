@@ -21,9 +21,9 @@
 #
 # For more information see:
 #
-#       http://www.apnic.net/db/rir-stats-format.html
+#       https://ftp.ripe.net/pub/stats/ripencc/_README
 # or
-#       ftp://ftp.apnic.net/pub/apnic/stats/apnic/README.TXT
+#		https://ftp.ripe.net/pub/stats/ripencc/RIR-Statistics-Exchange-Format.txt
 #
 ######################################################################
 #
