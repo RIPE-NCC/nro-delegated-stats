@@ -23,7 +23,7 @@
 #
 #       https://ftp.ripe.net/pub/stats/ripencc/_README
 # or
-#		https://ftp.ripe.net/pub/stats/ripencc/RIR-Statistics-Exchange-Format.txt
+#       https://ftp.ripe.net/pub/stats/ripencc/RIR-Statistics-Exchange-Format.txt
 #
 ######################################################################
 #
