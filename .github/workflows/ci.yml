@@ -71,7 +71,7 @@ jobs:
       - name: Get image tag
         shell: bash
         run: |
-           if [ $GITHUB_REF = "ref/heads/main" ]; then BRANCH=latest; else BRANCH=${GITHUB_REF##*/}; fi
+           if [ $GITHUB_REF = "refs/heads/main" ]; then BRANCH=latest; else BRANCH=${GITHUB_REF##*/}; fi
            echo "##[set-output name=branch;]$(echo $BRANCH)"
         id: branch_name
 
