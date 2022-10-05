@@ -36,8 +36,8 @@ trait Ranges {
     .flatMap {
       case (key, _) if empty(key) => List()
       case (range, record: Ipv4Record) if alignIpv4 =>
-        record.splitPrefixes(range).map { ipv6 =>
-          record.updateRange(RecordRange.from(ipv6).key)
+        record.splitPrefixes(range).map { ipv4 =>
+          record.updateRange(RecordRange.from(ipv4).key)
         }
       case (range, record: Ipv6Record) =>
         record.splitPrefixes(range).map { ipv6 =>

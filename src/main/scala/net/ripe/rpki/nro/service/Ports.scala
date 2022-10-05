@@ -253,7 +253,7 @@ object Ports extends Logging {
         .sliding(2, 2)
         .map {
           case Seq(a, b) => Conflict(Record(a), Record(b))
-          case _ => throw new IllegalArgumentException("Cannot parse incomplete conflicts file. Remainder: $x")
+          case x => throw new IllegalArgumentException(s"Cannot parse incomplete conflicts file. Remainder: $x")
         }.toSeq
     }
   }
