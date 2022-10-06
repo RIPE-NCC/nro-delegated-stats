@@ -192,7 +192,7 @@ object Ports extends Logging {
   }
 
   def writeRecords(records: Records, outputFile: String = s"$resultFileName"): Unit = {
-    Using.resource(new PrintWriter(new File(config.currentIanaFile))) { writer =>
+    Using.resource(new PrintWriter(new File(outputFile))) { writer =>
       writeHeader(records, writer)
       writeResult(records, writer)
     }
