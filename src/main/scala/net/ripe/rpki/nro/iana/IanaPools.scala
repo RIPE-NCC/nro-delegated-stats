@@ -7,12 +7,13 @@ import net.ripe.rpki.nro.model.{AsnRecord, Ipv4Record, Ipv6Record, RecordRange, 
 
 object IanaPools {
 
-  def apply(records: Records, status: String = IANAPOOL): Records = {
+  // Calculate what is available on iana pool after substracting from used records
+  def apply(usedRecords: Records, status: String = IANAPOOL): Records = {
     Records(
       List(asnPool(RecordRange.from(ALL_ASNS), status)),
       List(ipv4Pool(RecordRange.from(ALL_IPV4), status)),
       List(ipv6Pool(RecordRange.from(ALL_IPV6), status)),
-    ).substract(records)
+    ).substract(usedRecords)
   }
 
   def ipv4Pool(ipv4: RecordRange, status: String = IANAPOOL): Ipv4Record = Ipv4Record(Stat(IANA, DEFAULT_CC, IPV4, s"${Ipv4.of(ipv4.rStart)}", s"${ipv4.length}", IPV4_IANA_POOL_DATE, status, IANA, IANA))

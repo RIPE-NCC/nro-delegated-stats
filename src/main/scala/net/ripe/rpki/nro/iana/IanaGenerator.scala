@@ -1,7 +1,7 @@
 package net.ripe.rpki.nro.iana
 
 import net.ripe.rpki.nro.Configs.ianaOrgFileURL
-import net.ripe.rpki.nro.Const.{ASN16, ASN32, ASN_SPECIAL_REGISTRY, IPV4_ADDRESS_SPACE, IPV4_REALLOCATED_SPACE, IPV4_RECOVERED_SPACE, IPV4_SPECIAL_REGISTRY, IPV6_ADDRESS_SPACE, IPV6_IANA_POOL_DATE, IPV6_SPECIAL_REGISTRY, IPV6_UNICAST_ASSIGNMENT}
+import net.ripe.rpki.nro.Const.{ASN16, ASN32, ASN_SPECIAL_REGISTRY, IPV4_ADDRESS_SPACE, IPV4_REALLOCATED_SPACE, IPV4_RECOVERED_SPACE, IPV4_SPECIAL_REGISTRY, IPV6_ADDRESS_SPACE, IPV6_SPECIAL_REGISTRY, IPV6_UNICAST_ASSIGNMENT}
 import net.ripe.rpki.nro.Logging
 import net.ripe.rpki.nro.iana.IanaUnicastV6.{FIRST_SLASH_16_UNICAST_V6, GLOBAL_UNICAST_V6}
 import net.ripe.rpki.nro.main.Merger
@@ -31,11 +31,11 @@ object IanaGenerator extends Merger with Logging with IanaParser {
       .append(unicastV6)
       .append(specialRegistries)
 
-    val available = IanaPools(aggregatedIanaSpaces,"available")
-    val (combinedWithAvailableSpaces, _) = combineRecords(Seq(aggregatedIanaSpaces, available), alignIpv4 = true)
+    val availableIana = IanaPools(aggregatedIanaSpaces, "available")
 
-    combinedWithAvailableSpaces
+    aggregatedIanaSpaces.align(availableIana)
   }
+
 
   def fetchAllIanaAddressSpace(): Records = {
     logger.info("Fetch ASN16")
@@ -65,6 +65,6 @@ object IanaGenerator extends Merger with Logging with IanaParser {
     logger.info("Fetch asn special registries")
     val asnSpecialRegistry = fetchAsnSpecialRegs(ianaOrgFileURL(ASN_SPECIAL_REGISTRY))
 
-    toRecords(ipv4SpecialRegistry ++ipv6SpecialRegistry++asnSpecialRegistry)
+    toRecords(ipv4SpecialRegistry ++ ipv6SpecialRegistry ++ asnSpecialRegistry)
   }
 }
