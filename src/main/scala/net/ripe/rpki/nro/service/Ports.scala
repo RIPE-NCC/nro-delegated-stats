@@ -191,38 +191,42 @@ object Ports extends Logging {
     (allowedListRecords, previousConflicts, currentConflicts)
   }
 
-
-
-  def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true, disclaimer: Boolean = false): Unit = {
-      writeResult(records.asn, records.ipv4, records.ipv6, outputFile, header, disclaimer)
-  }
-
-  def writeResult(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record], outputFile: String = s"$resultFileName", header:Boolean = true, disclaimer:Boolean = false): Unit = {
-    Using.resource(new PrintWriter(new File(outputFile))) { writer =>
-
-      val totalSize = asn.size + ipv4.size + ipv6.size
-      if(totalSize == 0) return
-      if(disclaimer) {
-        val disclaimer = scala.io.Source.fromResource("disclaimer.txt").getLines().mkString("\n")
-        writer.write(disclaimer)
-        writer.write("\n")
-      }
-      if(header){
-        writer.write(s"2|nro|${config.CURRENT_DAY}|$totalSize|$MAGIC_SERIAL_NUMBER|${config.CURRENT_DAY}|+0000\n")
-        writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
-        writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
-        writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
-      }
-
-      writer.write(asn.map(_.toString).mkString("\n"))
-      writer.write("\n")
-      writer.write(ipv4.map(_.toString).mkString("\n"))
-      writer.write("\n")
-      writer.write(ipv6.map(_.toString).mkString("\n"))
+  def writeRecords(records: Records, outputFile: String = s"$resultFileName"): Unit = {
+    Using.resource(new PrintWriter(new File(config.currentIanaFile))) { writer =>
+      writeHeader(records, writer)
+      writeResult(records, writer)
     }
   }
+  def writeDisclaimer(writer: PrintWriter): Unit = {
+    val disclaimer = scala.io.Source.fromResource("disclaimer.txt").getLines().mkString("\n")
+    writer.write(disclaimer)
+    writer.write("\n")
+  }
 
-  def writeClaims(recs : Records, fileName: String): Unit = writeResult(recs.asn, recs.ipv4, recs.ipv6, fileName, header = false)
+  def writeHeader(records: Records, writer: PrintWriter): Unit = {
+    val (asn, ipv4, ipv6) = (records.asn, records.ipv4, records.ipv6)
+    val totalSize = asn.size + ipv4.size + ipv6.size
+    writer.write(s"2|nro|${config.CURRENT_DAY}|$totalSize|$MAGIC_SERIAL_NUMBER|${config.CURRENT_DAY}|+0000\n")
+    writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
+    writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
+    writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
+  }
+
+  def writeResult(records: Records, writer: PrintWriter): Unit = {
+    val (asn, ipv4, ipv6) = (records.asn, records.ipv4, records.ipv6)
+    val totalSize = asn.size + ipv4.size + ipv6.size
+    if(totalSize == 0) return
+    writer.write(asn.map(_.toString).mkString("\n"))
+    writer.write("\n")
+    writer.write(ipv4.map(_.toString).mkString("\n"))
+    writer.write("\n")
+    writer.write(ipv6.map(_.toString).mkString("\n"))
+  }
+
+  def writeClaims(recs : Records, fileName: String): Unit =
+    Using.resource(new PrintWriter(new File(fileName))) { writer =>
+      writeResult(recs, writer)
+    }
 
   def writeConflicts(conflicts: Seq[Conflict], outputFile: String = s"${config.currentConflictFile}"): Unit = {
     Using.resource( CSVWriter.open(new File(outputFile))) { writer =>

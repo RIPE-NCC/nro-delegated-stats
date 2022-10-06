@@ -8,9 +8,10 @@ import net.ripe.rpki.nro.service.{Notifier, Ports}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
+import java.io.{File, PrintWriter}
 import java.net.URL
 import java.time.LocalDate
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 case class CommandLineOptions(
                                operation: String = "",
@@ -118,7 +119,13 @@ object Main extends Stats with App {
 
   def generateIanaFile(): Unit = {
     val ianaRecords = IanaGenerator.processIanaRecords
-    Ports.writeRecords(ianaRecords, config.currentIanaFile, disclaimer=true)
+
+    Using.resource(new PrintWriter(new File(config.currentIanaFile))){ writer =>
+      Ports.writeDisclaimer(writer)
+      Ports.writeHeader(ianaRecords, writer)
+      Ports.writeResult(ianaRecords, writer)
+    }
+
   }
 
   def checkConflictsAndNotify(baseConflictsURL: String) : Unit = {
