@@ -30,13 +30,23 @@ object Const {
 
   val IPV4_RECOVERED_SPACE   = "ipv4-recovered-space"
   val IPV4_REALLOCATED_SPACE = "ipv4-reallocated-space"
+
   val IPV4_SPECIAL_REGISTRY  = "ipv4-special-registry"
+  val IPV6_SPECIAL_REGISTRY  = "ipv6-special-registry"
+  val ASN_SPECIAL_REGISTRY   = "asn-special-registry"
 
   val IPV6_UNICAST_ASSIGNMENT  = "ipv6-unicast-assignment"
 
-
-  // Ipv4 ianapool on Geoff's combined results always dated 20120801, Magic date, where is it from?
+// Available ranges that is not listed on IANA files are dated with these fillers.
   val IPV4_IANA_POOL_DATE = "20120801"
+  val IPV6_IANA_POOL_DATE = "19960801"
+  val ASN_IANA_POOL_DATE = "20061129"
+
+  val ASN_UNALLOCATED_DATE = "20061129"
+  val ASN_EMPTY_DATE = "19921201"
+  val ASN_SPECIAL_DATE = "20140311"
+
+  val IPV6_RFC_DATE = "19960801"
 
   val IPV4 = "ipv4"
   val IPV6 = "ipv6"
@@ -57,7 +67,7 @@ object Const {
   // Magic serial number, all previous delegated-extended-stat are using this serial number
   val MAGIC_SERIAL_NUMBER = 19821213
 
-  val RIRS = List(APNIC, AFRINIC, ARIN, LACNIC, RIPENCC)
+  val RIRs: List[String] = List(APNIC, AFRINIC, ARIN, LACNIC, RIPENCC)
 }
 
 

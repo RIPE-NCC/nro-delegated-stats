@@ -1,8 +1,11 @@
 package net.ripe.rpki.nro.model
 
+import com.google.common.collect.TreeRangeMap
 import net.ripe.rpki.nro.Configs.config
-import net.ripe.rpki.nro.Const.{ALLOCATED, ASSIGNED, AVAILABLE, DEFAULT_CC, IANA, IETF, RESERVED}
+import net.ripe.rpki.nro.Const.{ALLOCATED, ASSIGNED, AVAILABLE, DEFAULT_CC, RESERVED}
 import net.ripe.rpki.nro.main.Ranges
+
+import java.math.BigInteger
 
 case class Records(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record]) extends Ranges {
 
@@ -43,9 +46,23 @@ case class Records(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record]) exten
     Records(alignRecordWithMapRangeKeys(thisAsn), alignRecordWithMapRangeKeys(thisIpv4), alignRecordWithMapRangeKeys(thisIpv6))
   }
 
+  // Append without alignments/overlaps checking
   def append(that: Records): Records =
     Records(this.asn ++ that.asn, this.ipv4 ++ that.ipv4, this.ipv6 ++ that.ipv6)
 
+
+  def align(that: Records): Records = {
+    Records(
+      align(this.asn ++ that.asn),
+      align(this.ipv4 ++ that.ipv4),
+      align(this.ipv6 ++ that.ipv6) )
+  }
+
+  def align(rirRecords: Seq[Record]): Seq[Record] = {
+    val accumulatedResults = TreeRangeMap.create[BigInteger, Record]()
+    rirRecords.foreach(rec => accumulatedResults.put(rec.range.key, rec))
+    alignRecordWithMapRangeKeys(accumulatedResults, true)
+  }
   def sorted(): Records =
     Records(this.asn.sorted, this.ipv4.sorted, this.ipv6.sorted)
 

@@ -1,25 +1,20 @@
 package net.ripe.rpki.nro.service
 
-import java.io.{File, FileOutputStream, PrintWriter, Reader, StringReader}
-import scala.io.Source.{fromBytes, fromFile, fromResource}
 import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
-import net.ripe.rpki.nro.{Configs, Logging}
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
-import net.ripe.rpki.nro.iana.IanaMagic
+import net.ripe.rpki.nro.iana.IanaGenerator
 import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
-
-import scala.util.{Success, Failure, Try, Using}
+import net.ripe.rpki.nro.{Configs, Logging}
 import requests.Response
 
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import java.security.MessageDigest
+import java.io.{File, FileOutputStream, PrintWriter, Reader, StringReader}
 import java.math.BigInteger
-import net.ripe.rpki.nro.service.Ports.md5digest
-
-import java.util.UUID
-import scala.math.Numeric.Implicits.infixNumericOps
+import java.security.MessageDigest
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
+import scala.io.Source.{fromBytes, fromFile, fromResource}
+import scala.util.{Failure, Success, Try, Using}
 /**
  * Importing data from remotes files and exporting to file.
  * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
@@ -103,7 +98,7 @@ object Ports extends Logging {
       }
     } else {
       val sourceAttempts = fetchWithRetries(source)
-      val md5Attempts    = fetchWithRetries(s"${source}.md5")
+      val md5Attempts    = fetchWithRetries(s"$source.md5")
 
       val sourceMd5 : Future[(Response, Response)]   = for {
         sourceResponse <- sourceAttempts
@@ -116,12 +111,11 @@ object Ports extends Logging {
             logger.error(s"Contents $source is too small, please investigate manually.")
             System.exit(1)
           }
-          val responseText = response.text()
           // Example MD5, Arin has different formats, the rest of the MD5 looks like the first line.:
           //   MD5 (delegated-apnic-extended-latest) = 83c9ed2721a049faf70bb88fd586347d
           //   d9e9d22a6fc88d9455ccd198a061d1fc  delegated-arin-extended-20210502
           // This explains the filter.
-          val maybeMD5 = md5response.text().split("\\s+").filter(_.length == 32).headOption
+          val maybeMD5 = md5response.text().split("\\s+").find(_.length == 32)
 
           if(maybeMD5.isDefined){
             val computedMd5 = md5digest(response.bytes)
@@ -157,7 +151,7 @@ object Ports extends Logging {
     }
 
     val rirs = (recordMaps - "iana").view.mapValues(_.formatRIRs).values
-    val iana = if(ownmagic)  IanaMagic.processIanaRecords else recordMaps("iana")
+    val iana = if(ownmagic)  IanaGenerator.processIanaRecords else recordMaps("iana")
     logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
 
     val allSourceFileContainSomething = iana.size > 0 && rirs.forall(_.size > 0)
@@ -197,33 +191,42 @@ object Ports extends Logging {
     (allowedListRecords, previousConflicts, currentConflicts)
   }
 
-
-
-  def writeRecords(records: Records, outputFile: String = s"$resultFileName", header: Boolean = true): Unit = {
-      writeResult(records.asn, records.ipv4, records.ipv6, outputFile, header)
-  }
-
-  def writeResult(asn: Seq[Record], ipv4: Seq[Record], ipv6: Seq[Record], outputFile: String = s"$resultFileName", header:Boolean = true): Unit = {
+  def writeRecords(records: Records, outputFile: String = s"$resultFileName"): Unit = {
     Using.resource(new PrintWriter(new File(outputFile))) { writer =>
-
-      val totalSize = asn.size + ipv4.size + ipv6.size
-      if(totalSize == 0) return
-      if(header){
-        writer.write(s"2|nro|${config.CURRENT_DAY}|$totalSize|$MAGIC_SERIAL_NUMBER|${config.CURRENT_DAY}|+0000\n")
-        writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
-        writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
-        writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
-      }
-
-      writer.write(asn.map(_.toString).mkString("\n"))
-      writer.write("\n")
-      writer.write(ipv4.map(_.toString).mkString("\n"))
-      writer.write("\n")
-      writer.write(ipv6.map(_.toString).mkString("\n"))
+      writeHeader(records, writer)
+      writeResult(records, writer)
     }
   }
+  def writeDisclaimer(writer: PrintWriter): Unit = {
+    val disclaimer = scala.io.Source.fromResource("disclaimer.txt").getLines().mkString("\n")
+    writer.write(disclaimer)
+    writer.write("\n")
+  }
 
-  def writeClaims(recs : Records, fileName: String): Unit = writeResult(recs.asn, recs.ipv4, recs.ipv6, fileName, header = false)
+  def writeHeader(records: Records, writer: PrintWriter): Unit = {
+    val (asn, ipv4, ipv6) = (records.asn, records.ipv4, records.ipv6)
+    val totalSize = asn.size + ipv4.size + ipv6.size
+    writer.write(s"2|nro|${config.CURRENT_DAY}|$totalSize|$MAGIC_SERIAL_NUMBER|${config.CURRENT_DAY}|+0000\n")
+    writer.write(s"nro|*|asn|*|${asn.size}|summary\n")
+    writer.write(s"nro|*|ipv4|*|${ipv4.size}|summary\n")
+    writer.write(s"nro|*|ipv6|*|${ipv6.size}|summary\n")
+  }
+
+  def writeResult(records: Records, writer: PrintWriter): Unit = {
+    val (asn, ipv4, ipv6) = (records.asn, records.ipv4, records.ipv6)
+    val totalSize = asn.size + ipv4.size + ipv6.size
+    if(totalSize == 0) return
+    writer.write(asn.map(_.toString).mkString("\n"))
+    writer.write("\n")
+    writer.write(ipv4.map(_.toString).mkString("\n"))
+    writer.write("\n")
+    writer.write(ipv6.map(_.toString).mkString("\n"))
+  }
+
+  def writeClaims(recs : Records, fileName: String): Unit =
+    Using.resource(new PrintWriter(new File(fileName))) { writer =>
+      writeResult(recs, writer)
+    }
 
   def writeConflicts(conflicts: Seq[Conflict], outputFile: String = s"${config.currentConflictFile}"): Unit = {
     Using.resource( CSVWriter.open(new File(outputFile))) { writer =>
@@ -254,7 +257,7 @@ object Ports extends Logging {
         .sliding(2, 2)
         .map {
           case Seq(a, b) => Conflict(Record(a), Record(b))
-          case x => throw new IllegalArgumentException("Cannot parse incomplete conflicts file. Remainder: $x")
+          case x => throw new IllegalArgumentException(s"Cannot parse incomplete conflicts file. Remainder: $x")
         }.toSeq
     }
   }

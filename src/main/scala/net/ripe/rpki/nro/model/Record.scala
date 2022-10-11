@@ -1,12 +1,11 @@
 package net.ripe.rpki.nro.model
 
 import java.math.BigInteger
-
 import com.google.common.collect._
-import net.ripe.commons.ip.{Ipv4, Ipv6Range, PrefixUtils}
+import net.ripe.commons.ip.{Ipv4, Ipv4Range, Ipv6Range, PrefixUtils}
 import net.ripe.rpki.nro.main.Ranges
-import scala.jdk.CollectionConverters._
 
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 
 case class Stat(registry: String, cc: String, `type`: String, start: String, length: String, date: String, status: String, oid: String = "", ext: String = "e-stats") {
@@ -95,6 +94,11 @@ case class Ipv4Record(stat: Stat) extends Record {
     val len = size(key)
     val startAddress = Ipv4.of(start)
     this.copy(stat = this.stat.copy(start = s"$startAddress", length = s"$len"))
+  }
+
+  def splitPrefixes(range: Range[BigInteger]): mutable.Seq[Ipv4Range] = {
+    val (start, end) = toInterval(range)
+    Ipv4Range.from(start).to(end).splitToPrefixes().asScala
   }
 }
 

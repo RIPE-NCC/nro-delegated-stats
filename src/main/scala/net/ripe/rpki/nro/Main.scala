@@ -1,15 +1,17 @@
 package net.ripe.rpki.nro
 
 import net.ripe.rpki.nro.Configs._
+import net.ripe.rpki.nro.iana.IanaGenerator
 import net.ripe.rpki.nro.main.Stats
 import net.ripe.rpki.nro.model.{Conflict, Records}
 import net.ripe.rpki.nro.service.{Notifier, Ports}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
+import java.io.{File, PrintWriter}
 import java.net.URL
 import java.time.LocalDate
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 case class CommandLineOptions(
                                operation: String = "",
@@ -51,7 +53,7 @@ object Main extends Stats with App {
             .text("End date for processing NRO delegated stat, default to today: YYYY-MM-DD"),
           opt[Unit]("ownIana")
             .action((_, cli) => cli.copy(ownIana = true))
-            .text("Use own generated IANA file as input, defaults to using http://ftp.apnic.net/stats/iana/delegated-iana-latest"),
+            .text("Use own generated IANA file as input, defaults to using https://ftp.apnic.net/stats/iana/delegated-iana-latest"),
         ),
       cmd("notify")
         .text("Notify RS contacts if there are persistent conflicts over a grace period")
@@ -60,6 +62,10 @@ object Main extends Stats with App {
           opt[LocalDate]('c', "conflict-date")
             .text("Current conflict date, defaults to today: YYYY-MM-DD")
             .action((conflictDateArgs, cli) => cli.copy(conflictDate = conflictDateArgs))
+        ),
+      cmd("iana-file")
+        .text("Generate IANA file based on  numbers and resources from iana.org ")
+        .action((_, cli) => cli.copy(operation = "iana-file")
         ),
       checkConfig(cli => if (cli.operation.isEmpty) failure("You need to specify operations [generate | notify] ") else success),
       checkConfig(cli => Try(new URL(cli.base).getHost) match {
@@ -75,9 +81,11 @@ object Main extends Stats with App {
       case _ => System.exit(1) // some options parse error, usage message from scopt will be shown
     }
 
+
   operation match {
     case "generate" => generateDelegatedStats(baseURL)
     case "notify"   => checkConflictsAndNotify(baseURL)
+    case "iana-file" => generateIanaFile()
   }
 
   def generateDelegatedStats(baseURL: String): Unit = {
@@ -107,6 +115,17 @@ object Main extends Stats with App {
 
       startDate = startDate.plusDays(1)
     }
+  }
+
+  def generateIanaFile(): Unit = {
+    val ianaRecords = IanaGenerator.processIanaRecords
+
+    Using.resource(new PrintWriter(new File(config.currentIanaFile))){ writer =>
+      Ports.writeDisclaimer(writer)
+      Ports.writeHeader(ianaRecords, writer)
+      Ports.writeResult(ianaRecords, writer)
+    }
+
   }
 
   def checkConflictsAndNotify(baseConflictsURL: String) : Unit = {

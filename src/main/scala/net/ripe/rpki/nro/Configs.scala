@@ -3,11 +3,10 @@ package net.ripe.rpki.nro
 import java.io.File
 import java.time.LocalDate
 import scala.concurrent.duration.Duration
-
 import com.typesafe.config.{Config, ConfigFactory}
 import courier.Mailer
 import net.ripe.rpki.nro.Const._
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 class Configs(private val todayDate: LocalDate) {
   import Configs._
@@ -24,6 +23,7 @@ class Configs(private val todayDate: LocalDate) {
   def previousResultFile: String = s"$previousResultDirectory/$resultFileName"
   def currentConflictFile: String = s"$currentResultDirectory/$conflictFileName"
   def previousConflictFile: String = s"$previousResultDirectory/$conflictFileName"
+  def currentIanaFile: String = s"$currentResultDirectory/$ianaFileName"
 
   def currentDataDirectory: File = createIfNeeded(s"$dataDirectory/$CURRENT_DAY")
   def currentResultDirectory: File = createIfNeeded(s"$resultDirectory/$CURRENT_DAY")
@@ -32,7 +32,7 @@ class Configs(private val todayDate: LocalDate) {
 
   def formatDate(date: LocalDate): String = date.toString.replaceAll("-", "")
 
-  def createIfNeeded(path: String) = {
+  def createIfNeeded(path: String): File = {
     val resultFile = new File(path)
     if(!resultFile.exists()){
       resultFile.mkdir()
@@ -42,10 +42,8 @@ class Configs(private val todayDate: LocalDate) {
 }
 
 object Configs {
-  private implicit def asDuration(d: java.time.Duration): Duration =
-    Duration.fromNanos(d.toNanos)
 
-  def configureFor(todayDate: LocalDate) = {
+  def configureFor(todayDate: LocalDate): Unit = {
     config = new Configs(todayDate)
   }
   private val conf: Config = ConfigFactory.load()
@@ -64,10 +62,11 @@ object Configs {
   val allowedList: Either[String, String] = if(conf.hasPath("allowedlist")) Left(conf.getString("allowedlist")) else Right("allowedlist")
   val gracePeriod: Int = conf.getInt("grace.period")
   val maxRetries: Int = conf.getInt("http.max-retries")
-  val httpTimeout: Duration = conf.getDuration("http.timeout")
+  val httpTimeout: Duration = Duration.fromNanos(conf.getDuration("http.timeout").toNanos)
   val dataDirectory: String = conf.getString("data.directory")
   val resultDirectory: String = conf.getString("result.directory")
   val resultFileName: String = conf.getString("result.fileName")
+  val ianaFileName: String = conf.getString("iana.fileName")
   val mergedFileName: String = conf.getString("merged.fileName")
   val conflictFileName: String = conf.getString("conflict.fileName")
   val unclaimedFileName: String = conf.getString("unclaimed.fileName")
@@ -84,11 +83,13 @@ object Configs {
   val ianaOrgFileURL: Map[String, String] = Map[String, String](
     ASN16      -> urls.getString(ASN16),
     ASN32      -> urls.getString(ASN32),
+    ASN_SPECIAL_REGISTRY   -> urls.getString(ASN_SPECIAL_REGISTRY),
     IPV4_ADDRESS_SPACE      -> urls.getString(IPV4_ADDRESS_SPACE),
     IPV6_ADDRESS_SPACE      -> urls.getString(IPV6_ADDRESS_SPACE),
     IPV4_RECOVERED_SPACE    -> urls.getString(IPV4_RECOVERED_SPACE),
     IPV4_REALLOCATED_SPACE  -> urls.getString(IPV4_REALLOCATED_SPACE),
     IPV4_SPECIAL_REGISTRY   -> urls.getString(IPV4_SPECIAL_REGISTRY),
+    IPV6_SPECIAL_REGISTRY   -> urls.getString(IPV6_SPECIAL_REGISTRY),
     IPV6_UNICAST_ASSIGNMENT -> urls.getString(IPV6_UNICAST_ASSIGNMENT)
   )
 
@@ -101,7 +102,7 @@ object Configs {
   val debug: Boolean = mail.getBoolean("debug")
   val auth: Boolean = mail.getBoolean("auth")
 
-  val mailer = Mailer(host, port)
+  val mailer: Mailer = Mailer(host, port)
     .as(username, password)
     .auth(auth)
     .startTls(tls)
@@ -112,5 +113,5 @@ object Configs {
 }
 
 trait Logging {
-  def logger = LoggerFactory.getLogger(getClass.getName)
+  def logger: Logger = LoggerFactory.getLogger(getClass.getName)
 }
