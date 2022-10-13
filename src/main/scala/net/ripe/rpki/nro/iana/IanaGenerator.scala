@@ -3,7 +3,6 @@ package net.ripe.rpki.nro.iana
 import net.ripe.rpki.nro.Configs.ianaOrgFileURL
 import net.ripe.rpki.nro.Const.{ASN16, ASN32, ASN_SPECIAL_REGISTRY, IPV4_ADDRESS_SPACE, IPV4_REALLOCATED_SPACE, IPV4_RECOVERED_SPACE, IPV4_SPECIAL_REGISTRY, IPV6_ADDRESS_SPACE, IPV6_SPECIAL_REGISTRY, IPV6_UNICAST_ASSIGNMENT}
 import net.ripe.rpki.nro.Logging
-import net.ripe.rpki.nro.iana.IanaUnicastV6.{FIRST_SLASH_16_UNICAST_V6, GLOBAL_UNICAST_V6}
 import net.ripe.rpki.nro.main.Merger
 import net.ripe.rpki.nro.model.Records
 import net.ripe.rpki.nro.service.Ports.toRecords
@@ -26,8 +25,8 @@ object IanaGenerator extends Merger with Logging with IanaParser {
     val unicastV6 = toRecords(fetchIpv6(ianaOrgFileURL(IPV6_UNICAST_ASSIGNMENT)))
 
     val aggregatedIanaSpaces = allIanaAddressSpace
-      .substract(GLOBAL_UNICAST_V6).append(FIRST_SLASH_16_UNICAST_V6)
-      .substract(recoveredV4).append(reallocatedV4)
+      .substract(recoveredV4)
+      .append(reallocatedV4)
       .append(unicastV6)
       .append(specialRegistries)
 
