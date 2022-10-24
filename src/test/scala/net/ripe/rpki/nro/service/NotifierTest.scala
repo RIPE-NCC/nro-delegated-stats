@@ -44,7 +44,7 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter{
     assert(recipients.contains(contacts(RSCG)))
 
     // All from no-reply nro.net
-    assert(messages.flatMap(_.getFrom).map(_.toString).toSet == Set("no-reply@nro.net"))
+    assert(messages.flatMap(_.getFrom).map(_.toString).toSet == Set(sender))
 
     // Same subjects
     assert(messages.map(_.getSubject).toSet == Set(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}"))

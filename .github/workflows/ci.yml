@@ -21,6 +21,14 @@ jobs:
 
       - name: Package
         run: sbt assembly
+        env:
+          NOTIFICATION_SENDER: ${{ secrets.NOTIFICATION_SENDER }}
+          RIPENCC_CONTACT: ${{ secrets.RIPENCC_CONTACT }}
+          APNIC_CONTACT: ${{ secrets.APNIC_CONTACT }}
+          ARIN_CONTACT: ${{ secrets.ARIN_CONTACT }}
+          LACNIC_CONTACT: ${{ secrets.LACNIC_CONTACT }}
+          AFRINIC_CONTACT: ${{ secrets.AFRINIC_CONTACT }}
+          RSCG_CONTACT: ${{ secrets.RSCG_CONTACT }}
 
       - name: Create artifacts directory
         run: mkdir artifacts
