@@ -16,13 +16,12 @@ Input files are data from RIRs, and IANA files which is also from Jeff.
     IANA    -> "https://ftp.apnic.net/pub/stats/iana/delegated-iana-latest",
 ```
 
-##
+## Reports
 
-Merged results will be created in `result/combined-stat`
-If there are conflicting entries between RIRs it will be stored in `result/conflicts`
+More detailed description about the generated reports is documented [here](Reports.md).
 
-We are not performing EU country code mapping that was done in the original NRO stats.
- 
+## Usage
+
 Building single jar assembly can be done with `sbt assembly` and look for `nro-delegated-stats.jar` in target directory.
 
 There are two main operations that can be performed. Generating the delegated extended stats, and notification/email
