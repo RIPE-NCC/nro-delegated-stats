@@ -7,13 +7,14 @@ This NRO Extended Allocations and Assignment reports is a daily updated report
 of the distribution of Internet number resources.
 
 The main NRO extended reports format is according to the following specification:
-- https://www.nro.net/wp-content/uploads/nro-extended-stats-readme5.txt
+- https://www.nro.net/wp-content/uploads/nro-extended-stats-readme5.txt [1]
 
 
 Inputs
 ===========
 
-The daily distribution reports are generated based on delegated extended RIR statistics from each of the RIRs.
+The daily distribution reports are generated based on delegated extended RIR reports from each of the RIRs.
+
 ```
     APNIC   -> "https://ftp.apnic.net/stats/apnic/delegated-apnic-extended-latest",
     AFRINIC -> "https://ftp.afrinic.net/stats/afrinic/delegated-afrinic-extended-latest",
@@ -22,7 +23,11 @@ The daily distribution reports are generated based on delegated extended RIR sta
     RIPENCC -> "https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-extended-latest",
 ```
 
-Each of these input files follows this RIR statistics exchange format. 
+Each RIRs has their own reports specification, but we rely on the facts that their records formats aligned with [1]./
+
+- https://ftp.apnic.net/apnic/stats/apnic/README-EXTENDED.TXT
+- https://ftp.afrinic.net/stats/afrinic/README-EXTENDED.txt
+- https://ftp.lacnic.net/pub/stats/lacnic/RIR-Statistics-Exchange-Format.txt
 - https://ftp.ripe.net/pub/stats/ripencc/RIR-Statistics-Exchange-Format.txt
 
 
@@ -39,8 +44,7 @@ Reports are generated daily and stored in:
 - https://ftp.ripe.net/pub/stats/ripencc/nro-stats/
 
 An subdirectory named `YYYYMMDD` is generated daily under that ftp location.
-The latest combined delegated-extended file is a symbolic link for the latest
-generated daily data.
+The `latest` subdirectory is a symbolic link for the latest generated daily data subdirectory.
 
 The main file generated is:
 https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats
@@ -72,7 +76,7 @@ There are several files produced under each daily archive directory:
     ```
   But not all of these space is  declared in their RIR statistics.
 
-* `conflicts` are if more than one RIR claims the same records, example:
+* `conflicts` are if more than one RIRs or IANA claims the same records, example:
 
     ```
     apnic|ZZ|ipv4|203.0.113.0|256|20230222|reserved|apnic|e-stats
