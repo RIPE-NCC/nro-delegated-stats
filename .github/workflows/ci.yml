@@ -92,7 +92,7 @@ jobs:
           context: ./
           file: ./Dockerfile
           push: true
-          tags: ripencc/nro-delegated-stats:${{ steps.branch_name.outputs.branch }}
+          tags: ghcr.io/ripe-ncc/nro-delegated-stats:${{ steps.branch_name.outputs.branch }}
           labels: "org.label-schema.vcs-ref=${{ github.sha }}"
 
       - name: Image digest
