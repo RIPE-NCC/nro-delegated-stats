@@ -56,6 +56,16 @@ For `notify` operation you need to provide `base-url` to fetch previous conflict
 Other application configuration that are not supplied via command line are provided in this [application.conf](https://github.com/RIPE-NCC/nro-delegated-stats/blob/main/src/main/resources/application.conf)
 which by default is bundled, but can be overriden using `-Dconfig.file=<application.conf>`.
 
+
+## Adding conflict exceptions 
+
+There are conflicts in certain resource attribution and these conflicts are mentioned in the `conflicts` generated 
+in the result directory for every date. Some of these conflicts are historically justified in some way or the other
+and are pretty hard to get rid of administratively. If RS gives up on some of the conflicts, we have `allowedlist` 
+file to add them to. After adding resources to `allowedlist` they are not mentioned in the notification email sent 
+to RS on the daily basis. The easiest way of suppressing conflict notifications is to copy-paste the line (any of 
+the two conflicting lines) from `conflicts` to the `allowedlist` and rebuild the docker image by creating a new release.
+
 ## License
 
 Copyright (c) 2019-2022 RIPE NCC All rights reserved.
