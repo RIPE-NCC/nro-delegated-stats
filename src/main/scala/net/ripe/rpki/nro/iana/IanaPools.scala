@@ -16,9 +16,11 @@ object IanaPools {
     ).substract(usedRecords)
   }
 
-  def ipv4Pool(ipv4: RecordRange, status: String = IANAPOOL): Ipv4Record = Ipv4Record(Stat(IANA, DEFAULT_CC, IPV4, s"${Ipv4.of(ipv4.rStart)}", s"${ipv4.length}", IPV4_IANA_POOL_DATE, status, IANA, IANA))
+  def ipv4Pool(ipv4: RecordRange, status: String = IANAPOOL): Ipv4Record =
+    Ipv4Record(Stat(IANA, DEFAULT_CC, IPV4, s"${Ipv4.of(ipv4.rStart)}", s"${ipv4.length}", IPV4_IANA_POOL_DATE, status, IANA, IANA))
 
-  def asnPool(asn: RecordRange, status: String = IANAPOOL): AsnRecord = AsnRecord(Stat(IANA, DEFAULT_CC, ASN, s"${asn.rStart}", s"${asn.length}", ASN_IANA_POOL_DATE, status, IANA, IANA))
+  def asnPool(asn: RecordRange, status: String = IANAPOOL): AsnRecord =
+    AsnRecord(Stat(IANA, DEFAULT_CC, ASN, s"${asn.rStart}", s"${asn.length}", ASN_IANA_POOL_DATE, status, IANA, IANA))
 
   def ipv6Pool(ipv6: RecordRange, status: String = IANAPOOL): Ipv6Record = {
     val Array(start, prefix) = Ipv6Range.from(ipv6.rStart).to(ipv6.rEnd).toStringInCidrNotation.split("/")

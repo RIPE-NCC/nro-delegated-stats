@@ -4,7 +4,7 @@ import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.iana.IanaGenerator
-import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Ipv4Record, Ipv6Record, Record, Records}
+import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Unclaimed, Ipv4Record, Ipv6Record, Record, Records}
 import net.ripe.rpki.nro.{Configs, Logging}
 import requests.Response
 
@@ -15,6 +15,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.io.Source.{fromBytes, fromFile, fromResource}
 import scala.util.{Failure, Success, Try, Using}
+
 /**
  * Importing data from remotes files and exporting to file.
  * Ports from Port & Adapter/Hexagonal architecture, i.e stuff on the edge communicating with outer world.
@@ -145,17 +146,17 @@ object Ports extends Logging {
   def fetchAndParseInputs(baseURL: String, ownmagic: Boolean = true): (Iterable[Records], Records, Option[Records]) = {
 
     val recordMaps: Map[String, Records] = sources.map {
-      case (name:String, url:String) =>
+      case (name: String, url: String) =>
         fetchLocally(url, s"${config.currentDataDirectory}/$name")
         name -> parseRecordFile(s"${config.currentDataDirectory}/$name")
     }
 
     val rirs = (recordMaps - "iana").view.mapValues(_.formatRIRs).values
-    val iana = if(ownmagic)  IanaGenerator.processIanaRecords else recordMaps("iana")
-    logger.info(if(ownmagic)"Using own magic" else "Using NRO iana from geoff")
+    val iana = if (ownmagic) IanaGenerator.processIanaRecords else recordMaps("iana")
+    logger.info(if (ownmagic) "Using own magic" else "Using NRO iana from geoff")
 
     val allSourceFileContainSomething = iana.size > 0 && rirs.forall(_.size > 0)
-    if(!allSourceFileContainSomething){
+    if (!allSourceFileContainSomething) {
       logger.error(s"Please check the input files in ${config.currentDataDirectory} some of them are empty.")
       System.exit(1)
     }
@@ -174,21 +175,27 @@ object Ports extends Logging {
     (rirs, iana, previousResult.toOption)
   }
 
-  private def getAllowedList: Records = {
+  private def getAllowedList: Records =
     parseRecordSource(allowedList.fold(fromFile(_), fromResource(_)))
+
+  def getConflicts(baseConflictURL: String): (Records, Seq[Conflict], Seq[Conflict]) = {
+    def getIt(path: String) =
+      Try(readConflicts(path)).getOrElse(Seq())
+
+    val previousPath = s"$baseConflictURL/${config.PREV_CONFLICT_DAY}/${Configs.conflictFileName}"
+    val currentPath = s"$baseConflictURL/${config.CURRENT_DAY}/${Configs.conflictFileName}"
+
+    (getAllowedList, getIt(currentPath), getIt(previousPath))
   }
 
-  def getConflicts(baseConflictURL: String): (Records,  Seq[Conflict], Seq[Conflict]) = {
+  def getUnclaimed(baseConflictURL: String): (Records, Seq[Conflict], Seq[Conflict]) = {
+    def getIt(path: String) =
+      Try(readUnclaimed(path)).getOrElse(Seq())
 
-    val allowedListRecords: Records = getAllowedList
+    val previousPath = s"$baseConflictURL/${config.PREV_CONFLICT_DAY}/${Configs.unclaimedFileName}"
+    val currentPath = s"$baseConflictURL/${config.CURRENT_DAY}/${Configs.unclaimedFileName}"
 
-    val previousConflictPath = s"$baseConflictURL/${config.PREV_CONFLICT_DAY}/${Configs.conflictFileName}"
-    val currentConflictPath = s"$baseConflictURL/${config.CURRENT_DAY}/${Configs.conflictFileName}"
-
-    val currentConflicts  = Try(readConflicts(previousConflictPath)).getOrElse(Seq())
-    val previousConflicts = Try(readConflicts(currentConflictPath)).getOrElse(Seq())
-
-    (allowedListRecords, previousConflicts, currentConflicts)
+    (getAllowedList, getIt(currentPath), getIt(previousPath))
   }
 
   def writeRecords(records: Records, outputFile: String = s"$resultFileName"): Unit = {
@@ -197,6 +204,7 @@ object Ports extends Logging {
       writeResult(records, writer)
     }
   }
+
   def writeDisclaimer(writer: PrintWriter): Unit = {
     val disclaimer = scala.io.Source.fromResource("disclaimer.txt").getLines().mkString("\n")
     writer.write(disclaimer)
@@ -215,7 +223,7 @@ object Ports extends Logging {
   def writeResult(records: Records, writer: PrintWriter): Unit = {
     val (asn, ipv4, ipv6) = (records.asn, records.ipv4, records.ipv6)
     val totalSize = asn.size + ipv4.size + ipv6.size
-    if(totalSize == 0) return
+    if (totalSize == 0) return
     writer.write(asn.map(_.toString).mkString("\n"))
     writer.write("\n")
     writer.write(ipv4.map(_.toString).mkString("\n"))
@@ -223,13 +231,13 @@ object Ports extends Logging {
     writer.write(ipv6.map(_.toString).mkString("\n"))
   }
 
-  def writeClaims(recs : Records, fileName: String): Unit =
+  def writeClaims(recs: Records, fileName: String): Unit =
     Using.resource(new PrintWriter(new File(fileName))) { writer =>
       writeResult(recs, writer)
     }
 
   def writeConflicts(conflicts: Seq[Conflict], outputFile: String = s"${config.currentConflictFile}"): Unit = {
-    Using.resource( CSVWriter.open(new File(outputFile))) { writer =>
+    Using.resource(CSVWriter.open(new File(outputFile))) { writer =>
       conflicts.foreach(c => {
         writer.writeRow(c.a.asList)
         writer.writeRow(c.b.asList)
@@ -238,16 +246,24 @@ object Ports extends Logging {
     }
   }
 
-  def readConflicts(conflictURL: String ): Seq[Conflict] = {
-    logger.debug(s"Reading conflicts from $conflictURL" )
+  def readConflicts(conflictURL: String): Seq[Conflict] = {
+    logger.debug(s"Reading conflicts from $conflictURL")
+    fetchFile(conflictURL, parseConflicts)
+  }
 
-    val fetchResponse: Future[Response] = fetchWithRetries(conflictURL)
-    Try(Await.result(fetchResponse, httpTimeout)) match {
-      case Success(response) if response.statusCode == 200 =>
-        parseConflicts(new StringReader(response.text()))
-      case _ => throw new RuntimeException("Failed to fetch conflict files")
+  def readUnclaimed(unclaimedURL: String): Seq[Conflict] = {
+    logger.debug(s"Reading unclaimed from $unclaimedURL")
+    fetchFile(unclaimedURL, parseConflicts)
+  }
+
+  def fetchFile[S](url: String, parse: StringReader => S): S = {
+    Try(Await.result(fetchWithRetries(url), httpTimeout)) match {
+      case Success(response)
+        if response.statusCode == 200 =>
+          parse(new StringReader(response.text()))
+      case _ =>
+        throw new RuntimeException("Failed to fetch conflict files")
     }
-
   }
 
   def parseConflicts(csvReader: Reader): Seq[Conflict] = {
@@ -258,6 +274,18 @@ object Ports extends Logging {
         .map {
           case Seq(a, b) => Conflict(Record(a), Record(b))
           case x => throw new IllegalArgumentException(s"Cannot parse incomplete conflicts file. Remainder: $x")
+        }.toSeq
+    }
+  }
+
+  def parseUnclaimed(csvReader: Reader): Seq[Unclaimed] = {
+    Using.resource(CSVReader.open(csvReader)) { reader =>
+      reader.all()
+        .filter(_.size > 1)
+        .map {
+          case r: List[String] => Unclaimed(Record(r))
+          case x =>
+            throw new IllegalArgumentException(s"Cannot parse unclaimed resources file. Remainder: $x")
         }.toSeq
     }
   }

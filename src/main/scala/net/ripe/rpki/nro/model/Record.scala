@@ -14,13 +14,12 @@ case class Stat(registry: String, cc: String, `type`: String, start: String, len
 }
 
 case class Conflict(a: Record, b: Record) {
-
   override def toString: String = s"$a\n$b"
-
   def rirsInvolved = s"${a.registry}--${b.registry}"
-
   def key: List[String] = a.noDate ++ b.noDate
 }
+
+case class Unclaimed(record: Record) {}
 
 trait Record extends Comparable[Record] with Ranges {
 
