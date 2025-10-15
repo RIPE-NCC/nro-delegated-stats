@@ -4,11 +4,11 @@ import com.github.tototoshi.csv.{CSVReader, CSVWriter, DefaultCSVFormat}
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const._
 import net.ripe.rpki.nro.iana.IanaGenerator
-import net.ripe.rpki.nro.model.{AsnRecord, Conflict, Unclaimed, Ipv4Record, Ipv6Record, Record, Records}
+import net.ripe.rpki.nro.model._
 import net.ripe.rpki.nro.{Configs, Logging}
 import requests.Response
 
-import java.io.{File, FileOutputStream, PrintWriter, Reader, StringReader}
+import java.io._
 import java.math.BigInteger
 import java.security.MessageDigest
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -27,7 +27,7 @@ object Ports extends Logging {
   }
 
   val comments: Seq[String] => Boolean = _.head.startsWith("#")
-  val summary : Seq[String] => Boolean = _.last == "summary"
+  val summary: Seq[String] => Boolean = _.last == "summary"
   val version: String => Boolean = s => s.forall(c => c.isDigit || c == '.')
   val header: Seq[String] => Boolean = line => version(line.head)
 
@@ -42,24 +42,24 @@ object Ports extends Logging {
     parseRecordSource(fromFile(source))
   }
 
-  def toRecords(lines : Seq[List[String]]): Records = {
-    var asn  : Vector[AsnRecord]  = Vector[AsnRecord]  ()
-    var ipv4 : Vector[Ipv4Record] = Vector[Ipv4Record] ()
-    var ipv6 : Vector[Ipv6Record] = Vector[Ipv6Record] ()
+  def toRecords(lines: Seq[List[String]]): Records = {
+    var asn: Vector[AsnRecord] = Vector[AsnRecord]()
+    var ipv4: Vector[Ipv4Record] = Vector[Ipv4Record]()
+    var ipv6: Vector[Ipv6Record] = Vector[Ipv6Record]()
 
     val records = lines.withFilter(isRecord).map(Record.apply)
 
     records.foreach {
-      case rec: AsnRecord   => asn  = asn  :+ rec
-      case rec: Ipv4Record  => ipv4 = ipv4 :+ rec
-      case rec: Ipv6Record  => ipv6 = ipv6 :+ rec
+      case rec: AsnRecord => asn = asn :+ rec
+      case rec: Ipv4Record => ipv4 = ipv4 :+ rec
+      case rec: Ipv6Record => ipv6 = ipv6 :+ rec
     }
 
     Records(asn.toList, ipv4.toList, ipv6.toList)
   }
 
   def fetchWithRetries(target: String): Future[Response] = {
-    implicit val success: retry.Success[Response] = retry.Success[Response](_.statusCode ==  200)
+    implicit val success: retry.Success[Response] = retry.Success[Response](_.statusCode == 200)
 
     retry.JitterBackoff(max = maxRetries).apply(() => Future {
       logger.info(s"-> trying $target")
@@ -99,16 +99,16 @@ object Ports extends Logging {
       }
     } else {
       val sourceAttempts = fetchWithRetries(source)
-      val md5Attempts    = fetchWithRetries(s"$source.md5")
+      val md5Attempts = fetchWithRetries(s"$source.md5")
 
-      val sourceMd5 : Future[(Response, Response)]   = for {
+      val sourceMd5: Future[(Response, Response)] = for {
         sourceResponse <- sourceAttempts
         md5Response <- md5Attempts
       } yield (sourceResponse, md5Response)
 
       Try(Await.result(sourceMd5, httpTimeout)) match {
         case Success((response, md5response)) if response.statusCode == 200 =>
-          if(response.bytes.length < 2000){
+          if (response.bytes.length < 2000) {
             logger.error(s"Contents $source is too small, please investigate manually.")
             System.exit(1)
           }
@@ -118,10 +118,10 @@ object Ports extends Logging {
           // This explains the filter.
           val maybeMD5 = md5response.text().split("\\s+").find(_.length == 32)
 
-          if(maybeMD5.isDefined){
+          if (maybeMD5.isDefined) {
             val computedMd5 = md5digest(response.bytes)
             val retrievedMd5 = maybeMD5.get
-            if(computedMd5 != retrievedMd5){
+            if (computedMd5 != retrievedMd5) {
               logger.error(s"MD5 does not match! for $source")
               logger.error(s"    Computed : $computedMd5")
               logger.error(s"    Retrieved: $retrievedMd5")
@@ -129,8 +129,8 @@ object Ports extends Logging {
             }
             logger.info(s"-> MD5 sum for $source: $computedMd5")
           } else {
-              logger.error(s"Unrecognized MD5 format for: $source : \n\t$md5response")
-              System.exit(1)
+            logger.error(s"Unrecognized MD5 format for: $source : \n\t$md5response")
+            System.exit(1)
           }
           Using.resource(new FileOutputStream(dest)) { out =>
             response.writeBytesTo(out)
@@ -188,7 +188,7 @@ object Ports extends Logging {
     (getAllowedList, getIt(currentPath), getIt(previousPath))
   }
 
-  def getUnclaimed(baseConflictURL: String): (Records, Seq[Conflict], Seq[Conflict]) = {
+  def getUnclaimed(baseConflictURL: String): (Records, Seq[Unclaimed], Seq[Unclaimed]) = {
     def getIt(path: String) =
       Try(readUnclaimed(path)).getOrElse(Seq())
 
@@ -251,16 +251,16 @@ object Ports extends Logging {
     fetchFile(conflictURL, parseConflicts)
   }
 
-  def readUnclaimed(unclaimedURL: String): Seq[Conflict] = {
+  def readUnclaimed(unclaimedURL: String): Seq[Unclaimed] = {
     logger.debug(s"Reading unclaimed from $unclaimedURL")
-    fetchFile(unclaimedURL, parseConflicts)
+    fetchFile(unclaimedURL, parseUnclaimed)
   }
 
   def fetchFile[S](url: String, parse: StringReader => S): S = {
     Try(Await.result(fetchWithRetries(url), httpTimeout)) match {
       case Success(response)
         if response.statusCode == 200 =>
-          parse(new StringReader(response.text()))
+        parse(new StringReader(response.text()))
       case _ =>
         throw new RuntimeException("Failed to fetch conflict files")
     }
@@ -273,7 +273,8 @@ object Ports extends Logging {
         .sliding(2, 2)
         .map {
           case Seq(a, b) => Conflict(Record(a), Record(b))
-          case x => throw new IllegalArgumentException(s"Cannot parse incomplete conflicts file. Remainder: $x")
+          case x =>
+            throw new IllegalArgumentException(s"Cannot parse incomplete conflicts file. Remainder: $x")
         }.toSeq
     }
   }
@@ -286,7 +287,7 @@ object Ports extends Logging {
           case r: List[String] => Unclaimed(Record(r))
           case x =>
             throw new IllegalArgumentException(s"Cannot parse unclaimed resources file. Remainder: $x")
-        }.toSeq
+        }
     }
   }
 

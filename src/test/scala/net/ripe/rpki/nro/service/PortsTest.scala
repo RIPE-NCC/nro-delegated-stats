@@ -1,10 +1,8 @@
 package net.ripe.rpki.nro.service
 
-import java.io.File
-
 import net.ripe.rpki.nro.TestUtil
-import net.ripe.rpki.nro.service.Ports._
 import net.ripe.rpki.nro.model.Conflict
+import net.ripe.rpki.nro.service.Ports._
 import org.scalatest.FlatSpec
 
 class PortsTest extends FlatSpec with TestUtil {
@@ -32,6 +30,11 @@ class PortsTest extends FlatSpec with TestUtil {
     val noConflict = List[Conflict]()
     val fetched = readConflicts("https://ftp.ripe.net/pub/stats/ripencc/nro-stats/20210810/unclaimed")
     assert(fetched == noConflict)
+  }
+
+  it should "parse unclaimed entries" in {
+    val fetched = readUnclaimed("https://ftp.ripe.net/pub/stats/ripencc/nro-stats/20251014/unclaimed")
+    assert(fetched.size == 9)
   }
 
 }
