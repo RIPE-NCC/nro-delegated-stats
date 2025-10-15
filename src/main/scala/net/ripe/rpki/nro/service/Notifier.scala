@@ -66,7 +66,7 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
       val envelope: Envelope = Envelope
         .from(sender.addr)
         .to(ArraySeq.unsafeWrapArray(rsContactsFromConflicts.map(_.addr)): _*)
-        .subject(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
+        .subject(s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
         .content(Text(messageText))
 
       Await.result(mailer(envelope), Duration.Inf)
