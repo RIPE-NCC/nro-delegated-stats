@@ -69,7 +69,7 @@ object Main extends Stats with App {
         ),
       checkConfig(cli => if (cli.operation.isEmpty) failure("You need to specify operations [generate | notify] ") else success),
       checkConfig(cli => Try(new URL(cli.base).getHost) match {
-        case Success(_)  => success
+        case Success(_) => success
         case Failure(e) => failure(s"Base URL can't be parsed ${e.getMessage}")
       })
     )
@@ -84,7 +84,7 @@ object Main extends Stats with App {
 
   operation match {
     case "generate" => generateDelegatedStats(baseURL)
-    case "notify"   => checkConflictsAndNotify(baseURL)
+    case "notify"   => checkIssuesAndNotify(baseURL)
     case "iana-file" => generateIanaFile()
   }
 
@@ -120,19 +120,18 @@ object Main extends Stats with App {
   def generateIanaFile(): Unit = {
     val ianaRecords = IanaGenerator.processIanaRecords
 
-    Using.resource(new PrintWriter(new File(config.currentIanaFile))){ writer =>
+    Using.resource(new PrintWriter(new File(config.currentIanaFile))) { writer =>
       Ports.writeDisclaimer(writer)
       Ports.writeHeader(ianaRecords, writer)
       Ports.writeResult(ianaRecords, writer)
     }
-
   }
 
-  def checkConflictsAndNotify(baseConflictsURL: String) : Unit = {
-
+  def checkIssuesAndNotify(baseURL: String): Unit = {
     Configs.configureFor(conflictDate)
     // Here we already have to modify how we are retrieving conflicts.
-    val (allowedList, previousConflicts, currentConflicts): (Records, Seq[Conflict], Seq[Conflict]) = Ports.getConflicts(baseConflictsURL)
+    val (allowedList, previousConflicts, currentConflicts) = Ports.getConflicts(baseURL)
+    val (previousUnclaimed, currentUnclaimed) = Ports.getUnclaimed(baseURL)
 
     val notifier = new Notifier(mailer, allowedList.all)
     val stickyConflicts = notifier.findStickyConflicts(currentConflicts, previousConflicts)
@@ -141,7 +140,7 @@ object Main extends Stats with App {
     } else {
       logger.info("Found persistent conflicts:")
       stickyConflicts.foreach(c => logger.info(c.toString))
-      notifier.notifyConflicts(stickyConflicts)
+      notifier.notifyOnIssues(stickyConflicts)
     }
   }
 

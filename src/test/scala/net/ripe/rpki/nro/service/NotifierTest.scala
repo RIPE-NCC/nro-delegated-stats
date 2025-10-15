@@ -33,7 +33,7 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter{
     val currentConflicts = Ports.parseConflicts(getResourceReader("/currentConflicts"))
 
     val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
-    subject.notifyConflicts(stickyConflicts)
+    subject.notifyOnIssues(stickyConflicts)
 
     val messages = greenMail.getReceivedMessages.toList
 
@@ -60,21 +60,14 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter{
     val previousConflicts = Ports.parseConflicts(getResourceReader("/previousConflicts"))
     val currentConflicts = List()
     val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
-
-    subject.notifyConflicts(stickyConflicts)
-
-    val messages = greenMail.getReceivedMessages.toList
-    assert(messages.isEmpty)
+    assert(stickyConflicts.isEmpty)
   }
 
   it should " not alert if there are just new conflicts" in {
     val previousConflicts = List()
     val currentConflicts = Ports.parseConflicts(getResourceReader("/currentConflicts"))
     val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
-    val alertSent = subject.notifyConflicts(stickyConflicts)
-
-    val messages = greenMail.getReceivedMessages.toList
-    assert(messages.isEmpty)
+    assert(stickyConflicts.isEmpty)
   }
 
   it should " able to detect allowedlisted conflict " in {

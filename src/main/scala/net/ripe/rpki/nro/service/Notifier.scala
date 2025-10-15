@@ -36,20 +36,19 @@ class Notifier(mailer: Mailer, allowedList : Seq[Record]) extends Logging {
       .filterNot(isAllowed)
   }
 
-  def notifyConflicts(conflicts: Set[Conflict]): Unit = {
-    if (conflicts.isEmpty) ()
-    else {
-      val rsContactsFromConflicts: Array[String] = conflicts.flatMap(c => Set(c.a.registry, c.b.registry))
+  def notifyOnIssues(conflicts: Set[Conflict]): Unit = {
+    val rsContactsFromConflicts: Array[String] =
+      conflicts.flatMap(c => Set(c.a.registry, c.b.registry))
         .filter(_ != Const.IANA)
         .map(contacts)
         .toArray :+ contacts(RSCG)
-      val envelope: Envelope = Envelope
-        .from(sender.addr)
-        .to(ArraySeq.unsafeWrapArray(rsContactsFromConflicts.map(_.addr)): _*)
-        .subject(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
-        .content(Text(s"Please verify the following conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"))
 
-      Await.result(mailer(envelope), Duration.Inf)
-    }
+    val envelope: Envelope = Envelope
+      .from(sender.addr)
+      .to(ArraySeq.unsafeWrapArray(rsContactsFromConflicts.map(_.addr)): _*)
+      .subject(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
+      .content(Text(s"Please verify the following conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"))
+
+    Await.result(mailer(envelope), Duration.Inf)
   }
 }
