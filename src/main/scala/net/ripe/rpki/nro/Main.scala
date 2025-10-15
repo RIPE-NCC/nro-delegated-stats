@@ -135,12 +135,14 @@ object Main extends Stats with App {
 
     val notifier = new Notifier(mailer, allowedList.all)
     val stickyConflicts = notifier.findStickyConflicts(currentConflicts, previousConflicts)
-    if (stickyConflicts.isEmpty) {
+    val stickyUnclaimed = notifier.findStickyUnclaimed(currentUnclaimed, previousUnclaimed)
+    if (stickyConflicts.isEmpty && stickyUnclaimed.isEmpty) {
       logger.info("No emails sent.")
     } else {
       logger.info("Found persistent conflicts:")
       stickyConflicts.foreach(c => logger.info(c.toString))
-      notifier.notifyOnIssues(stickyConflicts)
+      stickyUnclaimed.foreach(c => logger.info(c.toString))
+      notifier.notifyOnIssues(stickyConflicts, stickyUnclaimed)
     }
   }
 

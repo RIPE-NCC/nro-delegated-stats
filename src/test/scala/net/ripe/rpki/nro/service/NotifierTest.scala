@@ -33,7 +33,7 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter{
     val currentConflicts = Ports.parseConflicts(getResourceReader("/currentConflicts"))
 
     val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
-    subject.notifyOnIssues(stickyConflicts)
+    subject.notifyOnIssues(stickyConflicts, Set())
 
     val messages = greenMail.getReceivedMessages.toList
 

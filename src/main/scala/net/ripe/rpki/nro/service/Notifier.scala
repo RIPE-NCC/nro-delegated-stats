@@ -4,13 +4,11 @@ import courier.Defaults._
 import courier._
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.Const.RSCG
-import net.ripe.rpki.nro.model.Conflict
+import net.ripe.rpki.nro.model.{Conflict, Record, Unclaimed, WithKey}
 import net.ripe.rpki.nro.{Const, Logging}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import net.ripe.rpki.nro.model.Record
-
 import scala.collection.immutable.ArraySeq
 
 class Notifier(mailer: Mailer, allowedList : Seq[Record]) extends Logging {
@@ -24,19 +22,21 @@ class Notifier(mailer: Mailer, allowedList : Seq[Record]) extends Logging {
     check
   }
 
-  def findStickyConflicts(current: Seq[Conflict], previous: Seq[Conflict]): Set[Conflict] = {
-    // Conflict records contains date,  we need to convert to keys without dates
-    // to find persisting conflicts i.e intersection of previous and current conflicts
-    val currentKeys = current.map(_.key).toSet
+  private def findStickyIssues[T <: WithKey](current: Seq[T], previous: Seq[T]): Set[T] = {
     val previousMap = previous.map(c => c.key -> c).toMap
-
-    currentKeys
+    current.map(_.key)
+      .toSet
       .intersect(previousMap.keySet)
       .map(previousMap)
-      .filterNot(isAllowed)
   }
 
-  def notifyOnIssues(conflicts: Set[Conflict]): Unit = {
+  def findStickyConflicts(current: Seq[Conflict], previous: Seq[Conflict]): Set[Conflict] =
+    findStickyIssues(current, previous).filterNot(isAllowed)
+
+  def findStickyUnclaimed(current: Seq[Unclaimed], previous: Seq[Unclaimed]): Set[Unclaimed] =
+    findStickyIssues(current, previous)
+
+  def notifyOnIssues(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Unit = {
     val rsContactsFromConflicts: Array[String] =
       conflicts.flatMap(c => Set(c.a.registry, c.b.registry))
         .filter(_ != Const.IANA)
