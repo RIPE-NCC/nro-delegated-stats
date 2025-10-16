@@ -32,7 +32,7 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter{
     val previousConflicts = Ports.parseConflicts(getResourceReader("/previousConflicts"))
     val currentConflicts = Ports.parseConflicts(getResourceReader("/currentConflicts"))
 
-    val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
+    val stickyConflicts = subject.findStickyConflicts(previousConflicts, currentConflicts)
     subject.notifyOnIssues(stickyConflicts, Set())
 
     val messages = greenMail.getReceivedMessages.toList
@@ -47,7 +47,7 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter{
     assert(messages.flatMap(_.getFrom).map(_.toString).toSet == Set(sender))
 
     // Same subjects
-    assert(messages.map(_.getSubject).toSet == Set(s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}"))
+    assert(messages.map(_.getSubject).toSet == Set(s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}"))
 
     allowedList.foreach{allowedListed =>
       messages.foreach(mimeMessage =>
@@ -59,14 +59,14 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter{
   it should " be quiet if conflict disappears" in {
     val previousConflicts = Ports.parseConflicts(getResourceReader("/previousConflicts"))
     val currentConflicts = List()
-    val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
+    val stickyConflicts = subject.findStickyConflicts(previousConflicts, currentConflicts)
     assert(stickyConflicts.isEmpty)
   }
 
   it should " not alert if there are just new conflicts" in {
     val previousConflicts = List()
     val currentConflicts = Ports.parseConflicts(getResourceReader("/currentConflicts"))
-    val stickyConflicts = subject.findStickyConflicts(currentConflicts, previousConflicts)
+    val stickyConflicts = subject.findStickyConflicts(previousConflicts, currentConflicts)
     assert(stickyConflicts.isEmpty)
   }
 

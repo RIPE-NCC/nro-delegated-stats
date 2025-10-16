@@ -22,7 +22,7 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
     check
   }
 
-  private def findStickyIssues[T <: WithKey](current: Seq[T], previous: Seq[T]): Set[T] = {
+  private def findStickyIssues[T <: WithKey](previous: Seq[T], current: Seq[T]): Set[T] = {
     val previousMap = previous.map(c => c.key -> c).toMap
     current.map(_.key)
       .toSet
@@ -30,11 +30,11 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
       .map(previousMap)
   }
 
-  def findStickyConflicts(current: Seq[Conflict], previous: Seq[Conflict]): Set[Conflict] =
-    findStickyIssues(current, previous).filterNot(isAllowed)
+  def findStickyConflicts(previous: Seq[Conflict], current: Seq[Conflict]): Set[Conflict] =
+    findStickyIssues(previous, current).filterNot(isAllowed)
 
-  def findStickyUnclaimed(current: Seq[Unclaimed], previous: Seq[Unclaimed]): Set[Unclaimed] =
-    findStickyIssues(current, previous)
+  def findStickyUnclaimed(previous: Seq[Unclaimed], current: Seq[Unclaimed]): Set[Unclaimed] =
+    findStickyIssues(previous, current)
 
   def notifyOnIssues(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Unit = {
     if (conflicts.isEmpty && unclaimed.isEmpty) {

@@ -185,7 +185,7 @@ object Ports extends Logging {
     val previousPath = s"$baseConflictURL/${config.PREV_CONFLICT_DAY}/${Configs.conflictFileName}"
     val currentPath = s"$baseConflictURL/${config.CURRENT_DAY}/${Configs.conflictFileName}"
 
-    (getAllowedList, getIt(currentPath), getIt(previousPath))
+    (getAllowedList, getIt(previousPath), getIt(currentPath))
   }
 
   def getUnclaimed(baseConflictURL: String): (Seq[Unclaimed], Seq[Unclaimed]) = {
@@ -195,7 +195,7 @@ object Ports extends Logging {
     val previousPath = s"$baseConflictURL/${config.PREV_CONFLICT_DAY}/${Configs.unclaimedFileName}"
     val currentPath = s"$baseConflictURL/${config.CURRENT_DAY}/${Configs.unclaimedFileName}"
 
-    (getIt(currentPath), getIt(previousPath))
+    (getIt(previousPath), getIt(currentPath))
   }
 
   def writeRecords(records: Records, outputFile: String = s"$resultFileName"): Unit = {

@@ -134,8 +134,8 @@ object Main extends Stats with App {
     val (previousUnclaimed, currentUnclaimed) = Ports.getUnclaimed(baseURL)
 
     val notifier = new Notifier(mailer, allowedList.all)
-    val stickyConflicts = notifier.findStickyConflicts(currentConflicts, previousConflicts)
-    val stickyUnclaimed = notifier.findStickyUnclaimed(currentUnclaimed, previousUnclaimed)
+    val stickyConflicts = notifier.findStickyConflicts(previousConflicts, currentConflicts)
+    val stickyUnclaimed = notifier.findStickyUnclaimed(previousUnclaimed, currentUnclaimed)
     if (stickyConflicts.isEmpty && stickyUnclaimed.isEmpty) {
       logger.info("No emails sent.")
     } else {
