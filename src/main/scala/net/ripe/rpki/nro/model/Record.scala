@@ -20,7 +20,8 @@ case class Conflict(a: Record, b: Record) extends WithKey {
 }
 
 case class Unclaimed(record: Record) extends WithKey {
-  def key = record.noDate
+  override def key = record.noDate
+  override def toString = record.toString
 }
 
 trait WithKey {

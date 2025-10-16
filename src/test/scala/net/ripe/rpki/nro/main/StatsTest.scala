@@ -6,7 +6,7 @@ import org.scalatest.FlatSpec
 
 class StatsTest extends FlatSpec with Stats with TestUtil with Logging {
 
-  "Stats sanity check " should "detects conflict, unclaimed, and claimed" in {
+  "Stats sanity check " should "detects conflict, currentUnclaimed, and claimed" in {
     val iana = parseRecordFile(getResourceFile("/data/iana"))
     val apnic = parseRecordFile(getResourceFile("/data/apnic")).formatRIRs
     val afrinic = parseRecordFile(getResourceFile("/data/afrinic")).formatRIRs
@@ -36,7 +36,7 @@ class StatsTest extends FlatSpec with Stats with TestUtil with Logging {
     assert(unclaimed.size === 32)
     assert(overclaimed.size === 475)
 
-    // Assert that all unclaimed are now assigned and obtained from previous results.
+    // Assert that all currentUnclaimed are now assigned and obtained from previous results.
     // No longer shown as available.
     assert(unclaimed.asn.map(_.status).forall(_ == "assigned"))
     assert(unclaimed.ipv4.map(_.status).forall(_ == "assigned"))

@@ -32,7 +32,7 @@ class PortsTest extends FlatSpec with TestUtil {
     assert(fetched == noConflict)
   }
 
-  it should "parse unclaimed entries" in {
+  it should "parse currentUnclaimed entries" in {
     val fetched = readUnclaimed("https://ftp.ripe.net/pub/stats/ripencc/nro-stats/20251014/unclaimed")
     assert(fetched.size == 9)
   }
