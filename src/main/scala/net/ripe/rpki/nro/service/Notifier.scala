@@ -54,15 +54,17 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
 
       val conflictText = {
         if (conflicts.nonEmpty)
-          s"Please verify the following resource conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}\n\n"
+          s"Please verify the following resource conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"
         else ""
       }
+
+      val messageText = List(conflictText, unclaimedText).filter(_.nonEmpty).mkString("\n\n")
 
       val envelope: Envelope = Envelope
         .from(sender.addr)
         .to(ArraySeq.unsafeWrapArray(rsContactsFromConflicts.map(_.addr)): _*)
         .subject(s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
-        .content(Text(conflictText + unclaimedText))
+        .content(Text(messageText))
 
       Await.result(mailer(envelope), Duration.Inf)
     }
