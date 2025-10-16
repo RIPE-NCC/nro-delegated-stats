@@ -262,7 +262,7 @@ object Ports extends Logging {
         if response.statusCode == 200 =>
         parse(new StringReader(response.text()))
       case _ =>
-        throw new RuntimeException("Failed to fetch conflict files")
+        throw new RuntimeException(s"Failed to fetch file from $url")
     }
   }
 
