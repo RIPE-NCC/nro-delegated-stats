@@ -3,7 +3,6 @@ package net.ripe.rpki.nro
 import net.ripe.rpki.nro.Configs._
 import net.ripe.rpki.nro.iana.IanaGenerator
 import net.ripe.rpki.nro.main.Stats
-import net.ripe.rpki.nro.model.{Conflict, Records}
 import net.ripe.rpki.nro.service.{Notifier, Ports}
 import org.slf4j.LoggerFactory
 import scopt.OParser
@@ -139,9 +138,14 @@ object Main extends Stats with App {
     if (stickyConflicts.isEmpty && stickyUnclaimed.isEmpty) {
       logger.info("No emails sent.")
     } else {
-      logger.info("Found persistent conflicts:")
-      stickyConflicts.foreach(c => logger.info(c.toString))
-      stickyUnclaimed.foreach(c => logger.info(c.toString))
+      if (stickyUnclaimed.nonEmpty) {
+        logger.info("Found persistent conflicts:")
+        stickyConflicts.foreach(c => logger.info(c.toString))
+      }
+      if (stickyConflicts.nonEmpty) {
+        logger.info("Found persistent unclaimed resources:")
+        stickyUnclaimed.foreach(c => logger.info(c.toString))
+      }
       notifier.notifyOnIssues(stickyConflicts, stickyUnclaimed)
     }
   }
