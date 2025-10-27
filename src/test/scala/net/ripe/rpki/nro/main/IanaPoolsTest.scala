@@ -110,7 +110,7 @@ class IanaPoolsTest extends FlatSpec {
     assert(overclaimed.ipv6.size == 1 && overclaimed.ipv6.head.length == "23")
   }
 
-  it should " detect unclaimed " in {
+  it should " detect currentUnclaimed " in {
     val iana: Records = parseRecordFile(getClass.getResource("/data/claims/iana").getFile)
     val combined : Records = parseRecordFile(getClass.getResource("/data/claims/combined-unclaimed").getFile)
 

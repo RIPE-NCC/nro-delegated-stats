@@ -1,0 +1,9 @@
+arin|ZZ|asn|10922|1|20250921|available|arin|iana
+ripencc|ZZ|asn|205663|1|20250921|available|ripencc|iana
+ripencc|CZ|ipv4|45.159.108.0|256|20191001|assigned|9c772a6d-6833-46ec-8611-e0629d69d93d|e-stats
+ripencc|GB|ipv4|80.77.80.0|2048|20050309|assigned|1d61df1b-7639-4c0c-acb5-aeeaab4e7ac5|e-stats
+ripencc|CZ|ipv4|185.159.89.0|256|20200403|assigned|9c772a6d-6833-46ec-8611-e0629d69d93d|e-stats
+afrinic|ZZ|ipv6|2001:43f8:d1::|48|20250923|reserved|afrinic|e-stats
+afrinic|ZZ|ipv6|2001:43f8:d2::|47|20250923|reserved|afrinic|e-stats
+afrinic|ZZ|ipv6|2001:43f8:d4::|46|20250923|reserved|afrinic|e-stats
+afrinic|ZZ|ipv6|2001:43f8:d8::|45|20250923|reserved|afrinic|e-stats

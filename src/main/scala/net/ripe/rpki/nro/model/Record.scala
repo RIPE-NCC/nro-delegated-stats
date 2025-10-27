@@ -13,16 +13,22 @@ case class Stat(registry: String, cc: String, `type`: String, start: String, len
   def noDate: List[String] = List(registry, cc, `type`, start, length, status, oid, ext)
 }
 
-case class Conflict(a: Record, b: Record) {
-
+case class Conflict(a: Record, b: Record) extends WithKey {
   override def toString: String = s"$a\n$b"
-
   def rirsInvolved = s"${a.registry}--${b.registry}"
-
   def key: List[String] = a.noDate ++ b.noDate
 }
 
-trait Record extends Comparable[Record] with Ranges {
+case class Unclaimed(record: Record) extends WithKey {
+  override def key = record.noDate
+  override def toString = record.toString
+}
+
+trait WithKey {
+  def key: List[String]
+}
+
+trait Record extends Comparable[Record] with Ranges with WithKey {
 
   def stat: Stat
   def range: RecordRange
@@ -42,6 +48,7 @@ trait Record extends Comparable[Record] with Ranges {
 
   def asList: List[String] = stat.asList
   def noDate: List[String] = stat.noDate
+  def key: List[String] = noDate
   override def toString: String = asList.mkString("|")
 
   override def compareTo(that: Record): Int = this.range.compareTo(that.range)
