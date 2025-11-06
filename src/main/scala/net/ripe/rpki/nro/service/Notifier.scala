@@ -37,14 +37,14 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
     findStickyIssues(previous, current)
 
   def notifyOnIssues(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Unit = {
-    if (conflicts.isEmpty && unclaimed.isEmpty) {
-      ()
-    } else {
-      val rsContactsFromConflicts: Array[String] =
-        conflicts.flatMap(c => Set(c.a.registry, c.b.registry))
-          .filter(_ != Const.IANA)
-          .map(contacts)
-          .toArray :+ contacts(RSCG)
+    if (conflicts.nonEmpty || unclaimed.nonEmpty) {
+      val sendTo = {
+        val registries =
+          conflicts.flatMap(c => Set(c.a.registry, c.b.registry)) ++
+            unclaimed.flatMap(c => Set(c.record.registry))
+
+        (registries.filter(_ != Const.IANA) ++ Set(RSCG)).map(contacts)
+      }.toArray
 
       val unclaimedText = {
         if (unclaimed.nonEmpty)
@@ -62,7 +62,7 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
 
       val envelope: Envelope = Envelope
         .from(sender.addr)
-        .to(ArraySeq.unsafeWrapArray(rsContactsFromConflicts.map(_.addr)): _*)
+        .to(ArraySeq.unsafeWrapArray(sendTo.map(_.addr)): _*)
         .subject(s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
         .content(Text(messageText))
 

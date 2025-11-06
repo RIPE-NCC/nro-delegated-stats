@@ -3,7 +3,7 @@ package net.ripe.rpki.nro.service
 import com.icegreen.greenmail.util.{GreenMail, ServerSetupTest}
 import courier.Mailer
 import net.ripe.rpki.nro.Configs._
-import net.ripe.rpki.nro.Const.{APNIC, RSCG}
+import net.ripe.rpki.nro.Const.{AFRINIC, APNIC, RIPENCC, RSCG}
 import net.ripe.rpki.nro.TestUtil
 import org.scalatest.{BeforeAndAfter, FlatSpec}
 
@@ -47,9 +47,9 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
     assert(messages.map(_.getSubject).toSet == Set(s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}"))
 
     allowedList.foreach { allowedListed =>
-      messages.foreach(mimeMessage =>
+      messages.foreach { mimeMessage =>
         assert(!mimeMessage.getContent().toString.contains(allowedListed))
-      )
+      }
     }
   }
 
@@ -66,10 +66,12 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
     val messages = greenMail.getReceivedMessages.toList
 
     // Sending to apnic and rscg
-    assert(messages.size == 2)
+    assert(messages.size == 3)
     val recipients = messages.flatMap(_.getAllRecipients).map(_.toString).toSet
     assert(recipients.contains(contacts(APNIC)))
     assert(recipients.contains(contacts(RSCG)))
+    assert(recipients.contains(contacts(AFRINIC)))
+    assert(recipients.contains(contacts(RIPENCC)))
 
     // All from no-reply nro.net
     assert(messages.flatMap(_.getFrom).map(_.toString).toSet == Set(sender))
