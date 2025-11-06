@@ -3,12 +3,11 @@ package net.ripe.rpki.nro.service
 import com.icegreen.greenmail.util.{GreenMail, ServerSetupTest}
 import courier.Mailer
 import net.ripe.rpki.nro.Configs._
-import net.ripe.rpki.nro.Const.{AFRINIC, APNIC, RIPENCC, RSCG}
+import net.ripe.rpki.nro.Const.{AFRINIC, APNIC, ARIN, RIPENCC, RSCG}
 import net.ripe.rpki.nro.TestUtil
 import org.scalatest.{BeforeAndAfter, FlatSpec}
 
 class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
-
 
   val greenMail = new GreenMail(ServerSetupTest.ALL)
 
@@ -66,12 +65,13 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
     val messages = greenMail.getReceivedMessages.toList
 
     // Sending to apnic and rscg
-    assert(messages.size == 3)
+    assert(messages.size == 5)
     val recipients = messages.flatMap(_.getAllRecipients).map(_.toString).toSet
     assert(recipients.contains(contacts(APNIC)))
     assert(recipients.contains(contacts(RSCG)))
     assert(recipients.contains(contacts(AFRINIC)))
     assert(recipients.contains(contacts(RIPENCC)))
+    assert(recipients.contains(contacts(ARIN)))
 
     // All from no-reply nro.net
     assert(messages.flatMap(_.getFrom).map(_.toString).toSet == Set(sender))
