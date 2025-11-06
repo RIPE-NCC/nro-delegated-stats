@@ -67,11 +67,9 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
     // Sending to apnic and rscg
     assert(messages.size == 5)
     val recipients = messages.flatMap(_.getAllRecipients).map(_.toString).toSet
-    assert(recipients.contains(contacts(APNIC)))
-    assert(recipients.contains(contacts(RSCG)))
-    assert(recipients.contains(contacts(AFRINIC)))
-    assert(recipients.contains(contacts(RIPENCC)))
-    assert(recipients.contains(contacts(ARIN)))
+    Seq(AFRINIC, APNIC, ARIN, RIPENCC, RSCG).foreach { r =>
+      assert(recipients.contains(contacts(r)))
+    }
 
     // All from no-reply nro.net
     assert(messages.flatMap(_.getFrom).map(_.toString).toSet == Set(sender))
