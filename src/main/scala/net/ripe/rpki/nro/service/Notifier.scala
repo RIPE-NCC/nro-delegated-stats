@@ -66,6 +66,8 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
       (registries.filter(_ != Const.IANA) ++ Set(RSCG)).map(contacts)
     }.toArray
 
+    logger.warn("sendTo = " + sendTo.mkString("(", ", ", ")"))
+
     Envelope
       .from(sender.addr)
       .to(ArraySeq.unsafeWrapArray(sendTo.map(_.addr)): _*)
