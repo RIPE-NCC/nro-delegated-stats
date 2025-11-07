@@ -38,35 +38,38 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
 
   def notifyOnIssues(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Unit = {
     if (conflicts.nonEmpty || unclaimed.nonEmpty) {
-      val sendTo = {
-        val registries =
-          conflicts.flatMap(c => Set(c.a.registry, c.b.registry)) ++
-            unclaimed.flatMap(c => Set(c.record.registry))
-
-        (registries.filter(_ != Const.IANA) ++ Set(RSCG)).map(contacts)
-      }.toArray
-
-      val unclaimedText = {
-        if (unclaimed.nonEmpty)
-          s"Please verify the following unclaimed resources:\n\n${unclaimed.mkString("\n")}"
-        else ""
-      }
-
-      val conflictText = {
-        if (conflicts.nonEmpty)
-          s"Please verify the following resource conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"
-        else ""
-      }
-
-      val messageText = List(conflictText, unclaimedText).filter(_.nonEmpty).mkString("\n\n")
-
-      val envelope: Envelope = Envelope
-        .from(sender.addr)
-        .to(ArraySeq.unsafeWrapArray(sendTo.map(_.addr)): _*)
-        .subject(s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
-        .content(Text(messageText))
-
+      val envelope: Envelope = createEnvelope(conflicts, unclaimed)
       Await.result(mailer(envelope), Duration.Inf)
     }
+  }
+
+  def createEnvelope(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Envelope = {
+    val unclaimedText = {
+      if (unclaimed.nonEmpty)
+        s"Please verify the following unclaimed resources:\n\n${unclaimed.mkString("\n")}"
+      else ""
+    }
+
+    val conflictText = {
+      if (conflicts.nonEmpty)
+        s"Please verify the following resource conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"
+      else ""
+    }
+
+    val messageText = List(conflictText, unclaimedText).filter(_.nonEmpty).mkString("\n\n")
+
+    val sendTo = {
+      val registries =
+        conflicts.flatMap(c => Set(c.a.registry, c.b.registry)) ++
+          unclaimed.flatMap(c => Set(c.record.registry))
+
+      (registries.filter(_ != Const.IANA) ++ Set(RSCG)).map(contacts)
+    }.toArray
+
+    Envelope
+      .from(sender.addr)
+      .to(ArraySeq.unsafeWrapArray(sendTo.map(_.addr)): _*)
+      .subject(s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
+      .content(Text(messageText))
   }
 }
