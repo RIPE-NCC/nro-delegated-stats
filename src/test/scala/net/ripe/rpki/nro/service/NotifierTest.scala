@@ -47,7 +47,6 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
     allowedList.foreach { allowedListed =>
       val content = envelope.contents.toString
       assert(!content.contains(allowedListed))
-      assert(!content.contains(allowedListed))
       assert(content.contains("Please verify the following unclaimed resources"))
       assert(content.contains("apnic|ZZ|ipv4|200.0.113.0|256|20190920|reserved||e-stats"))
       assert(content.contains("Please verify the following resource conflicts"))
