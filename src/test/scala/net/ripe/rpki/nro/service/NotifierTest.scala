@@ -21,7 +21,7 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
     val envelope = subject.createEnvelope(stickyConflicts, Set())
 
     assert(envelope.subject.get._1 == s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
-    assert(envelope.to.map(_.toString).toSet == Set(contacts(APNIC), contacts(RSCG)))
+    assert(envelope.to.map(_.toString).toSet == Set(APNIC, RSCG).map(contacts))
     assert(envelope.from.toString == sender)
 
     allowedList.foreach { allowedListed =>
@@ -41,7 +41,7 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
     val envelope = subject.createEnvelope(stickyConflicts, stickyUnclaimed)
 
     assert(envelope.subject.get._1 == s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
-    assert(envelope.to.map(_.toString).toSet == Seq(AFRINIC, APNIC, ARIN, RIPENCC, RSCG).map(contacts).toSet)
+    assert(envelope.to.map(_.toString).toSet == Set(AFRINIC, APNIC, ARIN, RIPENCC, RSCG).map(contacts))
     assert(envelope.from.toString == sender)
 
     allowedList.foreach { allowedListed =>
