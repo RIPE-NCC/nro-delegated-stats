@@ -18,14 +18,18 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
       Ports.parseConflicts(getResourceReader("/previousConflicts")),
       Ports.parseConflicts(getResourceReader("/currentConflicts")))
 
-    val envelope = subject.createEnvelope(stickyConflicts, Set())
+    val envelopes = subject.createEnvelopes(stickyConflicts, Set())
 
-    assert(envelope.subject.get._1 == s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
-    assert(envelope.to.map(_.toString).toSet == Set(APNIC, RSCG).map(contacts))
-    assert(envelope.from.toString == sender)
+    assert(envelopes(Notifier.CONFLICTS).subject.get._1 == s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
+    assert(envelopes(Notifier.CONFLICTS).to.map(_.toString).toSet == Set(APNIC).map(contacts))
+    assert(envelopes(Notifier.CONFLICTS).from.toString == sender)
+    assert(envelopes(Notifier.BOTH_CONFLICTS_AND_UNCLAIMED).subject.get._1 == s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
+    assert(envelopes(Notifier.BOTH_CONFLICTS_AND_UNCLAIMED).to.map(_.toString).toSet == Set(RSCG).map(contacts))
+    assert(envelopes(Notifier.BOTH_CONFLICTS_AND_UNCLAIMED).from.toString == sender)
 
     allowedList.foreach { allowedListed =>
-      assert(!envelope.contents.toString.contains(allowedListed))
+      assert(!envelopes(Notifier.CONFLICTS).contents.toString.contains(allowedListed))
+      assert(!envelopes(Notifier.BOTH_CONFLICTS_AND_UNCLAIMED).contents.toString.contains(allowedListed))
     }
   }
 
@@ -38,19 +42,37 @@ class NotifierTest extends FlatSpec with TestUtil with BeforeAndAfter {
     val stickyConflicts = subject.findStickyConflicts(previousConflicts, currentConflicts)
     val stickyUnclaimed = subject.findStickyUnclaimed(previousUnclaimed, currentUnclaimed)
 
-    val envelope = subject.createEnvelope(stickyConflicts, stickyUnclaimed)
+    val envelopes = subject.createEnvelopes(stickyConflicts, stickyUnclaimed)
 
-    assert(envelope.subject.get._1 == s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
-    assert(envelope.to.map(_.toString).toSet == Set(AFRINIC, APNIC, ARIN, RIPENCC, RSCG).map(contacts))
-    assert(envelope.from.toString == sender)
+    assert(envelopes(Notifier.CONFLICTS).subject.get._1 == s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}")
+    assert(envelopes(Notifier.CONFLICTS).from.toString == sender)
+    assert(envelopes(Notifier.CONFLICTS).to.map(_.toString).toSet == Set(APNIC).map(contacts))
+
+    assert(envelopes(Notifier.BOTH_CONFLICTS_AND_UNCLAIMED).subject.get._1 == s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
+    assert(envelopes(Notifier.BOTH_CONFLICTS_AND_UNCLAIMED).from.toString == sender)
+    assert(envelopes(Notifier.BOTH_CONFLICTS_AND_UNCLAIMED).to.map(_.toString).toSet == Set(RSCG).map(contacts))
+
+    assert(envelopes(Notifier.UNCLAIMED).subject.get._1 == s"There are unclaimed delegated stats since ${config.PREV_CONFLICT_DAY}")
+    assert(envelopes(Notifier.UNCLAIMED).from.toString == sender)
+    assert(envelopes(Notifier.UNCLAIMED).to.map(_.toString).toSet == Set(AFRINIC, ARIN, RIPENCC).map(contacts))
 
     allowedList.foreach { allowedListed =>
-      val content = envelope.contents.toString
-      assert(!content.contains(allowedListed))
-      assert(content.contains("Please verify the following unclaimed resources"))
-      assert(content.contains("apnic|ZZ|ipv4|200.0.113.0|256|20190920|reserved||e-stats"))
-      assert(content.contains("Please verify the following resource conflicts"))
-      assert(content.contains("afrinic|ZZ|ipv6|2001:43f8:d8::|45|20250923|reserved|afrinic|e-stats"))
+      val contentConflicts = envelopes(Notifier.CONFLICTS).contents.toString
+      assert(!contentConflicts.contains(allowedListed))
+      assert(contentConflicts.contains("apnic|ZZ|ipv4|200.0.113.0|256|20190920|reserved||e-stats"))
+      assert(contentConflicts.contains("Please verify the following resource conflicts"))
+
+      val contentUnclaimed = envelopes(Notifier.UNCLAIMED).contents.toString
+      assert(!contentUnclaimed.contains(allowedListed))
+      assert(contentUnclaimed.contains("Please verify the following unclaimed resources"))
+      assert(contentUnclaimed.contains("afrinic|ZZ|ipv6|2001:43f8:d8::|45|20250923|reserved|afrinic|e-stats"))
+
+      val contentBoth = envelopes(Notifier.BOTH_CONFLICTS_AND_UNCLAIMED).contents.toString
+      assert(!contentBoth.contains(allowedListed))
+      assert(contentBoth.contains("Please verify the following unclaimed resources"))
+      assert(contentBoth.contains("apnic|ZZ|ipv4|200.0.113.0|256|20190920|reserved||e-stats"))
+      assert(contentBoth.contains("Please verify the following resource conflicts"))
+      assert(contentBoth.contains("afrinic|ZZ|ipv6|2001:43f8:d8::|45|20250923|reserved|afrinic|e-stats"))
     }
   }
 

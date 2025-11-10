@@ -8,8 +8,14 @@ import net.ripe.rpki.nro.model.{Conflict, Record, Unclaimed, WithKey}
 import net.ripe.rpki.nro.{Const, Logging}
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+
+object Notifier {
+  val CONFLICTS = "conflicts"
+  val UNCLAIMED = "unclaimed"
+  val BOTH_CONFLICTS_AND_UNCLAIMED = "both"
+}
 
 class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
 
@@ -38,12 +44,13 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
 
   def notifyOnIssues(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Unit = {
     if (conflicts.nonEmpty || unclaimed.nonEmpty) {
-      val envelope: Envelope = createEnvelope(conflicts, unclaimed)
-      Await.result(mailer(envelope), Duration.Inf)
+      val envelopes = createEnvelopes(conflicts, unclaimed)
+      val all = Future.sequence(envelopes.values.map(x => mailer(x)))
+      Await.result(all, Duration.Inf)
     }
   }
 
-  def createEnvelope(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Envelope = {
+  def createEnvelopes(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Map[String, Envelope] = {
     val unclaimedText = {
       if (unclaimed.nonEmpty)
         s"Please verify the following unclaimed resources:\n\n${unclaimed.mkString("\n")}"
@@ -58,19 +65,31 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
 
     val messageText = List(conflictText, unclaimedText).filter(_.nonEmpty).mkString("\n\n")
 
-    val sendTo = {
-      val registries =
-        conflicts.flatMap(c => Set(c.a.registry, c.b.registry)) ++
-          unclaimed.flatMap(c => Set(c.record.registry))
+    def contactSet(x: Set[String]) =
+      (x.filter(_ != Const.IANA) ++ Set(RSCG))
+        .map(contacts)
+        .filter(a => a != null && a.nonEmpty)
 
-      (registries.filter(_ != Const.IANA) ++ Set(RSCG)).map(contacts)
-    }.filter(a => a != null && a.nonEmpty)
-      .toArray
+    def envelope(sendTo: Set[String], subject: String, messageText: String) =
+      Envelope
+        .from(sender.addr)
+        .to(ArraySeq.unsafeWrapArray(sendTo.map(_.addr).toArray): _*)
+        .subject(subject)
+        .content(Text(messageText))
 
-    Envelope
-      .from(sender.addr)
-      .to(ArraySeq.unsafeWrapArray(sendTo.map(_.addr)): _*)
-      .subject(s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
-      .content(Text(messageText))
+    val conflictContacts = contactSet(conflicts.flatMap(c => Set(c.a.registry, c.b.registry)))
+    val unclaimedContacts = contactSet(unclaimed.flatMap(c => Set(c.record.registry)))
+
+    val both = conflictContacts.intersect(unclaimedContacts)
+    val conflictsOnly = conflictContacts.diff(both)
+    val unclaimedOnly = unclaimedContacts.diff(both)
+
+    Seq(
+      (Notifier.CONFLICTS, conflictsOnly, envelope(conflictsOnly, s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}", conflictText)),
+      (Notifier.UNCLAIMED, unclaimedOnly, envelope(unclaimedOnly, s"There are unclaimed delegated stats since ${config.PREV_CONFLICT_DAY}", unclaimedText)),
+      (Notifier.BOTH_CONFLICTS_AND_UNCLAIMED, both, envelope(both, s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}", messageText))
+    ).filter(_._2.nonEmpty)
+      .map { case (key, _, env) => key -> env }
+      .toMap
   }
 }
