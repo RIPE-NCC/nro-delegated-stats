@@ -1,4 +1,4 @@
-FROM openjdk:17-slim
+FROM eclipse-temurin:21-ubi10-minimal
 
 RUN apt-get update && apt-get install -y libdigest-sha-perl \
     && rm -rf /var/lib/apt/lists/*
