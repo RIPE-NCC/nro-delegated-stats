@@ -8,8 +8,14 @@ import net.ripe.rpki.nro.model.{Conflict, Record, Unclaimed, WithKey}
 import net.ripe.rpki.nro.{Const, Logging}
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+
+object Notifier {
+  val CONFLICTS = "conflicts"
+  val UNCLAIMED = "unclaimed"
+  val BOTH_CONFLICTS_AND_UNCLAIMED = "both"
+}
 
 class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
 
@@ -37,36 +43,53 @@ class Notifier(mailer: Mailer, allowedList: Seq[Record]) extends Logging {
     findStickyIssues(previous, current)
 
   def notifyOnIssues(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Unit = {
-    if (conflicts.isEmpty && unclaimed.isEmpty) {
-      ()
-    } else {
-      val rsContactsFromConflicts: Array[String] =
-        conflicts.flatMap(c => Set(c.a.registry, c.b.registry))
-          .filter(_ != Const.IANA)
-          .map(contacts)
-          .toArray :+ contacts(RSCG)
+    if (conflicts.nonEmpty || unclaimed.nonEmpty) {
+      val envelopes = createEnvelopes(conflicts, unclaimed)
+      val all = Future.sequence(envelopes.values.map(x => mailer(x)))
+      Await.result(all, Duration.Inf)
+    }
+  }
 
-      val unclaimedText = {
-        if (unclaimed.nonEmpty)
-          s"Please verify the following unclaimed resources:\n\n${unclaimed.mkString("\n")}"
-        else ""
-      }
+  def createEnvelopes(conflicts: Set[Conflict], unclaimed: Set[Unclaimed]): Map[String, Envelope] = {
+    val unclaimedText = {
+      if (unclaimed.nonEmpty)
+        s"Please verify the following unclaimed resources:\n\n${unclaimed.mkString("\n")}"
+      else ""
+    }
 
-      val conflictText = {
-        if (conflicts.nonEmpty)
-          s"Please verify the following resource conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"
-        else ""
-      }
+    val conflictText = {
+      if (conflicts.nonEmpty)
+        s"Please verify the following resource conflicts:\n\n${conflicts.mkString("\n\n--\n\n")}"
+      else ""
+    }
 
-      val messageText = List(conflictText, unclaimedText).filter(_.nonEmpty).mkString("\n\n")
+    val messageText = List(conflictText, unclaimedText).filter(_.nonEmpty).mkString("\n\n")
 
-      val envelope: Envelope = Envelope
+    def contactSet(x: Set[String]) =
+      (x.filter(_ != Const.IANA) ++ Set(RSCG))
+        .map(contacts)
+        .filter(a => a != null && a.nonEmpty)
+
+    def envelope(sendTo: Set[String], subject: String, messageText: String) =
+      Envelope
         .from(sender.addr)
-        .to(ArraySeq.unsafeWrapArray(rsContactsFromConflicts.map(_.addr)): _*)
-        .subject(s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}")
+        .to(ArraySeq.unsafeWrapArray(sendTo.map(_.addr).toArray): _*)
+        .subject(subject)
         .content(Text(messageText))
 
-      Await.result(mailer(envelope), Duration.Inf)
-    }
+    val conflictContacts = contactSet(conflicts.flatMap(c => Set(c.a.registry, c.b.registry)))
+    val unclaimedContacts = contactSet(unclaimed.flatMap(c => Set(c.record.registry)))
+
+    val both = conflictContacts.intersect(unclaimedContacts)
+    val conflictsOnly = conflictContacts.diff(both)
+    val unclaimedOnly = unclaimedContacts.diff(both)
+
+    Seq(
+      (Notifier.CONFLICTS, conflictsOnly, envelope(conflictsOnly, s"There are conflicting delegated stats since ${config.PREV_CONFLICT_DAY}", conflictText)),
+      (Notifier.UNCLAIMED, unclaimedOnly, envelope(unclaimedOnly, s"There are unclaimed delegated stats since ${config.PREV_CONFLICT_DAY}", unclaimedText)),
+      (Notifier.BOTH_CONFLICTS_AND_UNCLAIMED, both, envelope(both, s"There are problematic delegated stats since ${config.PREV_CONFLICT_DAY}", messageText))
+    ).filter(_._2.nonEmpty)
+      .map { case (key, _, env) => key -> env }
+      .toMap
   }
 }
