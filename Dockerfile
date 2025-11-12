@@ -1,6 +1,7 @@
-FROM eclipse-temurin:21-ubi10-minimal
+FROM openjdk:26-ea-21-slim
 
-RUN microdnf install -y libdigest-sha-perl
+RUN apt-get update && apt-get install -y libdigest-sha-perl \
+     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /stats/data
 WORKDIR /stats
